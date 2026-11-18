@@ -1,0 +1,58 @@
+import type { Metadata } from "next";
+import { PageHero, RouteView, SectionHeading } from "@/components/ui/PageHero";
+import { ContactForm } from "@/components/contact/ContactForm";
+import { CONFIG } from "@/lib/config";
+
+export const metadata: Metadata = { title: "Contact — I Love Decants" };
+
+const FAQ = [
+  ["Which size should I try?", "Begin with 3 ml if the scent is new to you. It is enough for several wears without a large commitment."],
+  ["Can I add a gift note?", "Yes. A short handwritten message can be included with any gift order."],
+  ["How long does engraving take?", "Custom engraving generally adds one business day after spelling and placement are confirmed."],
+  ["Is this checkout active?", "This downloadable version is a frontend demo. Connect your preferred payment or store backend before selling."],
+  ["Do you have full bottles?", "Yes. Selected scents are offered in both 50 ml and 100 ml alongside the smaller decant volumes."],
+  ["Can you recommend a scent?", "Absolutely. Tell us two scents you enjoy—or the mood you want—and we will help you shortlist gently."],
+];
+
+export default function ContactPage() {
+  return (
+    <RouteView>
+      <PageHero
+        eyebrow="Contact us"
+        title="Have a doubt? We are here."
+        lead="Ask about a scent, volume, gift, engraving, or order. There is no wrong question and no pressure to buy."
+        noteTitle="Choose your easiest channel."
+        note="Use the form, WhatsApp, Telegram, Messenger, Facebook, or the fixed help button."
+        orb="rgba(230,225,238,.88)"
+      />
+      <section className="section">
+        <div className="container contact-layout">
+          <aside className="contact-aside">
+            <span className="eyebrow">Direct and reassuring</span>
+            <h2>Talk to a person, not a perfume counter.</h2>
+            <p>Tell us what you usually enjoy, what you dislike, or simply the feeling you want. We will help you narrow it down calmly.</p>
+            <div className="contact-list">
+              <a href={CONFIG.whatsapp} target="_blank" rel="noreferrer"><span className="contact-list-icon">wa</span><span><strong>WhatsApp</strong><br />Quick scent and order help</span></a>
+              <a href={CONFIG.telegram} target="_blank" rel="noreferrer"><span className="contact-list-icon">tg</span><span><strong>Telegram</strong><br />Message our team</span></a>
+              <a href={CONFIG.messenger} target="_blank" rel="noreferrer"><span className="contact-list-icon">ms</span><span><strong>Messenger</strong><br />Ask through Facebook</span></a>
+              <a href={`tel:${CONFIG.phoneHref}`}><span className="contact-list-icon">☎</span><span><strong>Phone / SMS</strong><br />{CONFIG.phone}</span></a>
+              <div><span className="contact-list-icon">⌖</span><span><strong>Location</strong><br />{CONFIG.location}</span></div>
+            </div>
+            <div className="contact-botanical" aria-hidden="true" />
+          </aside>
+          <ContactForm />
+        </div>
+      </section>
+      <section className="section welcome-band" id="faq" aria-labelledby="faqTitle">
+        <div className="container">
+          <SectionHeading eyebrow="A few quick answers" title="Before you need to ask." id="faqTitle">
+            <p>Short, plain answers to the questions we hear most often.</p>
+          </SectionHeading>
+          <div className="faq-grid">
+            {FAQ.map(([q, a]) => <article className="faq-card" key={q}><h3>{q}</h3><p>{a}</p></article>)}
+          </div>
+        </div>
+      </section>
+    </RouteView>
+  );
+}
