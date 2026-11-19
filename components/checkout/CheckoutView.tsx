@@ -4,9 +4,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
-import { useCart, useCoupons, useCurrentCustomer } from "@/hooks/useServices";
+import { useCart, useCurrentCustomer } from "@/hooks/useServices";
 import { couponService } from "@/lib/services/coupons";
-import { orderService, PAYMENT_ROUTES } from "@/lib/services/orders";
+import { ordersApi } from "@/lib/api/orders";
+import { PAYMENT_ROUTES } from "@/lib/services/orders";
 import { DELIVERY_ZONES } from "@/lib/config";
 import { isBdPhone } from "@/lib/validators";
 import { money } from "@/lib/format";
@@ -18,7 +19,6 @@ export function CheckoutView() {
   const router = useRouter();
   const { items, subtotal } = useCart();
   const customer = useCurrentCustomer();
-  const coupons = useCoupons();
 
   const [form, setForm] = useState({ fullName: "", phone: "", address: "", city: "", notes: "", reference: "", payerAccount: "" });
   const [zone, setZone] = useState<number>(DELIVERY_ZONES[0].value);
@@ -49,26 +49,22 @@ export function CheckoutView() {
     if (!route.offline && !route.providers.includes(provider)) setProvider(route.providers[0]);
   }, [route, provider]);
 
-  // If the applied coupon is deactivated/removed by an admin meanwhile, drop it.
-  useEffect(() => {
-    if (coupon && !couponService.find(coupon.code, coupons)) { setCoupon(null); setCouponMsg(null); }
-  }, [coupons, coupon]);
-
   const discount = couponService.discount(coupon, subtotal);
   const grandTotal = Math.max(0, subtotal - discount) + (items.length ? zone : 0);
 
-  const applyCoupon = () => {
+  const applyCoupon = async () => {
     const code = couponInput.trim().toUpperCase();
     if (!code) { setCouponMsg({ text: "Please enter a discount code.", ok: false }); return; }
-    const found = couponService.find(code, couponService.list());
-    if (!found) {
+    const res = await ordersApi.validateCoupon(code, items);
+    if (!res.ok || !res.data) {
       setCoupon(null);
-      setCouponMsg({ text: "Code not recognised. Check the spelling and try again.", ok: false });
+      setCouponMsg({ text: res.error ?? "Code not recognised. Check the spelling and try again.", ok: false });
       return;
     }
+    const found: Coupon = { code: res.data.code, type: res.data.type, value: res.data.value, active: true };
     setCoupon(found);
     const label = found.type === "percent" ? `${found.value}% off` : `৳${found.value} off`;
-    setCouponMsg({ text: `✓ ${code} applied — ${label} (−${money(couponService.discount(found, subtotal))})`, ok: true });
+    setCouponMsg({ text: `✓ ${code} applied — ${label} (−${money(res.data.discount)})`, ok: true });
   };
 
   const paymentLabel = useMemo(
@@ -76,7 +72,7 @@ export function CheckoutView() {
     [route, provider],
   );
 
-  const submit = (e: FormEvent) => {
+  const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (!items.length) return;
     const next: Partial<Record<Field, string>> = {};
@@ -96,20 +92,19 @@ export function CheckoutView() {
     setFormError("");
 
     setSubmitted(true);
-    orderService.place({
-      customer: { name: form.fullName.trim(), phone: form.phone.trim(), email: customer?.email },
+    const res = await ordersApi.place({
+      customer: { name: form.fullName.trim(), phone: form.phone.trim() },
       delivery: { address: form.address.trim(), city: form.city.trim(), notes: form.notes.trim(), charge: zone },
-      transaction: {
-        method, type: route.label,
-        provider: route.offline ? "Pay on delivery" : provider,
+      payment: {
+        method,
+        provider: route.offline ? "" : provider,
         payerAccount: route.offline ? "" : form.payerAccount.trim(),
-        reference: route.offline ? "Cash on Delivery" : form.reference.trim(),
+        reference: route.offline ? "" : form.reference.trim(),
       },
       items,
-      subtotal,
-      discount,
       couponCode: coupon?.code ?? null,
     });
+    if (!res.ok) { setSubmitted(false); setFormError(res.error ?? "Could not place your order."); return; }
     router.push("/order-confirmation");
   };
 

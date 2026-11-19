@@ -3,14 +3,14 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { useUI } from "@/components/providers/UIProvider";
-import { useCurrentCustomer, useOrders } from "@/hooks/useServices";
-import { customerService } from "@/lib/services/customers";
+import { useCurrentCustomer, useMyOrders } from "@/hooks/useServices";
+import { customerApi } from "@/lib/api/customer";
 import { money } from "@/lib/format";
 
 export function ProfilePanel() {
   const { profileOpen, closeProfile, showToast } = useUI();
   const customer = useCurrentCustomer();
-  const orders = useOrders();
+  const orders = useMyOrders();
   const [form, setForm] = useState({ name: "", phone: "", address: "" });
   const [error, setError] = useState("");
 
@@ -21,19 +21,19 @@ export function ProfilePanel() {
     }
   }, [customer, profileOpen]);
 
-  const mine = customer ? orders.filter((o) => o.customer.email === customer.email || (customer.phone && o.customer.phone === customer.phone)).slice(0, 5) : [];
+  const mine = orders.slice(0, 5);
 
-  const save = (e: FormEvent) => {
+  const save = async (e: FormEvent) => {
     e.preventDefault();
     if (!customer) return;
-    const res = customerService.updateProfile(customer.email, form);
+    const res = await customerApi.updateProfile(form);
     if (!res.ok) { setError(res.error ?? ""); return; }
     setError("");
     showToast("Profile updated.");
   };
 
-  const signOut = () => {
-    customerService.logout();
+  const signOut = async () => {
+    await customerApi.logout();
     closeProfile();
     showToast("Signed out.");
   };

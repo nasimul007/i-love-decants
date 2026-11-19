@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { useUI } from "@/components/providers/UIProvider";
 import { customerService } from "@/lib/services/customers";
+import { customerApi } from "@/lib/api/customer";
 import type { FieldErrors } from "@/lib/services/customers";
 import { passwordStrength } from "@/lib/validators";
 import { DoodleCanvas } from "./DoodleCanvas";
@@ -25,21 +26,21 @@ export function AuthModal() {
 
   const strength = passwordStrength(reg.password);
 
-  const submitLogin = (e: FormEvent) => {
+  const submitLogin = async (e: FormEvent) => {
     e.preventDefault();
-    const res = customerService.login(login.email, login.password);
+    const res = await customerApi.login(login.email, login.password);
     if (!res.ok || !res.data) { setLoginMsg(res.error ?? "Could not sign in."); return; }
     setLogin({ email: "", password: "" });
     closeAuth();
     showToast(`Welcome back, ${res.data.name.split(" ")[0]}!`);
   };
 
-  const submitRegister = (e: FormEvent) => {
+  const submitRegister = async (e: FormEvent) => {
     e.preventDefault();
     const errors = customerService.validateRegistration(reg);
     setRegErr(errors);
     if (Object.keys(errors).length) return;
-    const res = customerService.register(reg);
+    const res = await customerApi.register(reg);
     if (!res.ok) { setRegMsg(res.error ?? "Could not create account."); return; }
     closeAuth();
     showToast(`Account created! Welcome, ${reg.name.trim().split(" ")[0]}.`);

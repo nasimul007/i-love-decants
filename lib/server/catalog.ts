@@ -43,7 +43,8 @@ export async function loadCatalog(tx: Tx = db) {
     products: outProducts,
     oils: oils.filter((o) => live(o.inventory)).map(({ inventory: _i, ...o }) => o),
     gifts: gifts.filter((g) => live(g.inventory)).map(({ inventory: _i, ...g }) => g),
-    volumes: volumes.map((v) => v.volumeMl),
+    volumes: volumes.map((v) => v.volumeMl).filter((v) => v !== replaced),
+    fullBottle: fullLive ? { ml: fb!.ml, sprays: fb!.sprays } : null,
     sprays: Object.fromEntries(volumes.filter((v) => v.volumeMl !== replaced).map((v) => [v.volumeMl, v.sprays])),
   };
 }
