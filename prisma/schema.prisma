@@ -1,0 +1,252 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/**
+ * ───────────── Catalogue ─────────────
+ */
+
+model Product {
+  id          Int              @id // keeps the storefront ids (1..9)
+  name        String
+  family      String
+  badge       String
+  notes       String
+  description String
+  top         String
+  heart       String
+  base        String
+  liquid      String
+  pale        String
+  ink         String
+  shape       String
+  scentTags   String[]
+  variants    ProductVariant[]
+  inventory   InventoryItem?
+}
+
+/// One row per perfume + volume. `price = null` / `active = false` means "not offered".
+/// volumeMl = fullBottle.ml is used for the Full bottle option (isFull = true).
+model ProductVariant {
+  id        Int     @id @default(autoincrement())
+  productId Int
+  volumeMl  Int
+  price     Int
+  isFull    Boolean @default(false)
+  active    Boolean @default(true)
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, volumeMl, isFull])
+}
+
+model Oil {
+  id        String         @id // "oil-0"
+  brand     String
+  name      String
+  price     Int
+  inventory InventoryItem?
+}
+
+model GiftSet {
+  id          String         @id // "gift-trio"
+  name        String
+  description String
+  price       Int
+  accent      String
+  inventory   InventoryItem?
+}
+
+/// Volumes on sale + spray count per volume (applies to every perfume).
+model VolumeSetting {
+  volumeMl Int     @id
+  sprays   Int
+  onSale   Boolean @default(true)
+}
+
+/// Singleton row (id = 1): the special "Full bottle" section.
+model FullBottleSetting {
+  id      Int     @id @default(1)
+  enabled Boolean @default(false)
+  ml      Int     @default(100)
+  sprays  Int     @default(1100)
+  price   Int? // default price for every perfume; null until the owner sets one
+}
+
+/**
+ * ───────────── Inventory ─────────────
+ */
+
+enum InventoryKind {
+  PERFUME_DECANT
+  PERFUME_OIL
+  GIFT_SET
+  CUSTOM_BOTTLE
+}
+
+model InventoryItem {
+  id        String        @id @default(cuid())
+  name      String
+  kind      InventoryKind
+  sizes     String
+  price     Int
+  stock     Int           @default(0)
+  ordered   Int           @default(0)
+  inTransit Int           @default(0)
+  enabled   Boolean       @default(true)
+  visible   Boolean       @default(true)
+  removed   Boolean       @default(false)
+
+  // At most one of these is set; all null = custom item with no storefront page.
+  productId Int?     @unique
+  oilId     String?  @unique
+  giftSetId String?  @unique
+  product   Product? @relation(fields: [productId], references: [id])
+  oil       Oil?     @relation(fields: [oilId], references: [id])
+  giftSet   GiftSet? @relation(fields: [giftSetId], references: [id])
+}
+
+/**
+ * ───────────── People ─────────────
+ */
+
+model Customer {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  name         String
+  phone        String
+  address      String    @default("")
+  joinedAt     DateTime  @default(now())
+  lastLogin    DateTime  @default(now())
+  orders       Order[]
+  sessions     Session[]
+}
+
+enum StaffRole {
+  OWNER
+  MANAGER
+}
+
+model StaffUser {
+  id           String    @id @default(cuid())
+  username     String    @unique
+  name         String
+  passwordHash String
+  role         StaffRole
+  /// { inventory, products, customers, history, coupons } booleans; ignored for OWNER.
+  permissions  Json      @default("{}")
+  createdAt    DateTime  @default(now())
+  sessions     Session[]
+}
+
+/// Server-side session; the cookie holds a random token, only its hash is stored.
+model Session {
+  id         String     @id @default(cuid())
+  tokenHash  String     @unique
+  customerId String?
+  staffId    String?
+  expiresAt  DateTime
+  createdAt  DateTime   @default(now())
+  customer   Customer?  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  staff      StaffUser? @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+}
+
+/**
+ * ───────────── Orders ─────────────
+ */
+
+enum PaymentMethod {
+  BANK
+  WALLET
+  COD
+}
+
+enum OrderStatus {
+  RECEIVED
+  CONFIRMED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+model Order {
+  id             String        @id // "ILD-XXXX"
+  customerId     String?
+  customerName   String
+  customerPhone  String
+  customerEmail  String?
+  address        String
+  city           String
+  notes          String        @default("")
+  deliveryCharge Int
+  paymentMethod  PaymentMethod
+  paymentType    String
+  provider       String
+  payerAccount   String        @default("")
+  reference      String        @default("")
+  subtotal       Int
+  discount       Int           @default(0)
+  couponCode     String?
+  grandTotal     Int
+  status         OrderStatus   @default(RECEIVED)
+  placedAt       DateTime      @default(now())
+  customer       Customer?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  items          OrderItem[]
+
+  @@index([customerId])
+  @@index([placedAt])
+}
+
+/// Name/detail/price are snapshotted at purchase time so later price edits don't rewrite history.
+model OrderItem {
+  id        Int     @id @default(autoincrement())
+  orderId   String
+  /// Storefront id as string: "3", "oil-4", "gift-trio".
+  itemId    String
+  lineKey   String
+  name      String
+  detail    String
+  sizeMl    Int?
+  isFull    Boolean @default(false)
+  unitPrice Int
+  qty       Int
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+}
+
+model Coupon {
+  code      String     @id
+  type      CouponType
+  value     Int
+  active    Boolean    @default(true)
+  expiresAt DateTime?
+  maxUses   Int?
+  uses      Int        @default(0)
+}
+
+enum CouponType {
+  PERCENT
+  FLAT
+}
+
+/**
+ * ───────────── Audit ─────────────
+ */
+
+model AuditLog {
+  id     Int      @id @default(autoincrement())
+  actor  String // "customer" | "owner" | "manager"
+  user   String
+  action String // "login" | "logout" | ...
+  ts     DateTime @default(now())
+
+  @@index([ts])
+}
