@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useLastOrder } from "@/hooks/useServices";
+import { useCurrentCustomer, useLastOrder } from "@/hooks/useServices";
 import { money } from "@/lib/format";
 
 export function ConfirmationView() {
   const order = useLastOrder();
+  const customer = useCurrentCustomer();
   const cod = order?.transaction.method === "cod";
   const grand = order?.grandTotal ?? 0;
   const location = order ? [order.delivery.address, order.delivery.city].filter(Boolean).join(", ") || "Address pending" : "";
@@ -40,7 +41,8 @@ export function ConfirmationView() {
         )}
         <p className="confirmation-contact">We will reach you on <strong>{order?.customer.phone ?? "your phone number"}</strong> to confirm delivery.</p>
         <div className="hero-actions" style={{ justifyContent: "center" }}>
-          <Link className="btn btn-primary" href="/">Return to shop</Link>
+          {customer && order && <Link className="btn btn-primary" href={`/account#order-${order.id}`}>Track this order</Link>}
+          <Link className={`btn ${customer && order ? "btn-secondary" : "btn-primary"}`} href="/">Return to shop</Link>
           <Link className="btn btn-secondary" href="/products">Continue browsing</Link>
         </div>
       </article>

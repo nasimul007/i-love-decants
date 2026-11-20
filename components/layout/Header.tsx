@@ -89,7 +89,8 @@ export function Header() {
   const pathname = usePathname();
   const { count } = useCart();
   const customer = useCurrentCustomer();
-  const { openCart, cartOpen, openAuth, openProfile } = useUI();
+  const { openCart, cartOpen, openAuth } = useUI();
+  const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => { setMenuOpen(false); }, [pathname]);
@@ -117,7 +118,7 @@ export function Header() {
             <button
               className="profile-btn" type="button" title="Account"
               aria-label={customer ? `Your profile (${customer.name})` : "Sign in to your account"}
-              onClick={() => (customer ? openProfile() : openAuth("login"))}
+              onClick={() => (customer ? router.push("/account") : openAuth("login"))}
             >
               {customer ? <>{initials(customer.name)}<span className="profile-dot" title="Signed in" /></> : <UserIcon />}
             </button>

@@ -8,7 +8,6 @@ import { Intro } from "./Intro";
 import { CartDrawer } from "./CartDrawer";
 import { ProductModal } from "./ProductModal";
 import { AuthModal } from "./AuthModal";
-import { ProfilePanel } from "./ProfilePanel";
 import { ChatWidget } from "./ChatWidget";
 import { Toast } from "./Toast";
 import { Cursor } from "./Cursor";
@@ -25,7 +24,6 @@ export function SiteShell({ children }: { children: ReactNode }) {
       <ProductModal />
       <ChatWidget />
       <AuthModal />
-      <ProfilePanel />
       <Toast />
       <Cursor />
     </UIProvider>
