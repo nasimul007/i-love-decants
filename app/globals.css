@@ -4168,8 +4168,8 @@ html.touch-mode .cursor-layer{display:none!important}
 
 
 /* ── Unified product section tabs ──────────────────────────── */
-.product-section-tabs{display:flex;gap:.35rem;padding:.35rem;margin:0 0 2rem;border-radius:999px;background:rgba(234,210,212,.28);width:fit-content}
-.prod-tab-btn{min-height:40px;padding:.45rem 1.2rem;border:0;border-radius:999px;color:var(--muted);background:transparent;font-size:.84rem;font-weight:700;cursor:pointer;transition:background .22s,color .22s,box-shadow .22s;white-space:nowrap}
+.product-section-tabs{display:flex;gap:.35rem;padding:.35rem;margin:0 0 2rem;border-radius:999px;background:rgba(234,210,212,.28);width:fit-content;max-width:100%;overflow-x:auto}
+.prod-tab-btn{min-height:40px;padding:.45rem 1.2rem;flex:0 0 auto;border:0;border-radius:999px;color:var(--muted);background:transparent;font-size:.84rem;font-weight:700;cursor:pointer;transition:background .22s,color .22s,box-shadow .22s;white-space:nowrap}
 .prod-tab-btn.is-active{color:var(--rose-deep);background:#fffdf9;box-shadow:0 4px 14px rgba(91,60,68,.1)}
 .prod-section-panel{display:none}.prod-section-panel.is-active{display:block}
 
