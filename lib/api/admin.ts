@@ -1,6 +1,6 @@
 "use client";
 
-import { call, clearCache, mutate, refresh } from "./client";
+import { call, clearCache, mutate, refresh, refreshPrefix } from "./client";
 import type {
   AdminSession, CatalogOverrides, Coupon, InventoryKind, InventoryRecord, ManagerPermissions, Order, PublicManager, ServiceResult,
 } from "@/types";
@@ -48,7 +48,7 @@ export const adminApi = {
   /* orders */
   async setOrderStatus(id: string, status: Order["status"]): Promise<ServiceResult<unknown>> {
     const res = await call("PATCH", `/api/orders/${id}`, { status });
-    await Promise.all([refresh(ADMIN.orders), refresh(ADMIN.inventory), refresh(ADMIN.overview)]);
+    await Promise.all([refreshPrefix(ADMIN.orders), refresh(ADMIN.inventory), refresh(ADMIN.overview)]);
     return res;
   },
 

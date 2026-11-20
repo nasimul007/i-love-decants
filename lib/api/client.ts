@@ -33,6 +33,9 @@ export async function refresh(url: string): Promise<void> {
   }
 }
 
+/** Re-fetches every cached entry whose url starts with `prefix` (e.g. all cached pages of a list). */
+export const refreshPrefix = (prefix: string) => Promise.all([...cache.keys()].filter((k) => k.startsWith(prefix)).map(refresh));
+
 /** Drops cached entries whose url starts with one of `prefixes` (e.g. on sign-out) so the next user can't see them. */
 export function clearCache(...prefixes: string[]): void {
   for (const k of [...cache.keys()]) if (prefixes.some((p) => k.startsWith(p))) cache.delete(k);
