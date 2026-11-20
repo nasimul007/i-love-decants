@@ -9,6 +9,7 @@ import { couponService } from "@/lib/services/coupons";
 import { ordersApi } from "@/lib/api/orders";
 import { BULK_DISCOUNT, bulkDiscountFor, deliveryChargeFor } from "@/lib/config";
 import { BD_CITIES } from "@/lib/data/cities";
+import { CitySelect } from "./CitySelect";
 import { isBdPhone } from "@/lib/validators";
 import { money } from "@/lib/format";
 import type { Coupon } from "@/types";
@@ -124,10 +125,7 @@ export function CheckoutView() {
             <div className="field full"><label htmlFor="checkoutAddress">Full delivery address</label><textarea id="checkoutAddress" placeholder="House, road, area, landmark…" {...text("address")} />{err("address")}</div>
             <div className="field">
               <label htmlFor="checkoutCity">City</label>
-              <select id="checkoutCity" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })}>
-                <option value="">Select your city…</option>
-                {BD_CITIES.map((c) => <option key={c} value={c}>{c}</option>)}
-              </select>
+              <CitySelect id="checkoutCity" value={form.city} options={BD_CITIES} onChange={(city) => setForm({ ...form, city })} />
               {err("city")}
             </div>
             <div className="field">

@@ -4233,3 +4233,17 @@ html.touch-mode .cursor-layer{display:none!important}
   .notice-item { white-space: normal; text-align: center; padding: 0; }
   .notice-item::after { content: none; }
 }
+
+/* Checkout city picker (type to search) */
+.city-select { position: relative; }
+.city-select-list {
+  position: absolute; z-index: 30; left: 0; right: 0; top: calc(100% + 4px);
+  max-height: 240px; overflow-y: auto; margin: 0; padding: 0.3rem; list-style: none;
+  background: #fffdf9; border: 1px solid var(--line, #e6dcd8); border-radius: 0.9rem;
+  box-shadow: 0 14px 36px rgba(55, 40, 46, 0.18);
+}
+.city-select-option, .city-select-empty { padding: 0.55rem 0.75rem; border-radius: 0.6rem; font-size: 0.92rem; }
+.city-select-option { cursor: pointer; }
+.city-select-option.is-active { background: #f6e9ec; }
+.city-select-option.is-selected { font-weight: 700; color: var(--rose-deep, #8a5266); }
+.city-select-empty { color: var(--muted, #7b6f6a); }
