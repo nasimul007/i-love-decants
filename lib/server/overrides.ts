@@ -4,7 +4,7 @@ import { DEFAULT_SPRAYS, DEFAULT_VOLUMES } from "@/lib/config";
 import { GIFTS, OILS, PRODUCTS } from "@/lib/data/catalog";
 import { HttpError } from "./http";
 import { loadCatalog } from "./catalog";
-import type { Prisma } from "@prisma/client";
+import type { Prisma } from "@/lib/generated/prisma/client";
 import type { CatalogOverrides } from "@/types";
 
 /**

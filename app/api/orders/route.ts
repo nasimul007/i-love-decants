@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@/lib/generated/prisma/client";
 import { db } from "@/lib/db";
 import { currentCustomer, requireStaff } from "@/lib/server/auth";
 import { couponDiscount, loadCatalog, priceLine, type PricedLine } from "@/lib/server/catalog";

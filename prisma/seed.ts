@@ -1,9 +1,11 @@
-import { PrismaClient } from "@prisma/client";
+import "dotenv/config";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaClient } from "../lib/generated/prisma/client";
 import { PRODUCTS, GIFTS, OILS } from "../lib/data/catalog";
 import { DEFAULT_VOLUMES, DEFAULT_SPRAYS } from "../lib/config";
 import { DEFAULT_COUPONS } from "../lib/services/coupons";
 
-const db = new PrismaClient();
+const db = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) });
 
 async function main() {
   for (const p of PRODUCTS) {

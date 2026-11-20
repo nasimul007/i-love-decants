@@ -1,5 +1,5 @@
 import "server-only";
-import type { InventoryItem, InventoryKind } from "@prisma/client";
+import type { InventoryItem, InventoryKind } from "@/lib/generated/prisma/client";
 import type { InventoryRecord } from "@/types";
 
 export const KIND_LABEL: Record<InventoryKind, InventoryRecord["type"]> = {

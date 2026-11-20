@@ -1,5 +1,5 @@
 import "server-only";
-import type { Order, OrderItem } from "@prisma/client";
+import type { Order, OrderItem } from "@/lib/generated/prisma/client";
 
 /** DB order → the `Order` shape in types/index.ts (what the frontend already consumes). */
 export function serializeOrder(o: Order & { items: OrderItem[] }) {
