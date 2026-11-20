@@ -33,12 +33,14 @@ export function Dashboard({ session, canSee }: Props) {
 
   return (
     <div className="admin-dashboard is-active">
+      <div className="admin-sticky">
       <div className="admin-topbar">
         <div className="admin-topbar-brand">
           <span style={{ width: 40, height: 40, display: "grid", placeItems: "center", borderRadius: "50%", background: "linear-gradient(145deg,var(--rose-deep),#795060)", color: "#fff", fontFamily: "var(--serif)", fontSize: "1.1rem", flexShrink: 0 }}>i</span>
           <div><strong>I Love Decants</strong><br /><small>Admin Dashboard</small></div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: ".65rem" }}>
+          <a className="admin-signout" href="/" target="_blank" rel="noreferrer" style={{ textDecoration: "none" }}>View store ↗</a>
           <span className={`admin-role-badge ${session.role}`}>{session.role === "owner" ? "Owner" : "Manager"}</span>
           <span style={{ fontSize: ".83rem", color: "var(--muted)" }}>{session.name || session.username}</span>
           <button className="admin-signout" type="button" onClick={() => void adminApi.logout()}>Sign out</button>
@@ -49,6 +51,7 @@ export function Dashboard({ session, canSee }: Props) {
         {tabs.map((t) => (
           <button key={t.id} className={`admin-tab-btn${tab === t.id ? " is-active" : ""}`} type="button" role="tab" aria-selected={tab === t.id} onClick={() => setTab(t.id)}>{t.label}</button>
         ))}
+      </div>
       </div>
 
       <div className="admin-tab-panel is-active">

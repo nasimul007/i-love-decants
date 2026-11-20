@@ -7,6 +7,10 @@ import { adminApi } from "@/lib/api/admin";
 import { can } from "@/lib/services/admin";
 import { Dashboard } from "./Dashboard";
 
+function StoreLink() {
+  return <p style={{ margin: "1rem 0 0", textAlign: "center", fontSize: ".84rem" }}><a href="/" style={{ color: "var(--rose-deep)" }}>← Back to the store</a></p>;
+}
+
 function BrandMark() {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: ".75rem", marginBottom: ".5rem" }}>
@@ -66,6 +70,7 @@ function LoginPanel() {
           <p className="admin-form-msg" aria-live="polite">{msg}</p>
           <button className="btn btn-primary" type="submit" style={{ width: "100%", borderRadius: ".9rem" }}>Open dashboard</button>
         </form>
+        <StoreLink />
       </div>
     </div>
   );

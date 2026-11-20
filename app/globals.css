@@ -4067,7 +4067,7 @@ html.touch-mode .cursor-layer{display:none!important}
 
 /* ── Admin route ───────────────────────────────────────── */
 #route-admin{background:radial-gradient(circle at 8% 1%,rgba(201,151,165,.19),transparent 28rem),radial-gradient(circle at 96% 12%,rgba(145,165,144,.18),transparent 25rem),#f7f0ec}
-.admin-login-page{min-height:calc(100svh - 76px);display:grid;place-items:center;padding:1.25rem;position:relative;overflow:hidden}
+.admin-login-page{min-height:100svh;display:grid;place-items:center;padding:1.25rem;position:relative;overflow:hidden}
 .admin-login-page::before,.admin-login-page::after{position:absolute;z-index:0;content:"";width:min(55vw,540px);aspect-ratio:1;border-radius:50%;filter:blur(3px);opacity:.72;animation:admin-float 12s ease-in-out infinite alternate}
 .admin-login-page::before{top:-23vw;left:-18vw;background:rgba(201,151,165,.33)}
 .admin-login-page::after{right:-20vw;bottom:-28vw;background:rgba(145,165,144,.29);animation-delay:-4s}
@@ -4084,8 +4084,11 @@ html.touch-mode .cursor-layer{display:none!important}
 .admin-setup-hint b{color:var(--rose-deep)}
 
 /* Admin dashboard layout */
-.admin-dashboard{display:none;min-height:calc(100svh - 76px);padding:2rem 0 4rem}
+.admin-dashboard{display:none;min-height:100svh;padding:1rem 0 4rem}
 .admin-dashboard.is-active{display:block}
+.admin-sticky{position:sticky;top:0;z-index:30;margin:0 -.5rem 1.5rem;padding:.5rem .5rem .1rem;background:var(--cream);box-shadow:0 8px 14px -12px rgba(75,44,52,.35)}
+.admin-sticky .admin-topbar{margin-bottom:.8rem}
+.admin-sticky .admin-tabs{margin-bottom:.6rem}
 .admin-topbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1.8rem;padding:1.1rem 1.3rem;border:1px solid rgba(120,86,87,.13);border-radius:1.4rem;background:#fffdf9;box-shadow:0 10px 25px rgba(75,44,52,.07)}
 .admin-topbar-brand{display:flex;align-items:center;gap:.6rem}
 .admin-topbar-brand strong{font-family:var(--serif);font-size:1.15rem;font-weight:600}
