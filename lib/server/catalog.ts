@@ -1,6 +1,5 @@
 import "server-only";
 import { db } from "@/lib/db";
-import { DELIVERY_ZONES } from "@/lib/config";
 import type { Prisma } from "@prisma/client";
 
 type Tx = Prisma.TransactionClient | typeof db;
@@ -13,19 +12,21 @@ type Tx = Prisma.TransactionClient | typeof db;
  *  - inventory items that are disabled / hidden / removed are dropped
  */
 export async function loadCatalog(tx: Tx = db, opts: { all?: boolean } = {}) {
-  const [products, oils, gifts, volumes, fb] = await Promise.all([
+  const [products, oils, gifts, volumes, fb, categories] = await Promise.all([
     tx.product.findMany({ include: { variants: true, inventory: true }, orderBy: { id: "asc" } }),
     tx.oil.findMany({ include: { inventory: true }, orderBy: { id: "asc" } }),
     tx.giftSet.findMany({ include: { inventory: true }, orderBy: { id: "asc" } }),
     tx.volumeSetting.findMany({ where: { onSale: true }, orderBy: { volumeMl: "asc" } }),
     tx.fullBottleSetting.findUnique({ where: { id: 1 } }),
+    tx.category.findMany({ orderBy: [{ sort: "asc" }, { name: "asc" }] }),
   ]);
+  const hiddenCategories = new Set(categories.filter((c) => c.hidden).map((c) => c.name.toLowerCase()));
   const live = (i: { enabled: boolean; visible: boolean; removed: boolean } | null) => opts.all || !i || (i.enabled && i.visible && !i.removed);
   const fullLive = !!fb?.enabled && fb.price !== null;
   const replaced = fullLive && volumes.some((v) => v.volumeMl === fb!.ml) ? fb!.ml : null;
   const onSale = new Set(volumes.map((v) => v.volumeMl));
 
-  const outProducts = products.filter((p) => live(p.inventory)).map((p) => {
+  const outProducts = products.filter((p) => live(p.inventory) && (opts.all || !hiddenCategories.has(p.family.toLowerCase()))).map((p) => {
     const prices: Record<number, number> = {};
     for (const v of p.variants) {
       if (v.isFull || !v.active || !onSale.has(v.volumeMl) || v.volumeMl === replaced) continue;
@@ -41,6 +42,7 @@ export async function loadCatalog(tx: Tx = db, opts: { all?: boolean } = {}) {
 
   return {
     products: outProducts,
+    categories: categories.filter((c) => !c.hidden).map((c) => c.name),
     oils: oils.filter((o) => live(o.inventory)).map(({ inventory: _i, ...o }) => o),
     gifts: gifts.filter((g) => live(g.inventory)).map(({ inventory: _i, ...g }) => g),
     volumes: volumes.map((v) => v.volumeMl).filter((v) => v !== replaced),
@@ -80,8 +82,6 @@ export function priceLine(cat: Awaited<ReturnType<typeof loadCatalog>>, line: Re
   if (gift) return { itemId: id, lineKey: id, name: gift.name, detail: "Ready-to-gift set", sizeMl: null, isFull: false, unitPrice: gift.price, qty: line.qty };
   return null;
 }
-
-export const deliveryCharge = (v: number) => DELIVERY_ZONES.find((z) => z.value === v)?.value ?? null;
 
 export function couponDiscount(c: { type: "PERCENT" | "FLAT"; value: number }, subtotal: number) {
   return c.type === "PERCENT" ? Math.round((subtotal * c.value) / 100) : Math.min(c.value, subtotal);

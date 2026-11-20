@@ -6,7 +6,7 @@ import { cartService, cartTotals } from "@/lib/services/cart";
 import { EMPTY_OVERRIDES, fullBottleDetail } from "@/lib/services/catalogOverrides";
 import { hasAnySize } from "@/lib/volumes";
 import { useApi } from "@/lib/api/client";
-import { ADMIN, ordersUrl, type AdminMe, type Page } from "@/lib/api/admin";
+import { ADMIN, ordersUrl, type AdminMe, type Page, type PublicCategory } from "@/lib/api/admin";
 import { ME, MY_ORDERS } from "@/lib/api/customer";
 import type {
   CartItem, CatalogOverrides, Coupon, GiftSet, InventoryRecord, LoginEvent, OilProduct, Order, Product, PublicCustomer, PublicManager,
@@ -20,11 +20,12 @@ interface StorefrontCatalog {
   products: Product[];
   gifts: GiftSet[];
   oils: OilProduct[];
+  categories: string[];
   volumes: number[];
   sprays: Record<number, number>;
   fullBottle: { ml: number; sprays: number } | null;
 }
-const EMPTY_CATALOG: StorefrontCatalog = { products: [], gifts: [], oils: [], volumes: [], sprays: {}, fullBottle: null };
+const EMPTY_CATALOG: StorefrontCatalog = { products: [], gifts: [], oils: [], categories: [], volumes: [], sprays: {}, fullBottle: null };
 
 function useStorefront() {
   return useApi<StorefrontCatalog>("/api/products");
@@ -93,6 +94,7 @@ export function useCatalog() {
       products: (data?.products ?? []).filter(hasAnySize),
       gifts: data?.gifts ?? EMPTY_CATALOG.gifts,
       oils: data?.oils ?? EMPTY_CATALOG.oils,
+      categories: data?.categories ?? EMPTY_CATALOG.categories,
     }),
     [data],
   );
@@ -140,6 +142,9 @@ export function useOrders(page = 1, pageSize = 20, status?: string) {
 }
 export const useLoginHistory = () => useList<LoginEvent>(ADMIN.history);
 export const useCoupons = () => useList<Coupon>(ADMIN.coupons);
+export const useAdminNotice = () => useApi<{ enabled: boolean; text: string }>(ADMIN.notice);
+export const useAdminCategories = () => useList<PublicCategory>(ADMIN.categories);
+export const useAdminProducts = () => useList<{ id: number; name: string; family: string }>(ADMIN.products);
 export const useManagers = () => useList<PublicManager>(ADMIN.managers);
 
 /** Last order, kept locally only so the confirmation page can render after the checkout redirect. */

@@ -2,6 +2,12 @@
 const BD_PHONE = /^(?:\+?880|0)1[3-9]\d{8}$/;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+/** Canonical 01XXXXXXXXX form of a Bangladeshi mobile number (used to recognise the same customer). */
+export const normalizePhone = (value: string): string => {
+  const d = value.replace(/[\s-]/g, "").replace(/^\+/, "");
+  return d.startsWith("880") ? "0" + d.slice(3) : d;
+};
+
 export const isBdPhone = (value: string): boolean => BD_PHONE.test(value.replace(/[\s-]/g, ""));
 export const isEmail = (value: string): boolean => EMAIL.test(value.trim());
 

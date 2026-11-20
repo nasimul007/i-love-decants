@@ -10,5 +10,5 @@ export const serializeAudit = (e: { actor: string; user: string; action: string;
 
 export const serializeManager = (m: { id: string; name: string; username: string; permissions: unknown }) => ({
   id: m.id, name: m.name, username: m.username,
-  permissions: { inventory: false, products: false, customers: false, history: false, coupons: false, ...(m.permissions as object) },
+  permissions: { inventory: false, products: false, customers: false, history: false, coupons: false, content: false, ...(m.permissions as object) },
 });

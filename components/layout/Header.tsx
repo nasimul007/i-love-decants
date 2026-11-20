@@ -8,6 +8,7 @@ import { useUI } from "@/components/providers/UIProvider";
 import { useCart, useCatalog, useCurrentCustomer } from "@/hooks/useServices";
 import { initials, money } from "@/lib/format";
 import { priceFrom } from "@/lib/volumes";
+import { NoticeBar } from "./NoticeBar";
 
 const NAV = [
   { href: "/", label: "Home" },
@@ -125,6 +126,7 @@ export function Header() {
             </button>
           </div>
         </div>
+        <NoticeBar />
       </header>
     </>
   );

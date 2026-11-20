@@ -4,10 +4,10 @@ import { PageHero, RouteView, SectionHeading } from "@/components/ui/PageHero";
 export const metadata: Metadata = { title: "Delivery & Returns — I Love Decants" };
 
 const DELIVERY = [
-  ["Inside Dhaka — ৳100", "Usually delivered within 1–2 business days of your order being confirmed."],
-  ["Outside Dhaka — ৳150", "Usually delivered within 2–4 business days, depending on your area."],
+  ["Inside Dhaka city — ৳80", "Usually delivered within 1–2 business days of your order being confirmed."],
+  ["Outside Dhaka — ৳130", "Usually delivered within 2–4 business days, depending on your area."],
   ["Order tracking", "We will update you by phone, WhatsApp, or Telegram once your order ships."],
-  ["Order confirmation", "Cash on Delivery is available at checkout. Bank and wallet payment options are also shown if you prefer them."],
+  ["Order confirmation", "Payment is Cash on Delivery: no advance payment, just pay the rider when your order arrives."],
 ];
 const RETURNS = [
   ["Decants", "Because they are opened and filled to order, decants cannot be returned once delivered — please ask us anything before you buy."],

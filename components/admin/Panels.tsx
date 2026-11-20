@@ -6,6 +6,8 @@ import {
   useAdminOverview, useCatalogOverrides, useCoupons, useCustomers, useInventoryRecords, useLoginHistory, useManagers, useOrders,
 } from "@/hooks/useServices";
 import { useUI } from "@/components/providers/UIProvider";
+import { Modal, Panel, emptyRow, inputStyle } from "./shared";
+import { OrderDetailModal } from "./OrdersPanel";
 import {
   activeVolumes, applyToProduct, effectiveSprays, formatSprays, fullBottleFor, fullBottleLive, fullBottleOf,
   sectionReplacedByFullBottle, suggestSprays,
@@ -17,44 +19,15 @@ import { ADMIN_SECTIONS } from "@/lib/services/admin";
 import { formatDate, formatDateTime, money } from "@/lib/format";
 import type { CatalogOverrides, InventoryKind, InventoryRecord, ManagerPermissions, Order, Product, PublicManager } from "@/types";
 
-const inputStyle = { minHeight: 42, padding: ".6rem .8rem", border: "1px solid var(--line)", borderRadius: ".8rem", fontSize: ".9rem", width: "100%", outline: "none", background: "#fff" } as const;
-const emptyRow = (cols: number, text: string) => (
-  <tr><td colSpan={cols} style={{ textAlign: "center", color: "var(--muted)", padding: "1.5rem" }}>{text}</td></tr>
-);
-
-function Panel({ title, subtitle, action, children }: { title: string; subtitle: string; action?: ReactNode; children: ReactNode }) {
-  return (
-    <div className="admin-panel">
-      <div className="admin-panel-hd"><div><h2>{title}</h2><p>{subtitle}</p></div>{action}</div>
-      <div className="admin-panel-body">{children}</div>
-    </div>
-  );
-}
-
-function Modal({ open, onClose, title, subtitle, children }: { open: boolean; onClose: () => void; title: string; subtitle: string; children: ReactNode }) {
-  useEffect(() => {
-    document.body.classList.toggle("drawer-open", open);
-    return () => document.body.classList.remove("drawer-open");
-  }, [open]);
-  if (!open) return null;
-  return (
-    <div style={{ position: "fixed", zIndex: 5000, inset: 0, display: "grid", placeItems: "center", padding: "1rem", background: "rgba(53,46,48,.52)", backdropFilter: "blur(5px)" }} onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="mgr-modal" role="dialog" aria-modal="true" aria-label={title}>
-        <h2>{title}</h2>
-        <p>{subtitle}</p>
-        {children}
-      </div>
-    </div>
-  );
-}
-
 /* ───────────────────────── Overview ───────────────────────── */
-const STATUSES: Order["status"][] = ["received", "confirmed", "shipped", "delivered", "cancelled"];
+export const STATUSES: Order["status"][] = ["received", "confirmed", "shipped", "delivered", "cancelled"];
 
 export function OverviewPanel() {
   const ov = useAdminOverview();
   const { orders } = useOrders(1, 6);
   const history = ov?.recentSignIns ?? [];
+  const [viewingId, setViewingId] = useState<string | null>(null);
+  const viewing = orders.find((o) => o.id === viewingId) ?? null;
 
   return (
     <>
@@ -69,11 +42,12 @@ export function OverviewPanel() {
         {!orders.length && <p style={{ color: "var(--muted)", fontSize: ".84rem", padding: ".5rem" }}>No orders placed yet.</p>}
         <div style={{ display: "grid", gap: ".5rem", padding: ".5rem 0" }}>
           {orders.slice(0, 6).map((o) => (
-            <div key={o.id} style={{ display: "grid", gridTemplateColumns: "1fr auto auto", gap: ".75rem", alignItems: "center", padding: ".8rem", borderRadius: ".85rem", background: "#f7f0ec" }}>
+            <div key={o.id} style={{ display: "grid", gridTemplateColumns: "1fr auto auto auto", gap: ".75rem", alignItems: "center", padding: ".8rem", borderRadius: ".85rem", background: "#f7f0ec" }}>
               <div>
                 <strong style={{ display: "block", fontSize: ".88rem" }}>{o.id}</strong>
                 <small style={{ color: "var(--muted)", fontSize: ".75rem" }}>{o.customer.name || "—"} · {o.transaction.type || "—"} · {formatDateTime(o.placedAt)}</small>
               </div>
+              <button className="admin-btn" type="button" style={{ fontSize: ".75rem" }} onClick={() => setViewingId(o.id)}>Details</button>
               <select aria-label={`Status of ${o.id}`} value={o.status} onChange={(e) => void adminApi.setOrderStatus(o.id, e.target.value as Order["status"])} style={{ ...inputStyle, width: "auto", minHeight: 36, padding: ".3rem .6rem", fontSize: ".78rem", textTransform: "capitalize" }}>
                 {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
@@ -83,6 +57,7 @@ export function OverviewPanel() {
         </div>
       </Panel>
 
+      <OrderDetailModal order={viewing} onClose={() => setViewingId(null)} />
       <div style={{ height: "1.25rem" }} />
       <Panel title="Recent sign-ins" subtitle="Latest customer and staff activity.">
         {!history.length && <p style={{ color: "var(--muted)", fontSize: ".84rem", padding: ".5rem" }}>No activity yet.</p>}
@@ -285,8 +260,8 @@ export function CouponsPanel() {
 }
 
 /* ───────────────────────── Managers ───────────────────────── */
-const NO_PERMS: ManagerPermissions = { inventory: false, products: false, customers: false, history: false, coupons: false };
-const DEFAULT_PERMS: ManagerPermissions = { inventory: true, products: false, customers: false, history: false, coupons: true };
+const NO_PERMS: ManagerPermissions = { inventory: false, products: false, customers: false, history: false, coupons: false, content: false };
+const DEFAULT_PERMS: ManagerPermissions = { inventory: true, products: false, customers: false, history: false, coupons: true, content: false };
 
 export function ManagersPanel() {
   const managers = useManagers();
@@ -317,15 +292,15 @@ export function ManagersPanel() {
     <>
       <Panel title="Manager accounts" subtitle="Create named manager accounts and define which sections they can access." action={<button className="admin-btn primary" type="button" onClick={() => open("new")}>Add manager</button>}>
         <table className="admin-table">
-          <thead><tr><th>Name</th><th>Username</th><th>Inventory</th><th>Prices</th><th>Customers</th><th>History</th><th>Coupons</th><th>Actions</th></tr></thead>
+          <thead><tr><th>Name</th><th>Username</th><th>Inventory</th><th>Prices</th><th>Customers</th><th>History</th><th>Coupons</th><th>Notice &amp; categories</th><th>Actions</th></tr></thead>
           <tbody>
-            {!managers.length && emptyRow(8, "No manager accounts yet. Add one to get started.")}
+            {!managers.length && emptyRow(9, "No manager accounts yet. Add one to get started.")}
             {managers.map((m) => (
               <tr key={m.id}>
                 <td><strong style={{ fontSize: ".88rem" }}>{m.name}</strong></td>
                 <td style={{ fontSize: ".82rem", color: "var(--muted)" }}>{m.username}</td>
                 <td>{tick(m.permissions.inventory)}</td><td>{tick(m.permissions.products)}</td><td>{tick(m.permissions.customers)}</td>
-                <td>{tick(m.permissions.history)}</td><td>{tick(m.permissions.coupons)}</td>
+                <td>{tick(m.permissions.history)}</td><td>{tick(m.permissions.coupons)}</td><td>{tick(m.permissions.content)}</td>
                 <td style={{ display: "flex", gap: ".4rem", flexWrap: "wrap" }}>
                   <button className="admin-btn" style={{ fontSize: ".75rem", color: "var(--rose-deep)" }} type="button" onClick={() => open(m)}>Edit</button>
                   <button className="admin-btn danger" style={{ fontSize: ".75rem" }} type="button" onClick={() => { if (window.confirm(`Remove ${m.name}? They are signed out immediately.`)) void adminApi.removeManager(m.id); }}>Remove</button>

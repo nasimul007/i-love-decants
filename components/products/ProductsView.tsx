@@ -7,7 +7,6 @@ import { ProductCard } from "@/components/ui/ProductCard";
 import { SectionHeading } from "@/components/ui/PageHero";
 import { useUI } from "@/components/providers/UIProvider";
 import { useCart, useCatalog, useFullBottle, useVolumes } from "@/hooks/useServices";
-import { FAMILIES } from "@/lib/data/catalog";
 import { priceFrom } from "@/lib/volumes";
 import { money } from "@/lib/format";
 
@@ -29,7 +28,7 @@ export function ProductsView() {
   const params = useSearchParams();
   const router = useRouter();
   const { openProduct, showToast } = useUI();
-  const { products, gifts, oils } = useCatalog();
+  const { products, gifts, oils, categories } = useCatalog();
   const volumes = useVolumes();
   const fullBottle = useFullBottle();
   const { service } = useCart();
@@ -73,6 +72,11 @@ export function ProductsView() {
 
   const set = (key: keyof Filters) => (value: string) => setFilters((f) => ({ ...f, [key]: value }));
 
+  // A category hidden by the admin can't stay selected as a filter.
+  useEffect(() => {
+    if (categories.length && filters.family !== "all" && !categories.some((c) => c.toLowerCase() === filters.family)) setFilters((f) => ({ ...f, family: "all" }));
+  }, [categories, filters.family]);
+
   // A volume removed by the admin can't stay selected as a filter.
   useEffect(() => {
     const gone = filters.size === "full" ? !fullBottle : filters.size !== "all" && !volumes.includes(Number(filters.size));
@@ -111,7 +115,7 @@ export function ProductsView() {
               <span className="filter-group-title">Scent family</span>
               <div className="filter-options">
                 <Chip name="family" value="all" label="All" current={filters.family} onPick={set("family")} />
-                {FAMILIES.map((f) => <Chip key={f} name="family" value={f} label={f[0].toUpperCase() + f.slice(1)} current={filters.family} onPick={set("family")} />)}
+                {categories.map((f) => <Chip key={f} name="family" value={f.toLowerCase()} label={f} current={filters.family} onPick={set("family")} />)}
               </div>
             </div>
             <div className="filter-group">

@@ -6,15 +6,8 @@
 /** A bottle volume in ml. The list on sale is admin-controlled (Admin → Prices & sprays). */
 export type VolumeMl = number;
 export type BottleShape = "arch" | "square" | "tall" | "round";
-export type ScentFamily =
-  | "Floral"
-  | "Fresh"
-  | "Woody"
-  | "Gourmand"
-  | "Aromatic"
-  | "Warm"
-  | "Citrus"
-  | "Musky";
+/** A category name (admin-managed). */
+export type ScentFamily = string;
 
 export interface Product {
   id: number;
@@ -107,7 +100,10 @@ export interface Order {
   transaction: OrderTransaction;
   items: CartItem[];
   subtotal: number;
+  /** Coupon part of the discount. */
   discount: number;
+  /** Automatic discount for large orders. */
+  bulkDiscount?: number;
   couponCode: string | null;
   grandTotal: number;
   placedAt: string;
@@ -115,7 +111,7 @@ export interface Order {
 }
 
 /* ───────────── Admin ───────────── */
-export type AdminSection = "inventory" | "products" | "customers" | "history" | "coupons";
+export type AdminSection = "inventory" | "products" | "customers" | "history" | "coupons" | "content";
 export type ManagerPermissions = Record<AdminSection, boolean>;
 
 export interface Manager {

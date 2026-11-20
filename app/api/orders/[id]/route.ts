@@ -32,6 +32,8 @@ export const PATCH = route(async (req, { params }: { params: Promise<{ id: strin
         });
       }
     }
+    // A cancelled order doesn't use up the customer's one-time coupon.
+    if (next === "CANCELLED") await tx.couponRedemption.deleteMany({ where: { orderId: id } });
     return tx.order.update({ where: { id }, data: { status: next }, include: { items: true } });
   });
   return ok(serializeOrder(order));

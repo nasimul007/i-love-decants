@@ -49,7 +49,7 @@ export function useApi<T>(url: string): { data: T | undefined; loaded: boolean }
 }
 
 /** JSON write. Resolves to `{ ok, data }` or `{ ok: false, error }`. */
-export async function call<T = undefined>(method: "POST" | "PATCH" | "DELETE", url: string, payload?: unknown): Promise<ServiceResult<T>> {
+export async function call<T = undefined>(method: "POST" | "PATCH" | "PUT" | "DELETE", url: string, payload?: unknown): Promise<ServiceResult<T>> {
   try {
     const res = await fetch(url, {
       method, credentials: "same-origin",

@@ -30,8 +30,13 @@ export const DEFAULT_SPRAYS: Readonly<Record<number, number>> = {
 /** Full bottle section defaults (OFF until the admin switches it on and sets a price). */
 export const DEFAULT_FULL_BOTTLE = { enabled: false, ml: 100, sprays: 1100, price: null } as const;
 
-/** Delivery zones (value is the charge in ৳). */
-export const DELIVERY_ZONES = [
-  { value: 100, label: "Inside Dhaka · ৳100" },
-  { value: 150, label: "Outside Dhaka · ৳150" },
-] as const;
+/** Delivery charge in ৳: inside Dhaka city vs. everywhere else. The server calculates it from the chosen city. */
+export const DELIVERY_CHARGE = { insideDhaka: 80, outsideDhaka: 130 } as const;
+export const DHAKA_CITY = "Dhaka";
+export const deliveryChargeFor = (city: string): number =>
+  city.trim().toLowerCase() === DHAKA_CITY.toLowerCase() ? DELIVERY_CHARGE.insideDhaka : DELIVERY_CHARGE.outsideDhaka;
+
+/** Automatic discount on large orders (applied to the subtotal, before any coupon). */
+export const BULK_DISCOUNT = { minSubtotal: 5000, percent: 10 } as const;
+export const bulkDiscountFor = (subtotal: number): number =>
+  subtotal >= BULK_DISCOUNT.minSubtotal ? Math.round((subtotal * BULK_DISCOUNT.percent) / 100) : 0;

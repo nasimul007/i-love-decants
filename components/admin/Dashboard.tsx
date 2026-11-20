@@ -7,8 +7,10 @@ import { adminApi } from "@/lib/api/admin";
 import {
   CouponsPanel, CustomersPanel, HistoryPanel, InventoryPanel, ManagersPanel, OverviewPanel, PricingPanel,
 } from "./Panels";
+import { OrdersPanel } from "./OrdersPanel";
+import { ContentPanel } from "./ContentPanel";
 
-type TabId = "overview" | AdminSection | "managers";
+type TabId = "overview" | "orders" | AdminSection | "managers";
 
 interface Props {
   session: AdminSession;
@@ -18,6 +20,7 @@ interface Props {
 export function Dashboard({ session, canSee }: Props) {
   const tabs: { id: TabId; label: string }[] = [
     { id: "overview", label: "Overview" },
+    { id: "orders", label: "Orders" },
     ...ADMIN_SECTIONS.filter((s) => canSee(s.id)).map((s) => ({ id: s.id as TabId, label: s.label })),
     ...(session.role === "owner" ? [{ id: "managers" as TabId, label: "Managers" }] : []),
   ];
@@ -50,6 +53,8 @@ export function Dashboard({ session, canSee }: Props) {
 
       <div className="admin-tab-panel is-active">
         {tab === "overview" && <OverviewPanel />}
+        {tab === "orders" && <OrdersPanel />}
+        {tab === "content" && canSee("content") && <ContentPanel />}
         {tab === "inventory" && canSee("inventory") && <InventoryPanel />}
         {tab === "products" && canSee("products") && <PricingPanel />}
         {tab === "customers" && canSee("customers") && <CustomersPanel />}

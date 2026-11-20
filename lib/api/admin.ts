@@ -15,6 +15,9 @@ export const ADMIN = {
   coupons: "/api/admin/coupons",
   managers: "/api/admin/managers",
   orders: "/api/orders",
+  notice: "/api/admin/notice",
+  categories: "/api/admin/categories",
+  products: "/api/admin/products",
 } as const;
 
 export interface Page<T> { items: T[]; page: number; pageSize: number; total: number; pages: number }
@@ -22,6 +25,7 @@ export interface Page<T> { items: T[]; page: number; pageSize: number; total: nu
 export const ordersUrl = (page = 1, pageSize = 20, status?: string) =>
   `${ADMIN.orders}?page=${page}&pageSize=${pageSize}${status ? `&status=${status}` : ""}`;
 
+export interface PublicCategory { id: number; name: string; hidden: boolean; products: number }
 export interface AdminMe { session: AdminSession | null; needsSetup: boolean }
 
 /** Cached staff data must not outlive the staff session. */
@@ -78,6 +82,28 @@ export const adminApi = {
   async removeCoupon(code: string): Promise<ServiceResult<unknown>> {
     const res = await call("DELETE", `${ADMIN.coupons}/${encodeURIComponent(code)}`);
     await refresh(ADMIN.coupons);
+    return res;
+  },
+
+  /* notice & categories */
+  async saveNotice(input: { enabled: boolean; text: string }): Promise<ServiceResult<unknown>> {
+    const res = await call<{ enabled: boolean; text: string }>("PUT", ADMIN.notice, input);
+    if (res.ok) { mutate(ADMIN.notice, res.data); void refresh("/api/notice"); }
+    return res;
+  },
+  async categoryOp(op: () => Promise<ServiceResult<PublicCategory[]>>): Promise<ServiceResult<unknown>> {
+    const res = await op();
+    if (res.ok) mutate(ADMIN.categories, res.data);
+    await Promise.all([refresh(ADMIN.products), refresh("/api/products")]);
+    return res;
+  },
+  addCategory(name: string) { return this.categoryOp(() => call<PublicCategory[]>("POST", ADMIN.categories, { name })); },
+  renameCategory(id: number, name: string) { return this.categoryOp(() => call<PublicCategory[]>("PATCH", `${ADMIN.categories}/${id}`, { name })); },
+  setCategoryHidden(id: number, hidden: boolean) { return this.categoryOp(() => call<PublicCategory[]>("PATCH", `${ADMIN.categories}/${id}`, { hidden })); },
+  removeCategory(id: number) { return this.categoryOp(() => call<PublicCategory[]>("DELETE", `${ADMIN.categories}/${id}`)); },
+  async assignCategory(productId: number, category: string): Promise<ServiceResult<unknown>> {
+    const res = await call("PATCH", `${ADMIN.products}/${productId}`, { category });
+    await Promise.all([refresh(ADMIN.products), refresh(ADMIN.categories), refresh("/api/products")]);
     return res;
   },
 

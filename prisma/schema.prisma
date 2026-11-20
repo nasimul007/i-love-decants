@@ -193,6 +193,8 @@ model Order {
   reference      String        @default("")
   subtotal       Int
   discount       Int           @default(0)
+  /// Automatic discount for large orders (see lib/config.ts BULK_DISCOUNT); `discount` is the coupon part.
+  bulkDiscount   Int           @default(0)
   couponCode     String?
   grandTotal     Int
   status         OrderStatus   @default(RECEIVED)
@@ -249,4 +251,35 @@ model AuditLog {
   ts     DateTime @default(now())
 
   @@index([ts])
+}
+
+/**
+ * ───────────── Store content ─────────────
+ */
+
+/// Scrolling notice under the navbar. Singleton row (id = 1).
+model SiteNotice {
+  id      Int     @id @default(1)
+  text    String  @default("")
+  enabled Boolean @default(false)
+}
+
+/// Scent categories shown as storefront filters. Hiding one hides its perfumes too.
+model Category {
+  id     Int     @id @default(autoincrement())
+  name   String  @unique
+  hidden Boolean @default(false)
+  sort   Int     @default(0)
+}
+
+/// One row per (coupon, customer phone): a code can be used once per phone number.
+model CouponRedemption {
+  id        Int      @id @default(autoincrement())
+  code      String
+  phone     String // normalised: 01XXXXXXXXX
+  orderId   String
+  createdAt DateTime @default(now())
+
+  @@unique([code, phone])
+  @@index([orderId])
 }

@@ -15,7 +15,7 @@ export function serializeOrder(o: Order & { items: OrderItem[] }) {
       key: i.lineKey, id: /^\d+$/.test(i.itemId) ? Number(i.itemId) : i.itemId, name: i.name, detail: i.detail,
       size: i.sizeMl ?? undefined, full: i.isFull || undefined, price: i.unitPrice, qty: i.qty, swatch: "",
     })),
-    subtotal: o.subtotal, discount: o.discount, couponCode: o.couponCode, grandTotal: o.grandTotal,
+    subtotal: o.subtotal, discount: o.discount, bulkDiscount: o.bulkDiscount, couponCode: o.couponCode, grandTotal: o.grandTotal,
     placedAt: o.placedAt.toISOString(), status: o.status.toLowerCase(),
   };
 }

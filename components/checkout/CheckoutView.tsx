@@ -2,36 +2,31 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { useCart, useCurrentCustomer } from "@/hooks/useServices";
 import { couponService } from "@/lib/services/coupons";
 import { ordersApi } from "@/lib/api/orders";
-import { PAYMENT_ROUTES } from "@/lib/services/orders";
-import { DELIVERY_ZONES } from "@/lib/config";
+import { BULK_DISCOUNT, bulkDiscountFor, deliveryChargeFor } from "@/lib/config";
+import { BD_CITIES } from "@/lib/data/cities";
 import { isBdPhone } from "@/lib/validators";
 import { money } from "@/lib/format";
-import type { Coupon, PaymentMethod } from "@/types";
+import type { Coupon } from "@/types";
 
-type Field = "fullName" | "phone" | "address" | "city" | "provider" | "payerAccount" | "reference";
+type Field = "fullName" | "phone" | "address" | "city";
 
 export function CheckoutView() {
   const router = useRouter();
   const { items, subtotal } = useCart();
   const customer = useCurrentCustomer();
 
-  const [form, setForm] = useState({ fullName: "", phone: "", address: "", city: "", notes: "", reference: "", payerAccount: "" });
-  const [zone, setZone] = useState<number>(DELIVERY_ZONES[0].value);
-  const [method, setMethod] = useState<PaymentMethod>("cod");
-  const [provider, setProvider] = useState(PAYMENT_ROUTES.bank.providers[0]);
+  const [form, setForm] = useState({ fullName: "", phone: "", address: "", city: "", notes: "" });
   const [couponInput, setCouponInput] = useState("");
   const [coupon, setCoupon] = useState<Coupon | null>(null);
   const [couponMsg, setCouponMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const [errors, setErrors] = useState<Partial<Record<Field, string>>>({});
   const [formError, setFormError] = useState("");
   const [submitted, setSubmitted] = useState(false);
-
-  const route = PAYMENT_ROUTES[method];
 
   // Prefill from the signed-in customer's profile (never overwrite what was typed).
   useEffect(() => {
@@ -44,18 +39,18 @@ export function CheckoutView() {
     }));
   }, [customer]);
 
-  // Keep provider valid when the payment type changes.
-  useEffect(() => {
-    if (!route.offline && !route.providers.includes(provider)) setProvider(route.providers[0]);
-  }, [route, provider]);
-
-  const discount = couponService.discount(coupon, subtotal);
-  const grandTotal = Math.max(0, subtotal - discount) + (items.length ? zone : 0);
+  // Same rules the server applies (it recalculates everything when the order is placed).
+  const delivery = items.length && form.city ? deliveryChargeFor(form.city) : 0;
+  const bulk = bulkDiscountFor(subtotal);
+  const discount = couponService.discount(coupon, subtotal - bulk);
+  const grandTotal = Math.max(0, subtotal - bulk - discount) + delivery;
+  const toBulk = BULK_DISCOUNT.minSubtotal - subtotal;
 
   const applyCoupon = async () => {
     const code = couponInput.trim().toUpperCase();
     if (!code) { setCouponMsg({ text: "Please enter a discount code.", ok: false }); return; }
-    const res = await ordersApi.validateCoupon(code, items);
+    const phone = isBdPhone(form.phone) ? form.phone : undefined; // each code can be used once per phone number
+    const res = await ordersApi.validateCoupon(code, items, phone);
     if (!res.ok || !res.data) {
       setCoupon(null);
       setCouponMsg({ text: res.error ?? "Code not recognised. Check the spelling and try again.", ok: false });
@@ -64,13 +59,8 @@ export function CheckoutView() {
     const found: Coupon = { code: res.data.code, type: res.data.type, value: res.data.value, active: true };
     setCoupon(found);
     const label = found.type === "percent" ? `${found.value}% off` : `৳${found.value} off`;
-    setCouponMsg({ text: `✓ ${code} applied — ${label} (−${money(res.data.discount)})`, ok: true });
+    setCouponMsg({ text: `✓ ${code} applied — ${label} (−${money(res.data.discount)}). One use per phone number.`, ok: true });
   };
-
-  const paymentLabel = useMemo(
-    () => (route.offline ? `${route.label} · Pay on arrival` : `${route.label} · ${provider}`),
-    [route, provider],
-  );
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -81,12 +71,7 @@ export function CheckoutView() {
     if (!form.phone.trim()) next.phone = required;
     else if (!isBdPhone(form.phone)) next.phone = "Enter a valid Bangladeshi mobile number (01XXXXXXXXX).";
     if (!form.address.trim()) next.address = required;
-    if (!form.city.trim()) next.city = required;
-    if (!route.offline) {
-      if (!provider) next.provider = required;
-      if (!form.payerAccount.trim()) next.payerAccount = required;
-      if (!form.reference.trim()) next.reference = required;
-    }
+    if (!form.city) next.city = "Please choose your city.";
     setErrors(next);
     if (Object.keys(next).length) { setFormError("Please complete the highlighted fields before confirming."); return; }
     setFormError("");
@@ -94,13 +79,7 @@ export function CheckoutView() {
     setSubmitted(true);
     const res = await ordersApi.place({
       customer: { name: form.fullName.trim(), phone: form.phone.trim() },
-      delivery: { address: form.address.trim(), city: form.city.trim(), notes: form.notes.trim(), charge: zone },
-      payment: {
-        method,
-        provider: route.offline ? "" : provider,
-        payerAccount: route.offline ? "" : form.payerAccount.trim(),
-        reference: route.offline ? "" : form.reference.trim(),
-      },
+      delivery: { address: form.address.trim(), city: form.city, notes: form.notes.trim() },
       items,
       couponCode: coupon?.code ?? null,
     });
@@ -143,12 +122,17 @@ export function CheckoutView() {
           <h2>Delivery details</h2>
           <div className="form-grid">
             <div className="field full"><label htmlFor="checkoutAddress">Full delivery address</label><textarea id="checkoutAddress" placeholder="House, road, area, landmark…" {...text("address")} />{err("address")}</div>
-            <div className="field"><label htmlFor="checkoutCity">City / Area</label><input id="checkoutCity" type="text" placeholder="e.g. Dhanmondi, Dhaka" {...text("city")} />{err("city")}</div>
             <div className="field">
-              <label htmlFor="deliveryZone">Delivery charge</label>
-              <select id="deliveryZone" value={zone} onChange={(e) => setZone(Number(e.target.value))}>
-                {DELIVERY_ZONES.map((z) => <option key={z.value} value={z.value}>{z.label}</option>)}
+              <label htmlFor="checkoutCity">City</label>
+              <select id="checkoutCity" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })}>
+                <option value="">Select your city…</option>
+                {BD_CITIES.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
+              {err("city")}
+            </div>
+            <div className="field">
+              <label>Delivery charge</label>
+              <input type="text" readOnly value={form.city ? `${money(deliveryChargeFor(form.city))} · ${deliveryChargeFor(form.city) === 80 ? "Inside Dhaka city" : "Outside Dhaka"}` : "Choose a city to see the charge"} />
             </div>
             <div className="field full"><label htmlFor="deliveryNote">Delivery notes <small>(optional)</small></label><textarea id="deliveryNote" placeholder="Preferred time, landmark, gift note, or anything helpful…" {...text("notes")} /></div>
           </div>
@@ -156,33 +140,14 @@ export function CheckoutView() {
 
         <div className="checkout-block">
           <span className="eyebrow">Step 3</span>
-          <h2>Choose your payment option</h2>
-          <p className="wallet-hint">Cash on Delivery is selected by default. You can also choose a bank transfer or wallet payment if that suits you better.</p>
-          <div className="payment-methods" role="radiogroup" aria-label="Choose a payment type">
-            {([
-              ["bank", "Bank transfer", "Choose Bank A, B, or C", "#b99750", ""],
-              ["wallet", "Wallet payment", "Choose Wallet A, B, or C", "#a87987", ""],
-              ["cod", "Cash on Delivery", "Pay in cash when your order arrives", "#8ca390", " payment-option--cash"],
-            ] as const).map(([value, title, hint, tint, extra]) => (
-              <label key={value} className={`payment-option${extra}`}>
-                <input type="radio" name="paymentMethod" value={value} checked={method === value} onChange={() => { setMethod(value); setErrors({}); }} />
-                <span className="payment-mark" style={{ ["--pay-tint" as string]: tint }} />
-                <span className="payment-label"><strong>{title}</strong><small>{hint}</small></span>
-              </label>
-            ))}
-          </div>
-          <div className="wallet-fields" hidden={!!route.offline} aria-hidden={!!route.offline}>
-            <div className="form-grid">
-              <div className="field">
-                <label htmlFor="transactionProvider">{route.providerLabel}</label>
-                <select id="transactionProvider" value={provider} onChange={(e) => setProvider(e.target.value)}>
-                  {route.providers.map((p) => <option key={p}>{p}</option>)}
-                </select>
-                {err("provider")}
-              </div>
-              <div className="field"><label htmlFor="payerAccount">{route.accountLabel}</label><input id="payerAccount" type="text" placeholder={route.accountPlaceholder || "Account or wallet number"} {...text("payerAccount")} />{err("payerAccount")}</div>
-              <div className="field full"><label htmlFor="transactionId">Transaction reference</label><input id="transactionId" type="text" placeholder="Enter your bank or wallet transaction ID" {...text("reference")} />{err("reference")}</div>
-            </div>
+          <h2>Payment</h2>
+          <p className="wallet-hint">Cash on Delivery is our payment option: no advance payment needed. Pay the rider when your order arrives.</p>
+          <div className="payment-methods" role="radiogroup" aria-label="Payment type">
+            <label className="payment-option payment-option--cash">
+              <input type="radio" name="paymentMethod" value="cod" checked readOnly />
+              <span className="payment-mark" style={{ ["--pay-tint" as string]: "#8ca390" }} />
+              <span className="payment-label"><strong>Cash on Delivery</strong><small>Pay in cash when your order arrives</small></span>
+            </label>
           </div>
         </div>
 
@@ -221,10 +186,12 @@ export function CheckoutView() {
           ))}
         </div>
         <div className="summary-row"><span>Subtotal</span><strong>{money(subtotal)}</strong></div>
-        <div className="summary-row"><span>Delivery</span><strong>{money(items.length ? zone : 0)}</strong></div>
-        {discount > 0 && <div className="summary-row" style={{ color: "var(--sage)" }}><span>Discount</span><strong>−{money(discount)}</strong></div>}
+        {bulk > 0 && <div className="summary-row" style={{ color: "var(--sage)" }}><span>{BULK_DISCOUNT.percent}% off orders of {money(BULK_DISCOUNT.minSubtotal)}+</span><strong>−{money(bulk)}</strong></div>}
+        {discount > 0 && <div className="summary-row" style={{ color: "var(--sage)" }}><span>Discount code{coupon ? ` (${coupon.code})` : ""}</span><strong>−{money(discount)}</strong></div>}
+        <div className="summary-row"><span>Delivery</span><strong>{form.city ? money(delivery) : "Choose city"}</strong></div>
         <div className="summary-row summary-total"><span>Grand total</span><strong>{money(grandTotal)}</strong></div>
-        <div className="summary-row summary-payment"><span>Payment route</span><strong>{paymentLabel}</strong></div>
+        <div className="summary-row summary-payment"><span>Payment</span><strong>Cash on Delivery</strong></div>
+        {bulk === 0 && items.length > 0 && <p className="cart-note">Add {money(toBulk)} more to get {BULK_DISCOUNT.percent}% off your order.</p>}
         <p className="cart-note">Prices include everything currently in your bag. Adjust quantities from the bag icon before placing your order.</p>
       </aside>
     </div>
