@@ -4320,3 +4320,11 @@ html.touch-mode .cursor-layer{display:none!important}
   .acct-signout{margin-left:0}
   .acct-track small{display:none}
 }
+
+/* Checkout: order-in-progress state */
+.btn-loading{display:inline-flex;align-items:center;justify-content:center;gap:.6rem}
+.btn-loading:disabled{opacity:.85;cursor:progress}
+.btn-spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.45);border-top-color:#fff;border-radius:50%;animation:btn-spin .7s linear infinite}
+@keyframes btn-spin{to{transform:rotate(360deg)}}
+.placing-note{margin:.7rem 0 0;color:var(--muted);font-size:.82rem;text-align:center}
+@media (prefers-reduced-motion:reduce){.btn-spinner{animation-duration:2s}}

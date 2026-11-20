@@ -65,7 +65,7 @@ export function CheckoutView() {
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!items.length) return;
+    if (!items.length || submitted) return; // ignore double clicks while the order is being placed
     const next: Partial<Record<Field, string>> = {};
     const required = "Please fill in this field.";
     if (!form.fullName.trim()) next.fullName = required;
@@ -167,7 +167,10 @@ export function CheckoutView() {
           <p className={`coupon-status${couponMsg ? (couponMsg.ok ? " ok" : " err") : ""}`}>{couponMsg?.text}</p>
         </div>
 
-        <button className="btn btn-primary" type="submit">Confirm Order</button>
+        <button className="btn btn-primary btn-loading" type="submit" disabled={submitted} aria-busy={submitted}>
+          {submitted ? <><span className="btn-spinner" aria-hidden="true" />Placing your order…</> : "Confirm Order"}
+        </button>
+        {submitted && <p className="placing-note" role="status">Please wait and don’t close this page. This can take a few seconds.</p>}
         <div className={`form-status${formError ? " is-visible" : ""}`} role="status">{formError}</div>
       </form>
 
