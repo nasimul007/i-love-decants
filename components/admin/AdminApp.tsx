@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useState } from "react";
 import type { FormEvent } from "react";
-import { useAdminConfig, useAdminSession } from "@/hooks/useServices";
-import { adminService, can } from "@/lib/services/admin";
+import { useAdminMe } from "@/hooks/useServices";
+import { adminApi } from "@/lib/api/admin";
+import { can } from "@/lib/services/admin";
 import { Dashboard } from "./Dashboard";
-
-const useHydrated = () => useSyncExternalStore(() => () => {}, () => true, () => false);
 
 function BrandMark() {
   return (
@@ -20,9 +19,9 @@ function BrandMark() {
 function SetupWizard() {
   const [v, setV] = useState({ name: "", username: "", password: "", confirm: "" });
   const [msg, setMsg] = useState("");
-  const submit = (e: FormEvent) => {
+  const submit = async (e: FormEvent) => {
     e.preventDefault();
-    const res = adminService.setupOwner(v);
+    const res = await adminApi.setup(v);
     if (!res.ok) setMsg(res.error ?? "");
   };
   const f = (k: keyof typeof v) => ({ value: v[k], onChange: (e: { target: { value: string } }) => setV({ ...v, [k]: e.target.value }) });
@@ -40,7 +39,7 @@ function SetupWizard() {
           <p className="admin-form-msg" aria-live="polite">{msg}</p>
           <button className="btn btn-primary" type="submit" style={{ width: "100%", borderRadius: ".9rem" }}>Create owner account</button>
         </form>
-        <p className="admin-setup-hint"><b>🔐</b> Credentials are stored locally in your browser. This is a frontend demo.</p>
+        <p className="admin-setup-hint"><b>🔐</b> Use at least 8 characters. Passwords are hashed on the server.</p>
       </div>
     </div>
   );
@@ -50,9 +49,9 @@ function LoginPanel() {
   const [user, setUser] = useState("");
   const [pass, setPass] = useState("");
   const [msg, setMsg] = useState("");
-  const submit = (e: FormEvent) => {
+  const submit = async (e: FormEvent) => {
     e.preventDefault();
-    const res = adminService.login(user, pass);
+    const res = await adminApi.login(user, pass);
     if (!res.ok) setMsg(res.error ?? "");
   };
   return (
@@ -73,26 +72,11 @@ function LoginPanel() {
 }
 
 export function AdminApp() {
-  const hydrated = useHydrated();
-  const config = useAdminConfig();
-  const session = useAdminSession();
+  const { session, needsSetup, loaded } = useAdminMe();
 
-  // Re-validate the stored session against the config (e.g. manager removed or perms changed).
-  useEffect(() => {
-    if (!session || !config) return;
-    if (session.role === "manager") {
-      const m = config.managers.find((x) => x.username === session.username);
-      if (!m) adminService.logout();
-    }
-  }, [session, config]);
-
-  if (!hydrated) return <div className="container" style={{ padding: "6rem 0", textAlign: "center", color: "var(--muted)" }}>Loading…</div>;
-  if (!config?.setup) return <SetupWizard />;
+  if (!loaded) return <div className="container" style={{ padding: "6rem 0", textAlign: "center", color: "var(--muted)" }}>Loading…</div>;
+  if (needsSetup) return <SetupWizard />;
   if (!session) return <LoginPanel />;
-
-  // Use the freshest permissions from config for managers.
-  const live = session.role === "manager"
-    ? { ...session, permissions: config.managers.find((m) => m.username === session.username)?.permissions ?? session.permissions }
-    : session;
-  return <Dashboard session={live} canSee={(s) => can(live, s)} />;
+  // Permissions come from the server with the session; the server also enforces them on every request.
+  return <Dashboard session={session} canSee={(s) => can(session, s)} />;
 }

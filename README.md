@@ -1,11 +1,14 @@
 # I Love Decants — Next.js (App Router, TypeScript)
 
 Luxury decant / perfume-oil storefront with cart, checkout, customer accounts and an admin/manager
-dashboard. All data persists in `localStorage` through a service layer designed to be swapped for a real
-backend — see **[HANDOFF.md](./HANDOFF.md)**.
+dashboard. Backend: Next.js Route Handlers (`app/api`) + PostgreSQL via Prisma. Only the guest cart and the
+last-order confirmation stay in `localStorage`.
 
 ```bash
 npm install
+cp .env.example .env            # set DATABASE_URL (PostgreSQL)
+npm run db:migrate -- --name init
+npm run db:seed                 # catalogue, volumes, default coupons
 npm run dev        # http://localhost:3000
 npm run build && npm start
 npm run typecheck
@@ -32,6 +35,6 @@ types/index.ts           Domain types / data contract
 
 ## Try it
 * **Coupons:** `WELCOME10`, `BLOOM20`, `FLAT100`, `FIRST15`.
-* **Admin:** open `/admin` (footer link). First visit shows the owner setup wizard. Then add managers with
+* **Admin:** open `/admin` (footer link). First visit shows the owner setup wizard (server-side, works only until an owner exists). Then add managers with
   per-section permissions; disabling/hiding/archiving an item in Inventory removes it from the storefront.
 * **Phone format:** `01XXXXXXXXX` / `+8801XXXXXXXXX`. **Passwords (customers):** 8+ chars, letter + number.

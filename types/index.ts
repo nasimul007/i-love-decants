@@ -126,6 +126,9 @@ export interface Manager {
   permissions: ManagerPermissions;
 }
 
+/** A manager as returned by the API (never includes the password hash). */
+export type PublicManager = Omit<Manager, "passwordHash">;
+
 export interface AdminConfig {
   setup: boolean;
   ownerName: string;

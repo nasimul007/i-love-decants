@@ -80,12 +80,12 @@ export function ProductsView() {
   }, [volumes, fullBottle, filters.size]);
 
   const addGift = (id: string, name: string) => {
-    const line = service.lineForGift(id);
-    if (line) { service.add(line); showToast(`${name} added to your bag.`); }
+    const gift = gifts.find((g) => g.id === id);
+    if (gift) { service.add(service.lineForGift(gift)); showToast(`${name} added to your bag.`); }
   };
   const addOil = (id: string, name: string) => {
-    const line = service.lineForOil(id);
-    if (line) { service.add(line); showToast(`${name} added to your bag.`); }
+    const oil = oils.find((o) => o.id === id);
+    if (oil) { service.add(service.lineForOil(oil)); showToast(`${name} added to your bag.`); }
   };
 
   const tabs: [Tab, string][] = [["decants", "Perfume Decants"], ["oils", "Perfume Oils"], ["gifts", "Gift Sets"]];

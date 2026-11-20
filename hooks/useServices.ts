@@ -3,22 +3,16 @@
 import { useEffect, useMemo } from "react";
 import { KEYS, useStored } from "@/lib/storage";
 import { cartService, cartTotals } from "@/lib/services/cart";
-import { DEFAULT_COUPONS } from "@/lib/services/coupons";
 import { EMPTY_OVERRIDES, fullBottleDetail } from "@/lib/services/catalogOverrides";
 import { hasAnySize } from "@/lib/volumes";
 import { useApi } from "@/lib/api/client";
+import { ADMIN, ordersUrl, type AdminMe, type Page } from "@/lib/api/admin";
 import { ME, MY_ORDERS } from "@/lib/api/customer";
 import type {
-  AdminConfig, AdminSession, CartItem, CatalogOverrides, Coupon, Customer, GiftSet, InventoryRecord, LoginEvent, OilProduct, Order, Product, PublicCustomer,
+  CartItem, CatalogOverrides, Coupon, GiftSet, InventoryRecord, LoginEvent, OilProduct, Order, Product, PublicCustomer, PublicManager,
 } from "@/types";
 
 /** Reactive reads over the service layer. Swap internals for SWR/React Query when an API exists. */
-
-/** Admin price & spray overrides (Admin → Prices & sprays). */
-export function useCatalogOverrides(): CatalogOverrides {
-  const o = useStored<CatalogOverrides | null>(KEYS.catalogOverrides, null);
-  return useMemo(() => ({ ...EMPTY_OVERRIDES, ...(o ?? {}) }), [o]);
-}
 
 /* ───────── Storefront data comes from the API (server applies admin prices, volumes, Full bottle, stock) ───────── */
 
@@ -91,10 +85,6 @@ export function useCart() {
   return { items, ...totals, service: cartService };
 }
 
-export function useInventoryRecords(): InventoryRecord[] {
-  return useStored<InventoryRecord[]>(KEYS.inventory, []);
-}
-
 /** Storefront catalogue from the API (disabled/hidden/removed items and unpriced perfumes are already excluded). */
 export function useCatalog() {
   const { data } = useStorefront();
@@ -119,14 +109,38 @@ export function useMyOrders(): Order[] {
 }
 const EMPTY_ORDERS: Order[] = [];
 
-export const useCustomers = () => useStored<Customer[]>(KEYS.customers, []);
-export const useOrders = () => useStored<Order[]>(KEYS.orders, []);
-export const useLastOrder = () => useStored<Order | null>(KEYS.lastOrder, null);
-export const useLoginHistory = () => useStored<LoginEvent[]>(KEYS.loginHistory, []);
-export const useAdminConfig = () => useStored<AdminConfig | null>(KEYS.adminConfig, null);
-export const useAdminSession = () => useStored<AdminSession | null>(KEYS.adminSession, null);
+/* ───────── Admin (staff-only endpoints; all permission checks happen on the server) ───────── */
 
-export function useCoupons(): Coupon[] {
-  const saved = useStored<Coupon[] | null>(KEYS.coupons, null);
-  return saved && saved.length ? saved : DEFAULT_COUPONS;
+const EMPTY: never[] = [];
+const useList = <T,>(url: string): T[] => (useApi<T[]>(url).data ?? (EMPTY as T[]));
+
+/** Staff session + whether first-run owner setup is still needed. `loaded` is false until the first response. */
+export function useAdminMe() {
+  const { data, loaded } = useApi<AdminMe>(ADMIN.me);
+  return { session: data?.session ?? null, needsSetup: data?.needsSetup ?? false, loaded };
 }
+
+/** Admin price & spray overrides (Admin → Prices & sprays). */
+export function useCatalogOverrides(): CatalogOverrides {
+  const { data } = useApi<CatalogOverrides>(ADMIN.catalog);
+  return useMemo(() => ({ ...EMPTY_OVERRIDES, ...(data ?? {}) }), [data]);
+}
+
+export interface AdminOverview {
+  liveProducts: number; totalItems: number; inTransit: number; orders: number; shipped: number; customers: number;
+  recentSignIns: LoginEvent[];
+}
+export const useAdminOverview = () => useApi<AdminOverview>(ADMIN.overview).data;
+export const useInventoryRecords = () => useList<InventoryRecord>(ADMIN.inventory);
+export const useCustomers = () => useList<PublicCustomer>(ADMIN.customers);
+/** One page of orders for staff (newest first). */
+export function useOrders(page = 1, pageSize = 20, status?: string) {
+  const { data, loaded } = useApi<Page<Order>>(ordersUrl(page, pageSize, status));
+  return { orders: data?.items ?? (EMPTY as Order[]), page: data?.page ?? page, pages: data?.pages ?? 1, total: data?.total ?? 0, loaded };
+}
+export const useLoginHistory = () => useList<LoginEvent>(ADMIN.history);
+export const useCoupons = () => useList<Coupon>(ADMIN.coupons);
+export const useManagers = () => useList<PublicManager>(ADMIN.managers);
+
+/** Last order, kept locally only so the confirmation page can render after the checkout redirect. */
+export const useLastOrder = () => useStored<Order | null>(KEYS.lastOrder, null);

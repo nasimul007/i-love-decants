@@ -43,7 +43,7 @@ export function ProductModal() {
 
   const add = () => {
     if (!found) return;
-    const line = selected === "full" ? service.lineForFullBottle(found.id) : service.lineForProduct(found.id, selected);
+    const line = selected === "full" ? service.lineForFullBottle(found) : service.lineForProduct(found, selected);
     if (!line) return;
     service.add(line);
     showToast(`${found.name}, ${selectedLabel} added to your bag.`);

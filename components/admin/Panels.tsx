@@ -3,21 +3,19 @@
 import { useEffect, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 import {
-  useAdminConfig, useCatalogOverrides, useCoupons, useCustomers, useInventoryRecords, useLoginHistory, useOrders,
+  useAdminOverview, useCatalogOverrides, useCoupons, useCustomers, useInventoryRecords, useLoginHistory, useManagers, useOrders,
 } from "@/hooks/useServices";
 import { useUI } from "@/components/providers/UIProvider";
 import {
-  activeVolumes, applyToProduct, catalogOverridesService, effectiveSprays, formatSprays, fullBottleFor, fullBottleLive, fullBottleOf,
+  activeVolumes, applyToProduct, effectiveSprays, formatSprays, fullBottleFor, fullBottleLive, fullBottleOf,
   sectionReplacedByFullBottle, suggestSprays,
 } from "@/lib/services/catalogOverrides";
 import { GIFTS, OILS, PRODUCTS } from "@/lib/data/catalog";
 import { DEFAULT_SPRAYS } from "@/lib/config";
-import { couponService } from "@/lib/services/coupons";
-import { inventoryService } from "@/lib/services/inventory";
-import { orderService } from "@/lib/services/orders";
-import { ADMIN_SECTIONS, adminService } from "@/lib/services/admin";
+import { adminApi, catalogOverridesApi } from "@/lib/api/admin";
+import { ADMIN_SECTIONS } from "@/lib/services/admin";
 import { formatDate, formatDateTime, money } from "@/lib/format";
-import type { CatalogOverrides, InventoryKind, InventoryRecord, Manager, ManagerPermissions, Order, Product } from "@/types";
+import type { CatalogOverrides, InventoryKind, InventoryRecord, ManagerPermissions, Order, Product, PublicManager } from "@/types";
 
 const inputStyle = { minHeight: 42, padding: ".6rem .8rem", border: "1px solid var(--line)", borderRadius: ".8rem", fontSize: ".9rem", width: "100%", outline: "none", background: "#fff" } as const;
 const emptyRow = (cols: number, text: string) => (
@@ -54,22 +52,17 @@ function Modal({ open, onClose, title, subtitle, children }: { open: boolean; on
 const STATUSES: Order["status"][] = ["received", "confirmed", "shipped", "delivered", "cancelled"];
 
 export function OverviewPanel() {
-  const inv = useInventoryRecords();
-  const customers = useCustomers();
-  const orders = useOrders();
-  const history = useLoginHistory();
-
-  const live = inv.filter((i) => i.enabled && i.visible && !i.removed).length;
-  const inTransit = inv.reduce((t, i) => t + i.inTransit, 0);
-  const shipped = orders.filter((o) => o.status === "shipped").length;
+  const ov = useAdminOverview();
+  const { orders } = useOrders(1, 6);
+  const history = ov?.recentSignIns ?? [];
 
   return (
     <>
       <div className="admin-stats">
-        <div className="admin-stat"><span>Live products</span><strong>{inv.length ? live : "All"}</strong><small>{inv.length ? "Visible now" : "No overrides yet"}</small></div>
-        <div className="admin-stat"><span>Total orders</span><strong>{orders.length}</strong><small>Recorded so far</small></div>
-        <div className="admin-stat"><span>Shipments</span><strong>{shipped}</strong><small>{inTransit} unit(s) in transit</small></div>
-        <div className="admin-stat"><span>Customers</span><strong>{customers.length}</strong><small>Registered accounts</small></div>
+        <div className="admin-stat"><span>Live products</span><strong>{ov?.liveProducts ?? "—"}</strong><small>Visible now</small></div>
+        <div className="admin-stat"><span>Total orders</span><strong>{ov?.orders ?? "—"}</strong><small>Recorded so far</small></div>
+        <div className="admin-stat"><span>Shipments</span><strong>{ov?.shipped ?? "—"}</strong><small>{ov?.inTransit ?? 0} unit(s) in transit</small></div>
+        <div className="admin-stat"><span>Customers</span><strong>{ov?.customers ?? "—"}</strong><small>Registered accounts</small></div>
       </div>
 
       <Panel title="Recent order activity" subtitle="Last orders placed through the storefront. Update status as they progress.">
@@ -81,7 +74,7 @@ export function OverviewPanel() {
                 <strong style={{ display: "block", fontSize: ".88rem" }}>{o.id}</strong>
                 <small style={{ color: "var(--muted)", fontSize: ".75rem" }}>{o.customer.name || "—"} · {o.transaction.type || "—"} · {formatDateTime(o.placedAt)}</small>
               </div>
-              <select aria-label={`Status of ${o.id}`} value={o.status} onChange={(e) => orderService.updateStatus(o.id, e.target.value as Order["status"])} style={{ ...inputStyle, width: "auto", minHeight: 36, padding: ".3rem .6rem", fontSize: ".78rem", textTransform: "capitalize" }}>
+              <select aria-label={`Status of ${o.id}`} value={o.status} onChange={(e) => void adminApi.setOrderStatus(o.id, e.target.value as Order["status"])} style={{ ...inputStyle, width: "auto", minHeight: 36, padding: ".3rem .6rem", fontSize: ".78rem", textTransform: "capitalize" }}>
                 {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
               <span style={{ color: "var(--rose-deep)", fontSize: ".86rem", fontWeight: 800 }}>{money(o.grandTotal)}</span>
@@ -111,23 +104,22 @@ export function InventoryPanel() {
   const [form, setForm] = useState({ name: "", type: "Perfume decant" as InventoryKind, sizes: "3–100 ml", price: "", stock: "" });
   const [msg, setMsg] = useState("");
 
-  useEffect(() => { inventoryService.ensureSeeded(); }, []);
-
   const act = (r: InventoryRecord, a: "stock-" | "stock+" | "enabled" | "visible" | "archive" | "restore") => {
-    if (a === "stock-") inventoryService.update(r.id, { stock: Math.max(0, r.stock - 1) });
-    if (a === "stock+") inventoryService.update(r.id, { stock: r.stock + 1 });
-    if (a === "enabled") inventoryService.update(r.id, { enabled: !r.enabled });
-    if (a === "visible") inventoryService.update(r.id, { visible: !r.visible });
-    if (a === "archive") inventoryService.update(r.id, { removed: true });
-    if (a === "restore") inventoryService.update(r.id, { removed: false, enabled: true, visible: true });
+    if (a === "stock-") void adminApi.patchInventory(r.id, { stockDelta: -1 });
+    if (a === "stock+") void adminApi.patchInventory(r.id, { stockDelta: 1 });
+    if (a === "enabled") void adminApi.patchInventory(r.id, { enabled: !r.enabled });
+    if (a === "visible") void adminApi.patchInventory(r.id, { visible: !r.visible });
+    if (a === "archive") void adminApi.patchInventory(r.id, { removed: true });
+    if (a === "restore") void adminApi.patchInventory(r.id, { removed: false, enabled: true, visible: true });
   };
 
-  const submit = (e: FormEvent) => {
+  const submit = async (e: FormEvent) => {
     e.preventDefault();
     const price = Number(form.price);
     const stock = Number(form.stock);
     if (!form.name.trim() || !(price >= 0) || !(stock >= 0) || form.price === "" || form.stock === "") { setMsg("Please fill in all fields correctly."); return; }
-    inventoryService.add({ name: form.name.trim(), type: form.type, sizes: form.sizes.trim(), price, stock });
+    const res = await adminApi.addInventory({ name: form.name.trim(), type: form.type, sizes: form.sizes.trim(), price, stock });
+    if (!res.ok) { setMsg(res.error ?? "Could not save."); return; }
     setForm({ name: "", type: "Perfume decant", sizes: "3–100 ml", price: "", stock: "" });
     setMsg("");
     setOpen(false);
@@ -251,10 +243,8 @@ export function CouponsPanel() {
   const [form, setForm] = useState({ code: "", type: "percent" as "percent" | "flat", value: "" });
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
 
-  useEffect(() => { couponService.list(); }, []); // persist defaults on first visit
-
-  const add = () => {
-    const res = couponService.add({ code: form.code, type: form.type, value: Number(form.value) });
+  const add = async () => {
+    const res = await adminApi.addCoupon({ code: form.code, type: form.type, value: Number(form.value) });
     if (!res.ok) { setMsg({ text: res.error ?? "", ok: false }); return; }
     setForm({ ...form, code: "", value: "" });
     setMsg({ text: "Code added.", ok: true });
@@ -283,8 +273,8 @@ export function CouponsPanel() {
               <td>{c.type === "percent" ? `${c.value}%` : `৳${c.value}`}</td>
               <td><span className={`pill ${c.active ? "live" : "off"}`}>{c.active ? "Active" : "Off"}</span></td>
               <td style={{ display: "flex", gap: ".4rem", flexWrap: "wrap" }}>
-                <button className="admin-btn" style={{ fontSize: ".75rem", color: "var(--rose-deep)" }} type="button" onClick={() => couponService.toggle(c.code)}>{c.active ? "Deactivate" : "Activate"}</button>
-                <button className="admin-btn danger" style={{ fontSize: ".75rem" }} type="button" onClick={() => couponService.remove(c.code)}>Delete</button>
+                <button className="admin-btn" style={{ fontSize: ".75rem", color: "var(--rose-deep)" }} type="button" onClick={() => void adminApi.toggleCoupon(c.code, !c.active)}>{c.active ? "Deactivate" : "Activate"}</button>
+                <button className="admin-btn danger" style={{ fontSize: ".75rem" }} type="button" onClick={() => void adminApi.removeCoupon(c.code)}>Delete</button>
               </td>
             </tr>
           ))}
@@ -299,21 +289,20 @@ const NO_PERMS: ManagerPermissions = { inventory: false, products: false, custom
 const DEFAULT_PERMS: ManagerPermissions = { inventory: true, products: false, customers: false, history: false, coupons: true };
 
 export function ManagersPanel() {
-  const config = useAdminConfig();
-  const managers: Manager[] = config?.managers ?? [];
-  const [editing, setEditing] = useState<Manager | "new" | null>(null);
+  const managers = useManagers();
+  const [editing, setEditing] = useState<PublicManager | "new" | null>(null);
   const [form, setForm] = useState({ name: "", username: "", password: "", permissions: DEFAULT_PERMS });
   const [msg, setMsg] = useState("");
 
-  const open = (m: Manager | "new") => {
+  const open = (m: PublicManager | "new") => {
     setEditing(m);
     setMsg("");
     setForm(m === "new" ? { name: "", username: "", password: "", permissions: DEFAULT_PERMS } : { name: m.name, username: m.username, password: "", permissions: { ...NO_PERMS, ...m.permissions } });
   };
 
-  const submit = (e: FormEvent) => {
+  const submit = async (e: FormEvent) => {
     e.preventDefault();
-    const res = adminService.saveManager({
+    const res = await adminApi.saveManager({
       editId: editing && editing !== "new" ? editing.id : undefined,
       name: form.name, username: form.username, password: form.password, permissions: form.permissions,
     });
@@ -339,7 +328,7 @@ export function ManagersPanel() {
                 <td>{tick(m.permissions.history)}</td><td>{tick(m.permissions.coupons)}</td>
                 <td style={{ display: "flex", gap: ".4rem", flexWrap: "wrap" }}>
                   <button className="admin-btn" style={{ fontSize: ".75rem", color: "var(--rose-deep)" }} type="button" onClick={() => open(m)}>Edit</button>
-                  <button className="admin-btn danger" style={{ fontSize: ".75rem" }} type="button" onClick={() => adminService.removeManager(m.id)}>Remove</button>
+                  <button className="admin-btn danger" style={{ fontSize: ".75rem" }} type="button" onClick={() => { if (window.confirm(`Remove ${m.name}? They are signed out immediately.`)) void adminApi.removeManager(m.id); }}>Remove</button>
                 </td>
               </tr>
             ))}
@@ -450,7 +439,7 @@ export function PricingPanel() {
     + `OK — show "Full bottle" and hide the ${ml} ml section while Full bottle is ON.\n`
     + `Cancel — keep the ${ml} ml section (choose a different Full bottle size, or delete the ${ml} ml section).`,
   );
-  const saveFullBottle = (enabled: boolean) => {
+  const saveFullBottle = async (enabled: boolean) => {
     const ml = num(fbDraft.ml);
     const price = fbDraft.price.trim() === "" ? null : num(fbDraft.price);
     if (fbDraft.ml.trim() === "") { setFbMsg("Enter the full bottle size in ml."); return; }
@@ -458,18 +447,18 @@ export function PricingPanel() {
     if (enabled && price === null) { setFbMsg("Set the full bottle price before switching it ON."); return; }
     const alreadyReplacing = fbLive && fb.ml === ml;
     if (enabled && volumes.includes(ml) && !alreadyReplacing && !confirmClash(ml)) { setFbMsg(`Kept the ${ml} ml section. Choose a different Full bottle size, or delete the ${ml} ml section first.`); return; }
-    const res = catalogOverridesService.saveFullBottle({ enabled, ml, sprays: num(fbDraft.sprays), price });
+    const res = await catalogOverridesApi.saveFullBottle({ enabled, ml, sprays: num(fbDraft.sprays), price });
     if (!res.ok) { setFbMsg(res.error ?? ""); return; }
     setFbMsg("");
     showToast(enabled ? `Full bottle is ON (${ml} ml).` : "Full bottle saved — it's OFF, so customers don't see it.");
   };
-  const toggleFullBottle = () => {
+  const toggleFullBottle = async () => {
     if (fb.enabled) {
-      const res = catalogOverridesService.setFullBottleEnabled(false);
+      const res = await catalogOverridesApi.saveFullBottle({ ...fb, enabled: false });
       if (!res.ok) { setFbMsg(res.error ?? ""); return; }
       showToast("Full bottle is OFF — hidden from customers.");
     } else {
-      saveFullBottle(true);
+      await saveFullBottle(true);
     }
   };
 
@@ -486,12 +475,12 @@ export function PricingPanel() {
     setTimeout(() => document.querySelector<HTMLInputElement>(`input[aria-label$=" ${v} ml price"]`)?.focus({ preventScroll: true }), 450);
   };
 
-  const saveSprays = () => {
-    const res = catalogOverridesService.setSprays(Object.fromEntries(volumes.map((v) => [v, num(sprayDraft[v])])));
+  const saveSprays = async () => {
+    const res = await catalogOverridesApi.setSprays(Object.fromEntries(volumes.map((v) => [v, num(sprayDraft[v])])));
     if (!res.ok) { setSprayMsg(res.error ?? ""); return; }
     showToast("Spray counts saved.");
   };
-  const addVolume = (e: FormEvent) => {
+  const addVolume = async (e: FormEvent) => {
     e.preventDefault();
     const ml = num(newMl);
     if (newMl.trim() === "") { setAddMsg("Enter the volume in ml."); return; }
@@ -499,20 +488,20 @@ export function PricingPanel() {
     if (newSprays.trim() === "") { setAddMsg("Enter the spray count."); return; }
     if (newPrice.trim() === "") { setAddMsg("Enter the price for this section."); return; }
     const price = num(newPrice);
-    const res = catalogOverridesService.addVolume(ml, num(newSprays), price);
+    const res = await catalogOverridesApi.addVolume(ml, num(newSprays), price);
     if (!res.ok) { setAddMsg(res.error ?? ""); return; }
     setNewMl(""); setNewSprays(""); setNewPrice(""); setSpraysTouched(false); setAddMsg("");
     showToast(`${ml} ml section added at ${money(price)}. It's now on sale for every perfume.`);
   };
-  const removeVolume = (v: number) => {
+  const removeVolume = async (v: number) => {
     if (!window.confirm(`Stop selling ${v} ml?\n\nIt disappears from the shop, and its prices and spray count are discarded. Bags that contain ${v} ml items will drop them.`)) return;
-    const res = catalogOverridesService.removeVolume(v);
+    const res = await catalogOverridesApi.removeVolume(v);
     if (!res.ok) { showToast(res.error ?? "Could not remove."); return; }
     showToast(`${v} ml removed from the shop.`);
   };
-  const restoreDefaults = () => {
+  const restoreDefaults = async () => {
     if (!window.confirm("Restore the default volumes (3, 6, 9, 15, 50, 100 ml), their spray counts and the original perfume prices?")) return;
-    catalogOverridesService.resetVolumes();
+    await catalogOverridesApi.resetVolumes();
     showToast("Default volumes, spray counts and prices restored.");
   };
 
@@ -763,9 +752,9 @@ function PerfumePriceRow({ base, volumes, overrides, fullColumn }: { base: Produ
   const edited = !!custom && Object.keys(custom).some((v) => volumes.includes(Number(v)) || (fullColumn && v === "full"));
   const hidden = Object.keys(live.prices).length === 0 && !live.fullBottle;
 
-  const save = () => {
+  const save = async () => {
     const full = fullColumn ? ((draft.full ?? "").trim() === "" ? null : num(draft.full)) : undefined;
-    const res = catalogOverridesService.setProductPrices(base.id, Object.fromEntries(volumes.map((v) => [v, (draft[v] ?? "").trim() === "" ? null : num(draft[v])])), full);
+    const res = await catalogOverridesApi.setProductPrices(base.id, Object.fromEntries(volumes.map((v) => [v, (draft[v] ?? "").trim() === "" ? null : num(draft[v])])), full);
     if (!res.ok) { setMsg(res.error ?? ""); return; }
     showToast(`${base.name} prices saved.`);
   };
@@ -800,7 +789,7 @@ function PerfumePriceRow({ base, volumes, overrides, fullColumn }: { base: Produ
         <div style={{ display: "flex", gap: ".4rem" }}>
           <button className="admin-btn primary" style={{ fontSize: ".75rem" }} type="button" disabled={!dirty} onClick={save}>Save</button>
           {dirty && <button className="admin-btn" style={{ fontSize: ".75rem" }} type="button" onClick={() => { setDraft(saved); setMsg(""); }}>Cancel</button>}
-          {edited && !dirty && <button className="admin-btn" style={{ fontSize: ".75rem" }} type="button" onClick={() => { catalogOverridesService.resetProductPrices(base.id); showToast(`${base.name} prices reset.`); }}>Reset</button>}
+          {edited && !dirty && <button className="admin-btn" style={{ fontSize: ".75rem" }} type="button" onClick={async () => { await catalogOverridesApi.resetProductPrices(base.id); showToast(`${base.name} prices reset.`); }}>Reset</button>}
         </div>
       </td>
     </tr>
@@ -815,8 +804,8 @@ function ItemPriceRow({ id, name, kind, base, custom }: { id: string; name: stri
   useEffect(() => { setDraft(String(custom ?? base)); setMsg(""); }, [custom, base]);
   const dirty = draft !== saved;
 
-  const save = () => {
-    const res = catalogOverridesService.setItemPrice(id, draft.trim() === "" ? NaN : Number(draft));
+  const save = async () => {
+    const res = await catalogOverridesApi.setItemPrice(id, draft.trim() === "" ? NaN : Number(draft));
     if (!res.ok) { setMsg(res.error ?? ""); return; }
     showToast(`${name} price saved.`);
   };
@@ -836,7 +825,7 @@ function ItemPriceRow({ id, name, kind, base, custom }: { id: string; name: stri
         <div style={{ display: "flex", gap: ".4rem" }}>
           <button className="admin-btn primary" style={{ fontSize: ".75rem" }} type="button" disabled={!dirty} onClick={save}>Save</button>
           {dirty && <button className="admin-btn" style={{ fontSize: ".75rem" }} type="button" onClick={() => { setDraft(saved); setMsg(""); }}>Cancel</button>}
-          {custom !== undefined && !dirty && <button className="admin-btn" style={{ fontSize: ".75rem" }} type="button" onClick={() => { catalogOverridesService.resetItemPrice(id); showToast(`${name} price reset.`); }}>Reset</button>}
+          {custom !== undefined && !dirty && <button className="admin-btn" style={{ fontSize: ".75rem" }} type="button" onClick={async () => { await catalogOverridesApi.resetItemPrice(id); showToast(`${name} price reset.`); }}>Reset</button>}
         </div>
       </td>
     </tr>

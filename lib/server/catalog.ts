@@ -12,7 +12,7 @@ type Tx = Prisma.TransactionClient | typeof db;
  *  - a regular section equal to the Full bottle ml is hidden while Full bottle is live
  *  - inventory items that are disabled / hidden / removed are dropped
  */
-export async function loadCatalog(tx: Tx = db) {
+export async function loadCatalog(tx: Tx = db, opts: { all?: boolean } = {}) {
   const [products, oils, gifts, volumes, fb] = await Promise.all([
     tx.product.findMany({ include: { variants: true, inventory: true }, orderBy: { id: "asc" } }),
     tx.oil.findMany({ include: { inventory: true }, orderBy: { id: "asc" } }),
@@ -20,7 +20,7 @@ export async function loadCatalog(tx: Tx = db) {
     tx.volumeSetting.findMany({ where: { onSale: true }, orderBy: { volumeMl: "asc" } }),
     tx.fullBottleSetting.findUnique({ where: { id: 1 } }),
   ]);
-  const live = (i: { enabled: boolean; visible: boolean; removed: boolean } | null) => !i || (i.enabled && i.visible && !i.removed);
+  const live = (i: { enabled: boolean; visible: boolean; removed: boolean } | null) => opts.all || !i || (i.enabled && i.visible && !i.removed);
   const fullLive = !!fb?.enabled && fb.price !== null;
   const replaced = fullLive && volumes.some((v) => v.volumeMl === fb!.ml) ? fb!.ml : null;
   const onSale = new Set(volumes.map((v) => v.volumeMl));

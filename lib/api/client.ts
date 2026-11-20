@@ -33,6 +33,12 @@ export async function refresh(url: string): Promise<void> {
   }
 }
 
+/** Drops cached entries whose url starts with one of `prefixes` (e.g. on sign-out) so the next user can't see them. */
+export function clearCache(...prefixes: string[]): void {
+  for (const k of [...cache.keys()]) if (prefixes.some((p) => k.startsWith(p))) cache.delete(k);
+  emit();
+}
+
 export function useApi<T>(url: string): { data: T | undefined; loaded: boolean } {
   const entry = useSyncExternalStore(subscribe, () => cache.get(url) ?? EMPTY, () => EMPTY);
   useEffect(() => { if (!cache.has(url)) void refresh(url); }, [url]);

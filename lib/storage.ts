@@ -10,17 +10,8 @@
 import { useMemo, useSyncExternalStore } from "react";
 
 export const KEYS = {
-  inventory: "ild-admin-inventory-v1",
   cart: "ild-cart-v1",
-  customers: "ild-customers-v1",
-  customerSession: "ild-customer-session-v1",
   lastOrder: "ild-last-order",
-  orders: "ild-orders-v1",
-  coupons: "ild-coupons-v1",
-  catalogOverrides: "ild-catalog-overrides-v1",
-  adminConfig: "ild-admin-config-v1",
-  loginHistory: "ild-login-history-v1",
-  adminSession: "ild-admin-session-v1", // sessionStorage
 } as const;
 
 type Listener = () => void;
@@ -30,7 +21,7 @@ const emit = () => listeners.forEach((l) => l());
 function store(key: string): Storage | null {
   try {
     if (typeof window === "undefined") return null;
-    return key === KEYS.adminSession ? window.sessionStorage : window.localStorage;
+    return window.localStorage;
   } catch {
     return null;
   }

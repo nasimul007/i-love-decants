@@ -129,9 +129,20 @@ export const POST = route(async (req) => {
   }
 });
 
-/** Staff: list all orders (any staff member). */
-export const GET = route(async () => {
+const listQuery = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+  status: z.enum(["received", "confirmed", "shipped", "delivered", "cancelled"]).optional(),
+});
+
+/** Staff: paginated orders, newest first. `?page=1&pageSize=20&status=shipped` */
+export const GET = route(async (req) => {
   await requireStaff();
-  const orders = await db.order.findMany({ include: { items: true }, orderBy: { placedAt: "desc" }, take: 500 });
-  return ok(orders.map(serializeOrder));
+  const q = listQuery.parse(Object.fromEntries(new URL(req.url).searchParams));
+  const where = q.status ? { status: q.status.toUpperCase() as "RECEIVED" } : {};
+  const [total, orders] = await Promise.all([
+    db.order.count({ where }),
+    db.order.findMany({ where, include: { items: true }, orderBy: [{ placedAt: "desc" }, { id: "asc" }], skip: (q.page - 1) * q.pageSize, take: q.pageSize }),
+  ]);
+  return ok({ items: orders.map(serializeOrder), page: q.page, pageSize: q.pageSize, total, pages: Math.max(1, Math.ceil(total / q.pageSize)) });
 });

@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import type { AdminSection, AdminSession } from "@/types";
-import { ADMIN_SECTIONS, adminService } from "@/lib/services/admin";
+import { ADMIN_SECTIONS } from "@/lib/services/admin";
+import { adminApi } from "@/lib/api/admin";
 import {
   CouponsPanel, CustomersPanel, HistoryPanel, InventoryPanel, ManagersPanel, OverviewPanel, PricingPanel,
 } from "./Panels";
@@ -37,7 +38,7 @@ export function Dashboard({ session, canSee }: Props) {
         <div style={{ display: "flex", alignItems: "center", gap: ".65rem" }}>
           <span className={`admin-role-badge ${session.role}`}>{session.role === "owner" ? "Owner" : "Manager"}</span>
           <span style={{ fontSize: ".83rem", color: "var(--muted)" }}>{session.name || session.username}</span>
-          <button className="admin-signout" type="button" onClick={() => adminService.logout()}>Sign out</button>
+          <button className="admin-signout" type="button" onClick={() => void adminApi.logout()}>Sign out</button>
         </div>
       </div>
 
