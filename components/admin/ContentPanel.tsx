@@ -2,49 +2,72 @@
 
 import { useEffect, useState } from "react";
 import { useUI } from "@/components/providers/UIProvider";
-import { useAdminCategories, useAdminNotice, useAdminProducts } from "@/hooks/useServices";
+import { useAdminCategories, useAdminNotices, useAdminProducts } from "@/hooks/useServices";
 import { adminApi } from "@/lib/api/admin";
 import { Panel, emptyRow, inputStyle } from "./shared";
 
-/** Scrolling notice shown under the navbar. */
+/** Messages of the moving notice bar under the navbar (all enabled ones scroll one after another). */
 function NoticeEditor() {
-  const { data, loaded } = useAdminNotice();
+  const notices = useAdminNotices();
   const { showToast } = useUI();
   const [text, setText] = useState("");
-  const [enabled, setEnabled] = useState(false);
+  const [editing, setEditing] = useState<{ id: number; text: string } | null>(null);
   const [msg, setMsg] = useState("");
-  useEffect(() => { if (data) { setText(data.text); setEnabled(data.enabled); } }, [data]);
-  const dirty = !!data && (text !== data.text || enabled !== data.enabled);
 
-  const save = async () => {
-    const res = await adminApi.saveNotice({ enabled, text });
-    if (!res.ok) { setMsg(res.error ?? ""); return; }
+  const run = async (p: Promise<{ ok: boolean; error?: string }>, done?: string) => {
+    const res = await p;
+    if (!res.ok) { setMsg(res.error ?? "Something went wrong."); return false; }
     setMsg("");
-    showToast(enabled && text.trim() ? "Notice is live on the storefront." : "Notice saved (hidden).");
+    if (done) showToast(done);
+    return true;
   };
+  const add = () => void run(adminApi.addNotice(text), "Notice added.").then((ok) => ok && setText(""));
+  const live = notices.filter((n) => n.enabled).length;
 
   return (
-    <Panel title="Notice bar" subtitle="A line of moving text shown under the navbar on every page. Use it for offers, delivery news or holidays.">
+    <Panel title="Notice bar" subtitle={`Moving text under the navbar on every page. Add as many notices as you like; all switched-on notices scroll one after another. ${live} on now.`}>
       <div className="admin-field">
-        <label htmlFor="noticeText">Notice text</label>
-        <textarea id="noticeText" rows={2} maxLength={300} placeholder="e.g. Eid offer: free delivery on all orders this week!" style={{ ...inputStyle, minHeight: 70 }}
-          value={text} disabled={!loaded} onChange={(e) => { setText(e.target.value); setMsg(""); }} />
+        <label htmlFor="noticeText">New notice</label>
+        <textarea id="noticeText" rows={2} maxLength={300} placeholder="e.g. Eid offer: free delivery on all orders this week!" style={{ ...inputStyle, minHeight: 64 }}
+          value={text} onChange={(e) => { setText(e.target.value); setMsg(""); }} />
         <small style={{ color: "var(--muted)" }}>{text.length}/300</small>
       </div>
-      <label style={{ display: "inline-flex", alignItems: "center", gap: ".5rem", margin: ".6rem 0", fontSize: ".9rem" }}>
-        <input type="checkbox" checked={enabled} onChange={(e) => { setEnabled(e.target.checked); setMsg(""); }} /> Show the notice to customers
-      </label>
-      {enabled && text.trim() && (
-        <div style={{ margin: ".4rem 0 .8rem" }}>
-          <small style={{ color: "var(--muted)" }}>Preview</small>
-          <div className="notice-bar" style={{ borderRadius: ".6rem", marginTop: ".25rem" }}><div className="notice-track" style={{ animationDuration: "20s" }}><span className="notice-item">{text}</span><span className="notice-item">{text}</span></div></div>
-        </div>
-      )}
-      <div style={{ display: "flex", gap: ".6rem", alignItems: "center" }}>
-        <button className="admin-btn primary" type="button" disabled={!dirty} onClick={save}>Save notice</button>
-        {dirty && <button className="admin-btn" type="button" onClick={() => { if (data) { setText(data.text); setEnabled(data.enabled); } setMsg(""); }}>Cancel</button>}
+      <div style={{ display: "flex", gap: ".6rem", margin: ".4rem 0 .2rem" }}>
+        <button className="admin-btn primary" type="button" disabled={!text.trim()} onClick={add}>Add notice</button>
       </div>
-      <p className="admin-form-msg" aria-live="polite">{msg}</p>
+      <p className="admin-form-msg" aria-live="polite" style={{ marginBottom: ".6rem" }}>{msg}</p>
+
+      <table className="admin-table">
+        <thead><tr><th>Notice</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody>
+          {!notices.length && emptyRow(3, "No notices yet. The bar stays hidden until you add one.")}
+          {notices.map((n) => (
+            <tr key={n.id}>
+              <td style={{ maxWidth: 380 }}>
+                {editing?.id === n.id ? (
+                  <textarea aria-label="Edit notice" rows={2} maxLength={300} style={{ ...inputStyle, minHeight: 56 }} value={editing.text} autoFocus
+                    onChange={(e) => setEditing({ id: n.id, text: e.target.value })} />
+                ) : <span style={{ fontSize: ".88rem", opacity: n.enabled ? 1 : 0.55 }}>{n.text}</span>}
+              </td>
+              <td><span className={`pill ${n.enabled ? "live" : "off"}`}>{n.enabled ? "On" : "Off"}</span></td>
+              <td style={{ display: "flex", gap: ".4rem", flexWrap: "wrap" }}>
+                {editing?.id === n.id ? (
+                  <>
+                    <button className="admin-btn primary" style={{ fontSize: ".75rem" }} type="button" onClick={() => void run(adminApi.editNotice(n.id, editing.text), "Notice updated.").then((ok) => ok && setEditing(null))}>Save</button>
+                    <button className="admin-btn" style={{ fontSize: ".75rem" }} type="button" onClick={() => { setEditing(null); setMsg(""); }}>Cancel</button>
+                  </>
+                ) : (
+                  <>
+                    <button className="admin-btn" style={{ fontSize: ".75rem", color: "var(--rose-deep)" }} type="button" onClick={() => { setEditing({ id: n.id, text: n.text }); setMsg(""); }}>Edit</button>
+                    <button className="admin-btn" style={{ fontSize: ".75rem" }} type="button" onClick={() => void run(adminApi.setNoticeEnabled(n.id, !n.enabled), n.enabled ? "Notice turned off." : "Notice turned on.")}>{n.enabled ? "Turn off" : "Turn on"}</button>
+                    <button className="admin-btn danger" style={{ fontSize: ".75rem" }} type="button" onClick={() => { if (window.confirm("Delete this notice?")) void run(adminApi.removeNotice(n.id), "Notice deleted."); }}>Delete</button>
+                  </>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </Panel>
   );
 }

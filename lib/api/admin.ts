@@ -25,6 +25,7 @@ export interface Page<T> { items: T[]; page: number; pageSize: number; total: nu
 export const ordersUrl = (page = 1, pageSize = 20, status?: string) =>
   `${ADMIN.orders}?page=${page}&pageSize=${pageSize}${status ? `&status=${status}` : ""}`;
 
+export interface AdminNotice { id: number; text: string; enabled: boolean }
 export interface PublicCategory { id: number; name: string; hidden: boolean; products: number }
 export interface AdminMe { session: AdminSession | null; needsSetup: boolean }
 
@@ -86,11 +87,16 @@ export const adminApi = {
   },
 
   /* notice & categories */
-  async saveNotice(input: { enabled: boolean; text: string }): Promise<ServiceResult<unknown>> {
-    const res = await call<{ enabled: boolean; text: string }>("PUT", ADMIN.notice, input);
-    if (res.ok) { mutate(ADMIN.notice, res.data); void refresh("/api/notice"); }
+  async noticeOp(op: () => Promise<ServiceResult<AdminNotice[]>>): Promise<ServiceResult<unknown>> {
+    const res = await op();
+    if (res.ok) mutate(ADMIN.notice, res.data);
+    void refresh("/api/notice"); // storefront bar updates right away
     return res;
   },
+  addNotice(text: string) { return this.noticeOp(() => call<AdminNotice[]>("POST", ADMIN.notice, { text })); },
+  editNotice(id: number, text: string) { return this.noticeOp(() => call<AdminNotice[]>("PATCH", `${ADMIN.notice}/${id}`, { text })); },
+  setNoticeEnabled(id: number, enabled: boolean) { return this.noticeOp(() => call<AdminNotice[]>("PATCH", `${ADMIN.notice}/${id}`, { enabled })); },
+  removeNotice(id: number) { return this.noticeOp(() => call<AdminNotice[]>("DELETE", `${ADMIN.notice}/${id}`)); },
   async categoryOp(op: () => Promise<ServiceResult<PublicCategory[]>>): Promise<ServiceResult<unknown>> {
     const res = await op();
     if (res.ok) mutate(ADMIN.categories, res.data);

@@ -257,11 +257,12 @@ model AuditLog {
  * ───────────── Store content ─────────────
  */
 
-/// Scrolling notice under the navbar. Singleton row (id = 1).
-model SiteNotice {
-  id      Int     @id @default(1)
-  text    String  @default("")
-  enabled Boolean @default(false)
+/// Messages in the scrolling notice bar under the navbar. Every enabled one is shown, in `sort` order.
+model Notice {
+  id      Int     @id @default(autoincrement())
+  text    String
+  enabled Boolean @default(true)
+  sort    Int     @default(0)
 }
 
 /// Scent categories shown as storefront filters. Hiding one hides its perfumes too.

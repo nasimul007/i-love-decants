@@ -3,8 +3,8 @@ import { ok, route } from "@/lib/server/http";
 
 export const dynamic = "force-dynamic";
 
-/** Public: the scrolling notice under the navbar. */
+/** Public: the messages of the scrolling notice bar under the navbar (enabled ones, in order). */
 export const GET = route(async () => {
-  const n = await db.siteNotice.findUnique({ where: { id: 1 } });
-  return ok({ enabled: !!n?.enabled && !!n.text.trim(), text: n?.text ?? "" });
+  const rows = await db.notice.findMany({ where: { enabled: true }, orderBy: [{ sort: "asc" }, { id: "asc" }] });
+  return ok({ items: rows.map((n) => n.text).filter((t) => t.trim()) });
 });

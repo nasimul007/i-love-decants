@@ -23,7 +23,7 @@ export function OrderDetailModal({ order, onClose }: { order: Order | null; onCl
   ];
   return (
     <Modal open onClose={onClose} title={`Order ${o.id}`} subtitle={`Placed ${formatDateTime(o.placedAt)}`}>
-      <div style={{ display: "grid", gap: "1rem", maxHeight: "65vh", overflowY: "auto", paddingRight: ".25rem" }}>
+      <div style={{ display: "grid", gap: "1rem" }}>
         <div style={{ display: "flex", alignItems: "center", gap: ".6rem" }}>
           <span style={label}>Status</span>
           <select aria-label={`Status of ${o.id}`} value={o.status} onChange={(e) => void adminApi.setOrderStatus(o.id, e.target.value as Order["status"])}

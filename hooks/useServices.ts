@@ -6,7 +6,7 @@ import { cartService, cartTotals } from "@/lib/services/cart";
 import { EMPTY_OVERRIDES, fullBottleDetail } from "@/lib/services/catalogOverrides";
 import { hasAnySize } from "@/lib/volumes";
 import { useApi } from "@/lib/api/client";
-import { ADMIN, ordersUrl, type AdminMe, type Page, type PublicCategory } from "@/lib/api/admin";
+import { ADMIN, ordersUrl, type AdminMe, type AdminNotice, type Page, type PublicCategory } from "@/lib/api/admin";
 import { ME, MY_ORDERS } from "@/lib/api/customer";
 import type {
   CartItem, CatalogOverrides, Coupon, GiftSet, InventoryRecord, LoginEvent, OilProduct, Order, Product, PublicCustomer, PublicManager,
@@ -114,7 +114,11 @@ const EMPTY_ORDERS: Order[] = [];
 /* ───────── Admin (staff-only endpoints; all permission checks happen on the server) ───────── */
 
 const EMPTY: never[] = [];
-const useList = <T,>(url: string): T[] => (useApi<T[]>(url).data ?? (EMPTY as T[]));
+// A cached value of an unexpected shape (e.g. left over from before an API change, kept alive by hot reload) is treated as empty.
+const useList = <T,>(url: string): T[] => {
+  const data = useApi<T[]>(url).data;
+  return Array.isArray(data) ? data : (EMPTY as T[]);
+};
 
 /** Staff session + whether first-run owner setup is still needed. `loaded` is false until the first response. */
 export function useAdminMe() {
@@ -142,7 +146,7 @@ export function useOrders(page = 1, pageSize = 20, status?: string) {
 }
 export const useLoginHistory = () => useList<LoginEvent>(ADMIN.history);
 export const useCoupons = () => useList<Coupon>(ADMIN.coupons);
-export const useAdminNotice = () => useApi<{ enabled: boolean; text: string }>(ADMIN.notice);
+export const useAdminNotices = () => useList<AdminNotice>(ADMIN.notice);
 export const useAdminCategories = () => useList<PublicCategory>(ADMIN.categories);
 export const useAdminProducts = () => useList<{ id: number; name: string; family: string }>(ADMIN.products);
 export const useManagers = () => useList<PublicManager>(ADMIN.managers);
