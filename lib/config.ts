@@ -3,12 +3,12 @@ export const CONFIG = {
   brand: "I Love Decants",
   tagline: "Pay less, have more!",
   currency: "৳",
-  phone: "+880 1XXXXXXXXX",
-  phoneHref: "+8801000000000",
+  phone: "+880 1886-166889",
+  phoneHref: "+8801886166889",
   location: "Dhaka, Bangladesh",
-  whatsapp: "https://wa.me/8801000000000",
-  messenger: "https://m.me/yourpage",
-  facebook: "https://facebook.com/yourpage",
+  whatsapp: "https://wa.me/8801886166889",
+  messenger: "https://m.me/61559923042243",
+  facebook: "https://www.facebook.com/profile.php?id=61559923042243",
   instagram: "https://instagram.com/yourusername",
 } as const;
 
