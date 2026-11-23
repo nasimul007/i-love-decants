@@ -2,7 +2,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { currentCustomer, publicCustomer, requireCustomer } from "@/lib/server/auth";
 import { body, ok, route } from "@/lib/server/http";
-import { isBdPhone } from "@/lib/validators";
+import { isBdPhone, isPersonName, NAME_ERROR } from "@/lib/validators";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +12,7 @@ export const GET = route(async () => {
 });
 
 const patch = z.object({
-  name: z.string().trim().max(100),
+  name: z.string().trim().max(100).refine((n) => !n || isPersonName(n), NAME_ERROR),
   phone: z.string().trim().refine((p) => !p || isBdPhone(p), "Enter a valid Bangladeshi phone number."),
   address: z.string().trim().max(500),
 });

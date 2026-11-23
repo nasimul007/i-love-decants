@@ -7,10 +7,8 @@ export const CONFIG = {
   phoneHref: "+8801000000000",
   location: "Dhaka, Bangladesh",
   whatsapp: "https://wa.me/8801000000000",
-  telegram: "https://t.me/yourusername",
   messenger: "https://m.me/yourpage",
   facebook: "https://facebook.com/yourpage",
-  tiktok: "https://tiktok.com/@yourusername",
   instagram: "https://instagram.com/yourusername",
 } as const;
 
@@ -40,3 +38,6 @@ export const deliveryChargeFor = (city: string): number =>
 export const BULK_DISCOUNT = { minSubtotal: 5000, percent: 10 } as const;
 export const bulkDiscountFor = (subtotal: number): number =>
   subtotal >= BULK_DISCOUNT.minSubtotal ? Math.round((subtotal * BULK_DISCOUNT.percent) / 100) : 0;
+
+/** A perfume oil is a 6 ml roll-on; selling one uses this much of the oil's ml stock. */
+export const OIL_ML = 6;

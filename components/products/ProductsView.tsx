@@ -40,20 +40,23 @@ export function ProductsView() {
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   useEffect(() => {
-    if (tabParam === "oils" || tabParam === "gifts" || tabParam === "decants") setTab(tabParam);
+    if (tabParam === "oils" || tabParam === "gifts" || tabParam === "decants") {
+      setTab(tabParam);
+      document.getElementById("product-tabs")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
   }, [tabParam]);
 
   // Deep-link: /products?product=3 opens that perfume's modal, then tidies the URL.
   const deep = Number(params.get("product"));
   useEffect(() => {
-    if (!deep) return;
+    if (!deep || !products.length) return; // wait for the catalogue: on a cold load the link used to fire before it arrived
     const t = setTimeout(() => {
       if (products.some((p) => p.id === deep)) openProduct(deep);
       router.replace(query ? `/products?q=${encodeURIComponent(query)}` : "/products", { scroll: false });
     }, 160);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [deep]);
+  }, [deep, products.length]);
 
   const items = useMemo(() => {
     const list = products.filter((p) => {
@@ -92,13 +95,21 @@ export function ProductsView() {
     if (oil) { service.add(service.lineForOil(oil)); showToast(`${name} added to your bag.`); }
   };
 
+  // The tab lives in the URL, so a footer link such as /products?tab=decants always switches to (and scrolls to) its section.
+  const pickTab = (id: Tab) => {
+    setTab(id);
+    const next = new URLSearchParams(params.toString());
+    next.set("tab", id);
+    router.replace(`/products?${next.toString()}`, { scroll: false });
+  };
+
   const tabs: [Tab, string][] = [["decants", "Perfume Decants"], ["oils", "Perfume Oils"], ["gifts", "Gift Sets"]];
 
   return (
     <div className="container">
-      <div className="product-section-tabs" role="tablist">
+      <div className="product-section-tabs" id="product-tabs" role="tablist">
         {tabs.map(([id, label]) => (
-          <button key={id} className={`prod-tab-btn${tab === id ? " is-active" : ""}`} type="button" role="tab" aria-selected={tab === id} onClick={() => setTab(id)}>{label}</button>
+          <button key={id} className={`prod-tab-btn${tab === id ? " is-active" : ""}`} type="button" role="tab" aria-selected={tab === id} onClick={() => pickTab(id)}>{label}</button>
         ))}
       </div>
 
@@ -116,14 +127,6 @@ export function ProductsView() {
               <div className="filter-options">
                 <Chip name="family" value="all" label="All" current={filters.family} onPick={set("family")} />
                 {categories.map((f) => <Chip key={f} name="family" value={f.toLowerCase()} label={f} current={filters.family} onPick={set("family")} />)}
-              </div>
-            </div>
-            <div className="filter-group">
-              <span className="filter-group-title">Volume</span>
-              <div className="filter-options">
-                <Chip name="size" value="all" label="All" current={filters.size} onPick={set("size")} />
-                {volumes.map((s) => <Chip key={s} name="size" value={String(s)} label={`${s} ml`} current={filters.size} onPick={set("size")} />)}
-                {fullBottle && <Chip name="size" value="full" label="Full bottle" current={filters.size} onPick={set("size")} />}
               </div>
             </div>
             <div className="filter-group">

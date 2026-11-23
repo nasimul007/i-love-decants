@@ -102,7 +102,7 @@ export function OrdersPanel() {
         action={
           <select aria-label="Filter by status" value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }}
             style={{ ...inputStyle, width: "auto", minHeight: 38, textTransform: "capitalize" }}>
-            <option value="">All statuses</option>
+            <option value="">All Status</option>
             {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
         }

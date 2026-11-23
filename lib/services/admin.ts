@@ -7,7 +7,7 @@ export const ADMIN_SECTIONS: { id: AdminSection; label: string }[] = [
   { id: "customers", label: "Customers" },
   { id: "history", label: "Login history" },
   { id: "coupons", label: "Coupons" },
-  { id: "content", label: "Notice & categories" },
+  { id: "content", label: "Notice, categories & FAQ" },
 ];
 
 export function can(session: AdminSession | null, section: AdminSection): boolean {

@@ -26,6 +26,8 @@ export interface Product {
   ink: string;
   shape: BottleShape;
   prices: Record<VolumeMl, number>;
+  /** Ids of the uploaded photos (main photo first); served from /api/images/[id]. Empty → the drawn bottle is shown. */
+  images?: number[];
   /** Set on the storefront copy of a product when the Full bottle section is ON for it. */
   fullBottle?: FullBottleOffer;
 }
@@ -150,6 +152,8 @@ export interface InventoryRecord {
   type: InventoryKind;
   sizes: string;
   price: number;
+  /** Millilitres for perfume decants and oils; pieces for gift sets and custom bottles. */
+  unit: "ml" | "pcs";
   stock: number;
   ordered: number;
   inTransit: number;

@@ -18,6 +18,8 @@ export const ADMIN = {
   notice: "/api/admin/notice",
   categories: "/api/admin/categories",
   products: "/api/admin/products",
+  productDetails: "/api/admin/product-details",
+  faq: "/api/admin/faq",
 } as const;
 
 export interface Page<T> { items: T[]; page: number; pageSize: number; total: number; pages: number }
@@ -27,6 +29,9 @@ export const ordersUrl = (page = 1, pageSize = 20, status?: string) =>
 
 export interface AdminNotice { id: number; text: string; enabled: boolean }
 export interface PublicCategory { id: number; name: string; hidden: boolean; products: number }
+export interface AdminFaq { id: number; question: string; answer: string; enabled: boolean }
+export interface PublicFaq { id: number; question: string; answer: string }
+export interface ProductDetails { id: number; name: string; family: string; description: string; top: string; heart: string; base: string; images: number[] }
 export interface AdminMe { session: AdminSession | null; needsSetup: boolean }
 
 /** Cached staff data must not outlive the staff session. */
@@ -63,7 +68,7 @@ export const adminApi = {
     await Promise.all([refresh(ADMIN.inventory), refresh(ADMIN.overview)]);
     return res;
   },
-  async patchInventory(id: string, patch: { stockDelta?: number; enabled?: boolean; visible?: boolean; removed?: boolean }): Promise<ServiceResult<unknown>> {
+  async patchInventory(id: string, patch: { stockDelta?: number; stockSet?: number; enabled?: boolean; visible?: boolean; removed?: boolean }): Promise<ServiceResult<unknown>> {
     const res = await call<InventoryRecord>("PATCH", `${ADMIN.inventory}/${id}`, patch);
     await Promise.all([refresh(ADMIN.inventory), refresh(ADMIN.overview), refresh("/api/products")]);
     return res;
@@ -110,6 +115,50 @@ export const adminApi = {
   async assignCategory(productId: number, category: string): Promise<ServiceResult<unknown>> {
     const res = await call("PATCH", `${ADMIN.products}/${productId}`, { category });
     await Promise.all([refresh(ADMIN.products), refresh(ADMIN.categories), refresh("/api/products")]);
+    return res;
+  },
+
+  /* product photos */
+  async uploadProductImage(productId: number, file: Blob): Promise<ServiceResult<{ id: number }>> {
+    const form = new FormData();
+    form.set("productId", String(productId));
+    form.set("file", file, "photo.webp");
+    try {
+      const res = await fetch("/api/admin/product-images", { method: "POST", body: form, credentials: "same-origin" });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) return { ok: false, error: (json as { error?: string }).error ?? "Upload failed." };
+      return { ok: true, data: json as { id: number } };
+    } catch { return { ok: false, error: "Network error. Please try again." }; }
+  },
+  async moveProductImage(id: number, move: "earlier" | "later" | "first"): Promise<ServiceResult<unknown>> {
+    const res = await call("PATCH", `/api/admin/product-images/${id}`, { move });
+    await this.photosChanged();
+    return res;
+  },
+  async removeProductImage(id: number): Promise<ServiceResult<unknown>> {
+    const res = await call("DELETE", `/api/admin/product-images/${id}`);
+    await this.photosChanged();
+    return res;
+  },
+  async photosChanged() { await Promise.all([refresh(ADMIN.productDetails), refresh("/api/products")]); },
+
+  /* FAQ */
+  async faqOp(op: () => Promise<ServiceResult<AdminFaq[]>>): Promise<ServiceResult<unknown>> {
+    const res = await op();
+    if (res.ok) mutate(ADMIN.faq, res.data);
+    void refresh("/api/faq"); // the homepage section updates right away
+    return res;
+  },
+  addFaq(question: string, answer: string) { return this.faqOp(() => call<AdminFaq[]>("POST", ADMIN.faq, { question, answer })); },
+  editFaq(id: number, patch: { question?: string; answer?: string; enabled?: boolean; move?: "up" | "down" }) {
+    return this.faqOp(() => call<AdminFaq[]>("PATCH", `${ADMIN.faq}/${id}`, patch));
+  },
+  removeFaq(id: number) { return this.faqOp(() => call<AdminFaq[]>("DELETE", `${ADMIN.faq}/${id}`)); },
+
+  /* product text */
+  async saveProductDetails(id: number, d: Pick<ProductDetails, "description" | "top" | "heart" | "base">): Promise<ServiceResult<unknown>> {
+    const res = await call("PATCH", `${ADMIN.productDetails}/${id}`, d);
+    await Promise.all([refresh(ADMIN.productDetails), refresh("/api/products")]);
     return res;
   },
 

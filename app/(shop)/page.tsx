@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { CSSProperties } from "react";
 import { HeroSwitcher } from "@/components/home/HeroSwitcher";
+import { FaqSection } from "@/components/home/FaqSection";
 import { FeaturedRail } from "@/components/home/FeaturedRail";
 import { RouteView } from "@/components/ui/PageHero";
 import { VolumeList } from "@/components/ui/VolumeText";
@@ -93,6 +94,8 @@ export default function HomePage() {
           <div className="trust-item"><strong>Have a doubt?</strong><span>Talk to a real person through your favourite channel.</span></div>
         </div>
       </section>
+
+      <FaqSection />
     </RouteView>
   );
 }

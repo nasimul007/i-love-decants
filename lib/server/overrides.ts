@@ -56,7 +56,7 @@ export async function getOverrides(tx: Tx | typeof db = db): Promise<CatalogOver
 
   return {
     volumes: sameAsDefault(volumes) ? undefined : volumes, prices, itemPrices, sprays,
-    fullBottle: fbRow ? { enabled: fbRow.enabled, ml: fbRow.ml, sprays: fbRow.sprays, price: fbRow.price } : undefined,
+    fullBottle: undefined, // the Full bottle option is retired: never reported to the admin
   };
 }
 

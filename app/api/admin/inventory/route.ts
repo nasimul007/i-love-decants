@@ -17,7 +17,7 @@ const create = z.object({
   type: z.enum(["Perfume decant", "Perfume oil", "Gift set", "Custom bottle"]),
   sizes: z.string().trim().max(60).default("3–100 ml"),
   price: z.number().int().min(0).max(1_000_000),
-  stock: z.number().int().min(0).max(9999),
+  stock: z.number().int().min(0).max(1_000_000), // ml for decants/oils, pieces otherwise
 });
 
 export const POST = route(async (req) => {

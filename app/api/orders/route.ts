@@ -8,13 +8,14 @@ import { serializeOrder } from "@/lib/server/orders";
 import { lineSchema } from "@/lib/server/schemas";
 import { bulkDiscountFor, deliveryChargeFor } from "@/lib/config";
 import { isBdCity } from "@/lib/data/cities";
-import { isBdPhone, normalizePhone } from "@/lib/validators";
+import { inventoryWhere, stockByItem } from "@/lib/server/stock";
+import { isBdPhone, isPersonName, NAME_ERROR, normalizePhone } from "@/lib/validators";
 
 export const dynamic = "force-dynamic";
 
 const schema = z.object({
   customer: z.object({
-    name: z.string().trim().min(1, "Please enter your name.").max(100),
+    name: z.string().trim().min(1, "Please enter your name.").max(100).refine(isPersonName, NAME_ERROR),
     phone: z.string().trim().refine(isBdPhone, "Enter a valid Bangladeshi mobile number."),
   }),
   delivery: z.object({
@@ -54,17 +55,19 @@ export const POST = route(async (req) => {
         const bulkDiscount = bulkDiscountFor(subtotal);
 
         // 2. Stock: atomic conditional decrement (no oversell under concurrency).
-        const perItem = new Map<string, number>();
-        for (const l of lines) perItem.set(l.itemId, (perItem.get(l.itemId) ?? 0) + l.qty);
-        for (const [itemId, qty] of perItem) {
-          const where = /^\d+$/.test(itemId) ? { productId: Number(itemId) } : itemId.startsWith("oil-") ? { oilId: itemId } : { giftSetId: itemId };
+        // Perfumes and oils are stocked in ml (size × qty comes off the total); gift sets in pieces.
+        for (const [itemId, need] of stockByItem(lines)) {
+          const where = inventoryWhere(itemId);
           const res = await tx.inventoryItem.updateMany({
-            where: { ...where, stock: { gte: qty } },
-            data: { stock: { decrement: qty }, ordered: { increment: qty }, inTransit: { increment: qty } },
+            where: { ...where, stock: { gte: need } },
+            data: { stock: { decrement: need }, ordered: { increment: need }, inTransit: { increment: need } },
           });
           if (res.count === 0) {
             const exists = await tx.inventoryItem.findFirst({ where });
-            if (exists) throw new HttpError(409, "Sorry, an item in your bag is out of stock.");
+            if (exists) {
+              const name = lines.find((l) => l.itemId === itemId)?.name ?? "An item";
+              throw new HttpError(409, `Sorry, ${name} doesn't have enough stock for this quantity. Please reduce it or choose a smaller size.`);
+            }
           }
         }
 

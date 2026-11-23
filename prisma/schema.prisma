@@ -28,6 +28,7 @@ model Product {
   scentTags   String[]
   variants    ProductVariant[]
   inventory   InventoryItem?
+  images      ProductImage[]
 }
 
 /// One row per perfume + volume. `price = null` / `active = false` means "not offered".
@@ -283,4 +284,27 @@ model CouponRedemption {
 
   @@unique([code, phone])
   @@index([orderId])
+}
+
+/// Frequently asked questions: shown in the FAQ section at the bottom of the homepage, in `sort` order.
+model Faq {
+  id       Int     @id @default(autoincrement())
+  question String
+  answer   String
+  enabled  Boolean @default(true)
+  sort     Int     @default(0)
+}
+
+/// Product photos stored in the database itself (served by /api/images/[id], cached forever: a new upload gets a new id).
+model ProductImage {
+  id        Int      @id @default(autoincrement())
+  productId Int
+  mime      String
+  data      Bytes
+  size      Int
+  sort      Int      @default(0)
+  createdAt DateTime @default(now())
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, sort])
 }

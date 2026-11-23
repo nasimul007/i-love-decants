@@ -9,7 +9,7 @@ const db = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.
 
 async function main() {
   for (const p of PRODUCTS) {
-    const { prices, fullBottle: _f, scentFamilies, id, ...rest } = p;
+    const { prices, fullBottle: _f, images: _img, scentFamilies, id, ...rest } = p;
     await db.product.upsert({
       where: { id },
       update: {},
@@ -19,7 +19,7 @@ async function main() {
         inventory: {
           create: {
             name: p.name, kind: "PERFUME_DECANT", sizes: `${DEFAULT_VOLUMES[0]}–${DEFAULT_VOLUMES.at(-1)} ml`,
-            price: Math.min(...Object.values(prices)), stock: 25,
+            price: Math.min(...Object.values(prices)), stock: 500, // ml (perfume decants and oils are stocked in millilitres)
           },
         },
       },
@@ -31,7 +31,7 @@ async function main() {
       where: { id: o.id }, update: {},
       create: {
         id: o.id, brand: o.brand, name: o.name, price: o.price,
-        inventory: { create: { name: o.name, kind: "PERFUME_OIL", sizes: "6 ml", price: o.price, stock: 40 } },
+        inventory: { create: { name: o.name, kind: "PERFUME_OIL", sizes: "6 ml", price: o.price, stock: 240 /* ml: 40 roll-ons */ } },
       },
     });
   }

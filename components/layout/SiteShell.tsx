@@ -10,7 +10,6 @@ import { ProductModal } from "./ProductModal";
 import { AuthModal } from "./AuthModal";
 import { ChatWidget } from "./ChatWidget";
 import { Toast } from "./Toast";
-import { Cursor } from "./Cursor";
 
 /** Everything that persists across routes: header, footer, drawers, modals, toast. */
 export function SiteShell({ children }: { children: ReactNode }) {
@@ -25,7 +24,6 @@ export function SiteShell({ children }: { children: ReactNode }) {
       <ChatWidget />
       <AuthModal />
       <Toast />
-      <Cursor />
     </UIProvider>
   );
 }

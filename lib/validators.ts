@@ -29,3 +29,11 @@ export function validatePassword(pw: string): string {
   if (!/[A-Za-z]/.test(pw) || !/\d/.test(pw)) return "Use at least one letter and one number.";
   return "";
 }
+
+/** A person's name: letters in any script (Bangla too), spaces and . ' - only — no digits or symbols. */
+const PERSON_NAME = /^[\p{L}\p{M}][\p{L}\p{M} .'’-]*$/u;
+export const isPersonName = (value: string): boolean => {
+  const v = value.trim();
+  return v.length >= 2 && v.length <= 100 && PERSON_NAME.test(v);
+};
+export const NAME_ERROR = "Enter a valid name (letters only, no numbers or symbols).";
