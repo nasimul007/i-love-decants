@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { CloseIcon } from "@/components/ui/Icons";
 import { ProductBottle } from "@/components/ui/BottleVisual";
+import { ProductGallery } from "@/components/products/ProductGallery";
 import { ScentFamily } from "@/components/ui/ProductCard";
 import { useUI } from "@/components/providers/UIProvider";
 import { useCart, useCatalog, useSprays } from "@/hooks/useServices";
@@ -57,7 +58,7 @@ export function ProductModal() {
         {product && (
           <>
             <button ref={closeBtn} className="icon-btn modal-close" type="button" aria-label="Close product details" onClick={closeProduct}><CloseIcon /></button>
-            <div className="modal-visual"><ProductBottle product={product} /></div>
+            <div className={`modal-visual${product.images?.length ? " has-photos" : ""}`}>{product.images?.length ? <ProductGallery key={product.id} product={product} /> : <ProductBottle product={product} />}</div>
             <div className="modal-copy">
               <ScentFamily product={product} />
               <h2 id="modalTitle">{product.name}</h2>

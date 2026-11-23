@@ -73,15 +73,37 @@ export function OverviewPanel() {
 }
 
 /* ───────────────────────── Inventory ───────────────────────── */
+/** Stock editor: ml for perfume decants/oils (one total per perfume), pieces for gift sets. Type an exact amount or use the steps. */
+function StockCell({ r }: { r: InventoryRecord }) {
+  const ml = r.unit === "ml";
+  const step = ml ? 100 : 1;
+  const [val, setVal] = useState(String(r.stock));
+  useEffect(() => { setVal(String(r.stock)); }, [r.stock]);
+  const commit = () => {
+    const n = Number(val);
+    if (val.trim() === "" || !Number.isInteger(n) || n < 0) { setVal(String(r.stock)); return; }
+    if (n !== r.stock) void adminApi.patchInventory(r.id, { stockSet: n });
+  };
+  const stepper = { width: 30, height: 30, border: 0, borderRadius: ".45rem", color: "var(--rose-deep)", background: "#f8eff1", fontWeight: 700, fontSize: "1rem", cursor: "pointer" } as const;
+  return (
+    <div style={{ display: "inline-flex", alignItems: "center", gap: ".25rem", padding: ".18rem", border: "1px solid var(--line)", borderRadius: ".65rem", background: "#fff" }}>
+      <button style={stepper} type="button" aria-label={`Decrease stock of ${r.name} by ${step} ${r.unit}`} disabled={r.stock <= 0} onClick={() => void adminApi.patchInventory(r.id, { stockDelta: -step })}>−</button>
+      <input aria-label={`Stock of ${r.name} in ${r.unit}`} inputMode="numeric" value={val} onChange={(e) => setVal(e.target.value.replace(/[^\d]/g, ""))}
+        onBlur={commit} onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+        style={{ width: ml ? 64 : 44, border: 0, textAlign: "center", fontSize: ".85rem", fontWeight: 800, background: "transparent", outline: "none" }} />
+      <span style={{ fontSize: ".72rem", color: "var(--muted)", marginRight: ".15rem" }}>{r.unit}</span>
+      <button style={stepper} type="button" aria-label={`Increase stock of ${r.name} by ${step} ${r.unit}`} onClick={() => void adminApi.patchInventory(r.id, { stockDelta: step })}>+</button>
+    </div>
+  );
+}
+
 export function InventoryPanel() {
   const records = useInventoryRecords();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ name: "", type: "Perfume decant" as InventoryKind, sizes: "3–100 ml", price: "", stock: "" });
   const [msg, setMsg] = useState("");
 
-  const act = (r: InventoryRecord, a: "stock-" | "stock+" | "enabled" | "visible" | "archive" | "restore") => {
-    if (a === "stock-") void adminApi.patchInventory(r.id, { stockDelta: -1 });
-    if (a === "stock+") void adminApi.patchInventory(r.id, { stockDelta: 1 });
+  const act = (r: InventoryRecord, a: "enabled" | "visible" | "archive" | "restore") => {
     if (a === "enabled") void adminApi.patchInventory(r.id, { enabled: !r.enabled });
     if (a === "visible") void adminApi.patchInventory(r.id, { visible: !r.visible });
     if (a === "archive") void adminApi.patchInventory(r.id, { removed: true });
@@ -105,9 +127,9 @@ export function InventoryPanel() {
 
   return (
     <>
-      <Panel title="Inventory control" subtitle="Restock, disable, hide, restore, or archive listings." action={<button className="admin-btn primary" type="button" onClick={() => setOpen(true)}>Add inventory</button>}>
+      <Panel title="Inventory control" subtitle="Perfume decants and oils are stocked in ml: set the total once and every order takes its size out of it. Gift sets are counted in pieces." action={<button className="admin-btn primary" type="button" onClick={() => setOpen(true)}>Add inventory</button>}>
         <table className="admin-table">
-          <thead><tr><th>Product</th><th>Sizes</th><th>Stock</th><th>Orders</th><th>State</th><th>Actions</th></tr></thead>
+          <thead><tr><th>Product</th><th>Sizes</th><th>Stock</th><th>Sold</th><th>State</th><th>Actions</th></tr></thead>
           <tbody>
             {!records.length && emptyRow(6, "No inventory records. Add one to start.")}
             {records.map((r) => {
@@ -116,14 +138,8 @@ export function InventoryPanel() {
                 <tr key={r.id}>
                   <td><strong style={{ display: "block", fontSize: ".9rem" }}>{r.name}</strong><small style={{ color: "var(--muted)", fontSize: ".73rem" }}>{r.type} · From ৳{r.price}</small></td>
                   <td>{r.sizes || "—"}</td>
-                  <td>
-                    <div style={{ display: "inline-flex", alignItems: "center", gap: ".25rem", padding: ".18rem", border: "1px solid var(--line)", borderRadius: ".65rem", background: "#fff" }}>
-                      <button style={stepper} type="button" aria-label={`Decrease stock of ${r.name}`} disabled={r.stock <= 0} onClick={() => act(r, "stock-")}>−</button>
-                      <output style={{ minWidth: 28, textAlign: "center", fontSize: ".85rem", fontWeight: 800 }}>{r.stock}</output>
-                      <button style={stepper} type="button" aria-label={`Increase stock of ${r.name}`} onClick={() => act(r, "stock+")}>+</button>
-                    </div>
-                  </td>
-                  <td>{r.ordered}<small style={{ display: "block", color: "var(--muted)", fontSize: ".72rem" }}>{r.inTransit} on way</small></td>
+                  <td><StockCell r={r} /></td>
+                  <td>{r.ordered} {r.unit}<small style={{ display: "block", color: "var(--muted)", fontSize: ".72rem" }}>{r.inTransit} {r.unit} on way</small></td>
                   <td>{live ? <span className="pill live">Live</span> : <span className="pill off">{r.removed ? "Archived" : "Off"}</span>}</td>
                   <td style={{ whiteSpace: "nowrap", display: "flex", gap: ".4rem", flexWrap: "wrap" }}>
                     {r.removed ? (
@@ -154,7 +170,7 @@ export function InventoryPanel() {
             </div>
             <div className="admin-field"><label htmlFor="invSizes">Sizes</label><input id="invSizes" type="text" placeholder="e.g. 3–100 ml" value={form.sizes} onChange={(e) => setForm({ ...form, sizes: e.target.value })} /></div>
             <div className="admin-field"><label htmlFor="invPrice">Price (৳)</label><input id="invPrice" type="number" min={0} step={1} inputMode="numeric" placeholder="0" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} /></div>
-            <div className="admin-field"><label htmlFor="invStock">Opening stock</label><input id="invStock" type="number" min={0} max={9999} step={1} inputMode="numeric" placeholder="0" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} /></div>
+            <div className="admin-field"><label htmlFor="invStock">Opening stock ({form.type === "Perfume decant" || form.type === "Perfume oil" ? "total ml" : "pieces"})</label><input id="invStock" type="number" min={0} max={1000000} step={1} inputMode="numeric" placeholder={form.type === "Perfume decant" || form.type === "Perfume oil" ? "e.g. 500" : "0"} value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} /></div>
           </div>
           <p className="admin-form-msg" aria-live="polite">{msg}</p>
           <div className="mgr-modal-actions">
@@ -580,59 +596,6 @@ export function PricingPanel() {
         </form>
       </Panel>
 
-      <div style={{ height: "1.25rem" }} />
-      <Panel
-        title="Full bottle"
-        subtitle="A special section shown to customers as “Full bottle”. It can't be deleted — switch it ON to show it beside the ml sizes, or OFF to hide it."
-        action={
-          <button type="button" role="switch" aria-checked={fb.enabled} aria-label="Full bottle on or off" className={`admin-switch${fb.enabled ? " is-on" : ""}`} onClick={toggleFullBottle}>
-            <span className="admin-switch-track"><span className="admin-switch-knob" /></span>
-            <span className="admin-switch-label">{fb.enabled ? "ON" : "OFF"}</span>
-          </button>
-        }
-      >
-        <p style={{ margin: "0 0 .9rem", fontSize: ".86rem", fontWeight: 700, color: fbLive ? "#446046" : "var(--muted)" }}>
-          {fbLive ? `ON — customers see “Full bottle” (${fb.ml} ml) for ${fbSoldFor} of ${PRODUCTS.length} perfumes.` : "OFF — customers don't see a Full bottle option."}
-        </p>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem", alignItems: "flex-end" }}>
-          <div className="admin-field">
-            <label htmlFor="fbMl">Size (ml)</label>
-            <input id="fbMl" type="number" inputMode="numeric" min={1} max={1000} step={1} style={numInput} value={fbDraft.ml}
-              onChange={(e) => { setFbDraft({ ...fbDraft, ml: e.target.value }); setFbMsg(""); }} />
-          </div>
-          <div className="admin-field">
-            <label htmlFor="fbSprays">Spray count</label>
-            <input id="fbSprays" type="number" inputMode="numeric" min={1} step={1} style={{ ...numInput, width: 110 }} value={fbDraft.sprays}
-              onChange={(e) => { setFbDraft({ ...fbDraft, sprays: e.target.value }); setFbMsg(""); }} />
-          </div>
-          <div className="admin-field">
-            <label htmlFor="fbPrice">Price (৳)</label>
-            <input id="fbPrice" type="number" inputMode="numeric" min={0} step={1} placeholder="e.g. 4950" style={{ ...numInput, width: 120 }} value={fbDraft.price}
-              onChange={(e) => { setFbDraft({ ...fbDraft, price: e.target.value }); setFbMsg(""); }} />
-          </div>
-          <div className="admin-field">
-            <span style={{ fontSize: ".85rem" }}>Customers will see</span>
-            <CustomerTile
-              full
-              fullMl={Number.isFinite(fbDraftMl) ? fbDraftMl : undefined}
-              price={fbDraft.price.trim() !== "" && Number.isFinite(num(fbDraft.price)) ? num(fbDraft.price) : undefined}
-              sprays={Number.isFinite(num(fbDraft.sprays)) ? num(fbDraft.sprays) : undefined}
-              draft
-            />
-          </div>
-          <button className="admin-btn primary" type="button" style={{ height: 40 }} disabled={!fbDirty} onClick={() => saveFullBottle(fb.enabled)}>Save full bottle</button>
-          {fbDirty && <button className="admin-btn" type="button" style={{ height: 40 }} onClick={() => { setFbDraft(fbSaved); setFbMsg(""); }}>Cancel</button>}
-        </div>
-        <p className="admin-form-msg" aria-live="polite">{fbMsg}</p>
-        {fbClash && (
-          <p style={{ margin: ".2rem 0 .6rem", padding: ".7rem .9rem", borderRadius: ".8rem", background: "#fff6e5", color: "#7a5418", fontSize: ".83rem" }}>
-            <b>{fbDraftMl} ml is also a regular section.</b> They're the same bottle, so customers are only shown one: while Full bottle is ON,
-            the {fbDraftMl} ml section is hidden (it comes back if you switch Full bottle OFF). To keep {fbDraftMl} ml instead, choose a different
-            Full bottle size — or delete the {fbDraftMl} ml section if you only want “Full bottle”.
-          </p>
-        )}
-        <small style={{ color: "var(--muted)" }}>The price applies to every perfume. To charge a different full-bottle price for a particular perfume, change it in the “Full bottle” column of “Perfume prices” below (leave it empty to not offer a full bottle for that perfume).</small>
-      </Panel>
 
       <div style={{ height: "1.25rem" }} />
       <div id="perfume-prices" style={{ scrollMarginTop: "6rem" }} />

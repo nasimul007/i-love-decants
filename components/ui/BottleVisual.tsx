@@ -28,6 +28,10 @@ export function BottleVisual({ shape, liquid, ink, title, subtitle = "I Love Dec
   );
 }
 
+/** The product's main uploaded photo, or the drawn bottle when the admin hasn't added one. */
 export function ProductBottle({ product }: { product: Product }) {
+  const photo = product.images?.[0];
+  // eslint-disable-next-line @next/next/no-img-element
+  if (photo) return <img className="product-photo" src={`/api/images/${photo}`} alt={product.name} loading="lazy" decoding="async" />;
   return <BottleVisual shape={product.shape} liquid={product.liquid} ink={product.ink} title={product.name} />;
 }

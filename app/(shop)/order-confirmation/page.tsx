@@ -10,9 +10,9 @@ export default function OrderConfirmationPage() {
       <PageHero
         eyebrow="Order received"
         title="Thank you — we are confirming it."
-        lead="Your request is saved on this device as a frontend preview. We will use the contact and delivery details you supplied to confirm it."
+        lead="Your order is saved. We will use the contact and delivery details you supplied to confirm it. Signed-in customers can follow its status from My account."
         noteTitle="One calm final check."
-        note="Review the delivery and payment route below. No payment is processed by this downloadable frontend."
+        note="Review the delivery details below. You pay in cash when the order arrives."
         orb="rgba(143,163,143,.34)"
       />
       <section className="section"><ConfirmationView /></section>

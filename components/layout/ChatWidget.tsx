@@ -7,10 +7,8 @@ import { CONFIG } from "@/lib/config";
 
 const OPTIONS = [
   { k: "wa", label: "WhatsApp", hint: "Quick chat", href: CONFIG.whatsapp, color: "#55a66b" },
-  { k: "tg", label: "Telegram", hint: "Message our team", href: CONFIG.telegram, color: "#69a9c9" },
   { k: "ms", label: "Messenger", hint: "Ask on Facebook", href: CONFIG.messenger, color: "#777dd1" },
   { k: "fb", label: "Facebook", hint: "See updates", href: CONFIG.facebook, color: "#7892c7" },
-  { k: "tt", label: "TikTok", hint: "Watch short scent guides", href: CONFIG.tiktok, color: "#705763" },
 ];
 
 export function ChatWidget() {

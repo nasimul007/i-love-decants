@@ -1,4 +1,4 @@
-import { isBdPhone, isEmail, validatePassword } from "@/lib/validators";
+import { isBdPhone, isEmail, isPersonName, NAME_ERROR, validatePassword } from "@/lib/validators";
 
 export interface RegisterInput { name: string; phone: string; email: string; password: string }
 export type FieldErrors = Partial<Record<"name" | "phone" | "email" | "password", string>>;
@@ -8,6 +8,7 @@ export const customerService = {
   validateRegistration(input: RegisterInput): FieldErrors {
     const errors: FieldErrors = {};
     if (!input.name.trim()) errors.name = "Please enter your name.";
+    else if (!isPersonName(input.name)) errors.name = NAME_ERROR;
     if (!isBdPhone(input.phone.trim())) errors.phone = "Enter a valid Bangladeshi phone number.";
     if (!isEmail(input.email)) errors.email = "Enter a valid email address.";
     const pw = validatePassword(input.password);

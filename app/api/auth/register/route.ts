@@ -2,10 +2,10 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { audit, hashPassword, publicCustomer, startCustomerSession } from "@/lib/server/auth";
 import { body, clientIp, HttpError, ok, rateLimit, route } from "@/lib/server/http";
-import { isBdPhone, validatePassword } from "@/lib/validators";
+import { isBdPhone, isPersonName, NAME_ERROR, validatePassword } from "@/lib/validators";
 
 const schema = z.object({
-  name: z.string().trim().min(1, "Please enter your name.").max(100),
+  name: z.string().trim().min(1, "Please enter your name.").max(100).refine(isPersonName, NAME_ERROR),
   phone: z.string().trim().refine(isBdPhone, "Enter a valid Bangladeshi phone number."),
   email: z.string().trim().toLowerCase().email("Enter a valid email address.").max(200),
   password: z.string().max(200).superRefine((pw, ctx) => {

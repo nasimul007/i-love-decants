@@ -22,7 +22,7 @@ export default function ContactPage() {
         title="Have a doubt? We are here."
         lead="Ask about a scent, volume, gift, engraving, or order. There is no wrong question and no pressure to buy."
         noteTitle="Choose your easiest channel."
-        note="Use the form, WhatsApp, Telegram, Messenger, Facebook, or the fixed help button."
+        note="Use the form, WhatsApp, Messenger, Facebook, or the fixed help button."
         orb="rgba(230,225,238,.88)"
       />
       <section className="section">
@@ -33,7 +33,6 @@ export default function ContactPage() {
             <p>Tell us what you usually enjoy, what you dislike, or simply the feeling you want. We will help you narrow it down calmly.</p>
             <div className="contact-list">
               <a href={CONFIG.whatsapp} target="_blank" rel="noreferrer"><span className="contact-list-icon">wa</span><span><strong>WhatsApp</strong><br />Quick scent and order help</span></a>
-              <a href={CONFIG.telegram} target="_blank" rel="noreferrer"><span className="contact-list-icon">tg</span><span><strong>Telegram</strong><br />Message our team</span></a>
               <a href={CONFIG.messenger} target="_blank" rel="noreferrer"><span className="contact-list-icon">ms</span><span><strong>Messenger</strong><br />Ask through Facebook</span></a>
               <a href={`tel:${CONFIG.phoneHref}`}><span className="contact-list-icon">☎</span><span><strong>Phone / SMS</strong><br />{CONFIG.phone}</span></a>
               <div><span className="contact-list-icon">⌖</span><span><strong>Location</strong><br />{CONFIG.location}</span></div>

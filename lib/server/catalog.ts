@@ -1,6 +1,7 @@
 import "server-only";
+import { OIL_ML } from "@/lib/config";
 import { db } from "@/lib/db";
-import type { Prisma } from "@prisma/client";
+import type { Prisma } from "@/lib/generated/prisma/client";
 
 type Tx = Prisma.TransactionClient | typeof db;
 
@@ -11,9 +12,14 @@ type Tx = Prisma.TransactionClient | typeof db;
  *  - a regular section equal to the Full bottle ml is hidden while Full bottle is live
  *  - inventory items that are disabled / hidden / removed are dropped
  */
+/** The Full bottle option is retired (the store only sells decants/oils/gift sets): it is never offered, whatever the DB says. */
+function fullBottleOffered(_fb: unknown): boolean {
+  return false;
+}
+
 export async function loadCatalog(tx: Tx = db, opts: { all?: boolean } = {}) {
   const [products, oils, gifts, volumes, fb, categories] = await Promise.all([
-    tx.product.findMany({ include: { variants: true, inventory: true }, orderBy: { id: "asc" } }),
+    tx.product.findMany({ include: { variants: true, inventory: true, images: { select: { id: true }, orderBy: [{ sort: "asc" }, { id: "asc" }] } }, orderBy: { id: "asc" } }),
     tx.oil.findMany({ include: { inventory: true }, orderBy: { id: "asc" } }),
     tx.giftSet.findMany({ include: { inventory: true }, orderBy: { id: "asc" } }),
     tx.volumeSetting.findMany({ where: { onSale: true }, orderBy: { volumeMl: "asc" } }),
@@ -22,7 +28,7 @@ export async function loadCatalog(tx: Tx = db, opts: { all?: boolean } = {}) {
   ]);
   const hiddenCategories = new Set(categories.filter((c) => c.hidden).map((c) => c.name.toLowerCase()));
   const live = (i: { enabled: boolean; visible: boolean; removed: boolean } | null) => opts.all || !i || (i.enabled && i.visible && !i.removed);
-  const fullLive = !!fb?.enabled && fb.price !== null;
+  const fullLive: boolean = fullBottleOffered(fb);
   const replaced = fullLive && volumes.some((v) => v.volumeMl === fb!.ml) ? fb!.ml : null;
   const onSale = new Set(volumes.map((v) => v.volumeMl));
 
@@ -30,21 +36,23 @@ export async function loadCatalog(tx: Tx = db, opts: { all?: boolean } = {}) {
     const prices: Record<number, number> = {};
     for (const v of p.variants) {
       if (v.isFull || !v.active || !onSale.has(v.volumeMl) || v.volumeMl === replaced) continue;
+      // Stock is one pool of ml per perfume: a size that no longer fits in what is left isn't offered.
+      if (!opts.all && p.inventory && v.volumeMl > p.inventory.stock) continue;
       prices[v.volumeMl] = v.price;
     }
     const override = p.variants.find((v) => v.isFull);
     const fullOffer = fullLive && !(override && !override.active)
       ? { ml: fb!.ml, price: override?.price ?? fb!.price!, sprays: fb!.sprays }
       : undefined;
-    const { variants: _v, inventory: _i, scentTags, ...rest } = p;
-    return { ...rest, scentFamilies: scentTags.length ? scentTags : undefined, prices, fullBottle: fullOffer };
-  });
+    const { variants: _v, inventory: _i, scentTags, images, ...rest } = p;
+    return { ...rest, images: images.map((i) => i.id), scentFamilies: scentTags.length ? scentTags : undefined, prices, fullBottle: fullOffer };
+  }).filter((p) => opts.all || Object.keys(p.prices).length > 0 || p.fullBottle); // sold out: nothing left to offer
 
   return {
     products: outProducts,
     categories: categories.filter((c) => !c.hidden).map((c) => c.name),
-    oils: oils.filter((o) => live(o.inventory)).map(({ inventory: _i, ...o }) => o),
-    gifts: gifts.filter((g) => live(g.inventory)).map(({ inventory: _i, ...g }) => g),
+    oils: oils.filter((o) => live(o.inventory) && (opts.all || !o.inventory || o.inventory.stock >= OIL_ML)).map(({ inventory: _i, ...o }) => o),
+    gifts: gifts.filter((g) => live(g.inventory) && (opts.all || !g.inventory || g.inventory.stock >= 1)).map(({ inventory: _i, ...g }) => g),
     volumes: volumes.map((v) => v.volumeMl).filter((v) => v !== replaced),
     fullBottle: fullLive ? { ml: fb!.ml, sprays: fb!.sprays } : null,
     sprays: Object.fromEntries(volumes.filter((v) => v.volumeMl !== replaced).map((v) => [v.volumeMl, v.sprays])),

@@ -7,7 +7,7 @@ const STEPS = [
   ["You choose", "Pick a scent, a volume from 3 ml to 100 ml, or a gift set that fits the moment."],
   ["We prepare", "Each decant is filled from an authenticated bottle and sealed the same day."],
   ["We pack with care", "Protective packaging, a gift note if you'd like one, and nothing bulky or wasteful."],
-  ["You receive it", "Delivered across Bangladesh, with support open on WhatsApp, Telegram, or Messenger."],
+  ["You receive it", "Delivered across Bangladesh, with support open on WhatsApp or Messenger."],
 ];
 const WHY = [
   ["Authenticity first", "Every decant is drawn from a genuine, verified bottle — never a copy or a blend."],

@@ -6,7 +6,7 @@ export const metadata: Metadata = { title: "Delivery & Returns — I Love Decant
 const DELIVERY = [
   ["Inside Dhaka city — ৳80", "Usually delivered within 1–2 business days of your order being confirmed."],
   ["Outside Dhaka — ৳130", "Usually delivered within 2–4 business days, depending on your area."],
-  ["Order tracking", "We will update you by phone, WhatsApp, or Telegram once your order ships."],
+  ["Order tracking", "We will update you by phone or WhatsApp once your order ships."],
   ["Order confirmation", "Payment is Cash on Delivery: no advance payment, just pay the rider when your order arrives."],
 ];
 const RETURNS = [

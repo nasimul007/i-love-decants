@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CONFIG } from "@/lib/config";
 import { Brand } from "./Header";
+import { FacebookIcon, InstagramIcon } from "@/components/ui/Icons";
 
 export function Footer() {
   return (
@@ -13,7 +14,7 @@ export function Footer() {
         <div className="footer-column">
           <h3>Explore</h3>
           <div className="footer-links">
-            <Link href="/products">All perfumes</Link>
+            <Link href="/products?tab=decants">Perfume decants</Link>
             <Link href="/products?tab=oils">Perfume oils</Link>
             <Link href="/products?tab=gifts">Gift sets</Link>
             <Link href="/custom">Custom engraving</Link>
@@ -33,16 +34,14 @@ export function Footer() {
           <div className="footer-links">
             <a href={`tel:${CONFIG.phoneHref}`}>Call or SMS: {CONFIG.phone}</a>
             <a href={CONFIG.whatsapp} target="_blank" rel="noreferrer">WhatsApp</a>
-            <a href={CONFIG.telegram} target="_blank" rel="noreferrer">Telegram</a>
           </div>
         </div>
       </div>
       <div className="container footer-bottom">
-        <span>© {new Date().getFullYear()} I Love Decants. Frontend demonstration. · <Link className="footer-admin-link" href="/admin">Admin</Link></span>
+        <span>© {new Date().getFullYear()} I Love Decants. · <Link className="footer-admin-link" href="/admin">Admin</Link></span>
         <div className="footer-socials" aria-label="Social media">
-          <a href={CONFIG.facebook} target="_blank" rel="noreferrer" aria-label="Facebook">fb</a>
-          <a href={CONFIG.tiktok} target="_blank" rel="noreferrer" aria-label="TikTok">tt</a>
-          <a href={CONFIG.instagram} target="_blank" rel="noreferrer" aria-label="Instagram">ig</a>
+          <a href={CONFIG.facebook} target="_blank" rel="noreferrer" aria-label="Facebook"><FacebookIcon width={17} height={17} /></a>
+          <a href={CONFIG.instagram} target="_blank" rel="noreferrer" aria-label="Instagram"><InstagramIcon width={17} height={17} /></a>
         </div>
       </div>
     </footer>

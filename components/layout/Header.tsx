@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { CartIcon, CloseIcon, MenuIcon, SearchIcon, UserIcon } from "@/components/ui/Icons";
 import { useUI } from "@/components/providers/UIProvider";
 import { useCart, useCatalog, useCurrentCustomer } from "@/hooks/useServices";
+import { useApi } from "@/lib/api/client";
 import { initials, money } from "@/lib/format";
 import { priceFrom } from "@/lib/volumes";
 import { NoticeBar } from "./NoticeBar";
@@ -87,9 +88,12 @@ function SearchBox() {
 
 export function Header() {
   const pathname = usePathname();
+  const faqs = useApi<unknown[]>("/api/faq").data;
+  const hasFaq = Array.isArray(faqs) && faqs.length > 0;
   const { count } = useCart();
   const customer = useCurrentCustomer();
-  const { openCart, cartOpen, openAuth, openProfile } = useUI();
+  const { openCart, cartOpen, openAuth } = useUI();
+  const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => { setMenuOpen(false); }, [pathname]);
@@ -111,13 +115,14 @@ export function Header() {
             {NAV.map((n) => (
               <Link key={n.href} className="nav-link" href={n.href} aria-current={pathname === n.href ? "page" : undefined}>{n.label}</Link>
             ))}
+            {hasFaq && <Link className="nav-link" href="/#faq" onClick={() => setMenuOpen(false)}>FAQ</Link>}
           </nav>
           <div className="header-actions">
             <SearchBox />
             <button
               className="profile-btn" type="button" title="Account"
               aria-label={customer ? `Your profile (${customer.name})` : "Sign in to your account"}
-              onClick={() => (customer ? openProfile() : openAuth("login"))}
+              onClick={() => (customer ? router.push("/account") : openAuth("login"))}
             >
               {customer ? <>{initials(customer.name)}<span className="profile-dot" title="Signed in" /></> : <UserIcon />}
             </button>

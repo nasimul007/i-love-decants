@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { isBdPhone } from "@/lib/validators";
+import { isBdPhone, isPersonName, NAME_ERROR } from "@/lib/validators";
 
 const TOPICS = ["Scent recommendation", "Order or delivery", "Custom engraving", "Gift help", "Something else"];
 
@@ -15,6 +15,7 @@ export function ContactForm() {
     e.preventDefault();
     const next: Record<string, string> = {};
     if (!values.name.trim()) next.name = "Please fill in this field.";
+    else if (!isPersonName(values.name)) next.name = NAME_ERROR;
     if (!values.phone.trim()) next.phone = "Please fill in this field.";
     else if (!isBdPhone(values.phone)) next.phone = "Please enter a valid Bangladeshi mobile number.";
     if (!values.message.trim()) next.message = "Please fill in this field.";
@@ -44,7 +45,7 @@ export function ContactForm() {
           <label htmlFor="contactPhone">Phone number</label>
           <input id="contactPhone" type="tel" inputMode="tel" autoComplete="tel" placeholder="01XXXXXXXXX" maxLength={18} aria-describedby="contactPhoneHint" {...bind("phone")} />
           <span className="field-error">{errors.phone}</span>
-          <span className="field-hint" id="contactPhoneHint">Use 01XXXXXXXXX or +8801XXXXXXXXX. We can reply by SMS, call, WhatsApp, or Telegram.</span>
+          <span className="field-hint" id="contactPhoneHint">Use 01XXXXXXXXX or +8801XXXXXXXXX. We can reply by SMS, call, or WhatsApp.</span>
         </div>
         <div className="field full">
           <label htmlFor="contactTopic">What is this about?</label>

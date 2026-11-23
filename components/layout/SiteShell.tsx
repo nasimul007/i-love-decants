@@ -8,10 +8,8 @@ import { Intro } from "./Intro";
 import { CartDrawer } from "./CartDrawer";
 import { ProductModal } from "./ProductModal";
 import { AuthModal } from "./AuthModal";
-import { ProfilePanel } from "./ProfilePanel";
 import { ChatWidget } from "./ChatWidget";
 import { Toast } from "./Toast";
-import { Cursor } from "./Cursor";
 
 /** Everything that persists across routes: header, footer, drawers, modals, toast. */
 export function SiteShell({ children }: { children: ReactNode }) {
@@ -25,9 +23,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
       <ProductModal />
       <ChatWidget />
       <AuthModal />
-      <ProfilePanel />
       <Toast />
-      <Cursor />
     </UIProvider>
   );
 }

@@ -4,7 +4,7 @@ import { DEFAULT_SPRAYS, DEFAULT_VOLUMES } from "@/lib/config";
 import { GIFTS, OILS, PRODUCTS } from "@/lib/data/catalog";
 import { HttpError } from "./http";
 import { loadCatalog } from "./catalog";
-import type { Prisma } from "@prisma/client";
+import type { Prisma } from "@/lib/generated/prisma/client";
 import type { CatalogOverrides } from "@/types";
 
 /**
@@ -56,7 +56,7 @@ export async function getOverrides(tx: Tx | typeof db = db): Promise<CatalogOver
 
   return {
     volumes: sameAsDefault(volumes) ? undefined : volumes, prices, itemPrices, sprays,
-    fullBottle: fbRow ? { enabled: fbRow.enabled, ml: fbRow.ml, sprays: fbRow.sprays, price: fbRow.price } : undefined,
+    fullBottle: undefined, // the Full bottle option is retired: never reported to the admin
   };
 }
 
