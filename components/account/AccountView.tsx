@@ -66,8 +66,8 @@ function OrderCard({ order, open, onToggle }: { order: Order; open: boolean; onT
               </ul>
               <dl className="acct-sum">
                 <div><dt>Subtotal</dt><dd>{money(order.subtotal)}</dd></div>
-                {!!order.bulkDiscount && <div><dt>Bulk discount</dt><dd>−{money(order.bulkDiscount)}</dd></div>}
-                {order.discount > 0 && <div><dt>Coupon{order.couponCode ? ` (${order.couponCode})` : ""}</dt><dd>−{money(order.discount)}</dd></div>}
+                {!!order.bulkDiscount && <div className="is-deal"><dt>Large-order discount</dt><dd>−{money(order.bulkDiscount)}</dd></div>}
+                {order.discount > 0 && <div className="is-deal"><dt>Discount code{order.couponCode ? ` (${order.couponCode})` : ""}</dt><dd>−{money(order.discount)}</dd></div>}
                 <div><dt>Delivery</dt><dd>{money(order.delivery.charge)}</dd></div>
                 <div className="total"><dt>Total</dt><dd>{money(order.grandTotal)}</dd></div>
               </dl>

@@ -12,6 +12,17 @@ export const priceFrom = (p: Product): number => {
   return all.length ? Math.min(...all) : 0;
 };
 
+/** Regular "From" price while a sale is on (undefined when nothing is on sale). */
+export const regularFrom = (p: Product): number | undefined => {
+  if (!p.wasPrices) return undefined;
+  const regular = Math.min(...volumesOf(p).map((v) => p.wasPrices![v] ?? p.prices[v]));
+  return regular > priceFrom(p) ? regular : undefined;
+};
+
+/** Biggest % saving across the perfume's sizes, for the sale badge (0 = no sale). */
+export const saleOff = (p: Product): number =>
+  Math.max(0, ...Object.entries(p.wasPrices ?? {}).map(([v, was]) => Math.round(((was - p.prices[Number(v)]) / was) * 100)));
+
 /** True if the perfume can be bought in at least one size. */
 export const hasAnySize = (p: Product): boolean => volumesOf(p).length > 0 || !!p.fullBottle;
 

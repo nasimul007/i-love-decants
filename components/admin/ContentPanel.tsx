@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useUI } from "@/components/providers/UIProvider";
 import { useAdminCategories, useAdminFaqs, useAdminNotices, useAdminProducts } from "@/hooks/useServices";
 import { adminApi } from "@/lib/api/admin";
@@ -94,7 +94,7 @@ function CategoryEditor() {
       <Panel title="Categories" subtitle="Scent categories shown as filters in the shop. Hiding a category also hides the perfumes in it.">
         <div className="coupon-add-row">
           <div className="admin-field"><label htmlFor="newCategory">New category</label>
-            <input id="newCategory" type="text" maxLength={40} placeholder="e.g. Oriental" style={inputStyle} value={name}
+            <input id="newCategory" type="text" maxLength={40} placeholder="e.g. Woods" style={inputStyle} value={name}
               onChange={(e) => { setName(e.target.value); setMsg(""); }} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void run(adminApi.addCategory(name), `${name.trim()} added.`).then((ok) => ok && setName("")); } }} />
           </div>
           <button className="admin-btn primary" type="button" style={{ alignSelf: "flex-end", height: 42 }}

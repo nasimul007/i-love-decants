@@ -1,23 +1,24 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { FormEvent, ReactNode } from "react";
+import type { FormEvent } from "react";
 import {
-  useAdminOverview, useCatalogOverrides, useCoupons, useCustomers, useInventoryRecords, useLoginHistory, useManagers, useOrders,
+  useAdminCategories, useAdminMe, useAdminOverview, useCatalog, useCatalogOverrides, useCoupons, useCustomers, useInventoryRecords, useLoginHistory, useManagers, useOrders, useProductDetails, useSales,
 } from "@/hooks/useServices";
+import { ItemEditor, PerfumeEditor } from "./ProductEditor";
 import { useUI } from "@/components/providers/UIProvider";
 import { Modal, Panel, emptyRow, inputStyle } from "./shared";
 import { OrderDetailModal } from "./OrdersPanel";
 import {
-  activeVolumes, applyToProduct, effectiveSprays, formatSprays, fullBottleFor, fullBottleLive, fullBottleOf,
+  activeVolumes, applyToProduct, effectiveSprays, perfumesOf, formatSprays,
   sectionReplacedByFullBottle, suggestSprays,
 } from "@/lib/services/catalogOverrides";
-import { GIFTS, OILS, PRODUCTS } from "@/lib/data/catalog";
+import { PRODUCTS } from "@/lib/data/catalog";
 import { DEFAULT_SPRAYS } from "@/lib/config";
 import { adminApi, catalogOverridesApi } from "@/lib/api/admin";
-import { ADMIN_SECTIONS } from "@/lib/services/admin";
+import { ADMIN_SECTIONS, can } from "@/lib/services/admin";
 import { formatDate, formatDateTime, money } from "@/lib/format";
-import type { CatalogOverrides, InventoryKind, InventoryRecord, ManagerPermissions, Order, Product, PublicManager } from "@/types";
+import type { CatalogOverrides, InventoryKind, InventoryRecord, ManagerPermissions, Order, PublicManager } from "@/types";
 
 /* ───────────────────────── Overview ───────────────────────── */
 export const STATUSES: Order["status"][] = ["received", "confirmed", "shipped", "delivered", "cancelled"];
@@ -99,8 +100,15 @@ function StockCell({ r }: { r: InventoryRecord }) {
 
 export function InventoryPanel() {
   const records = useInventoryRecords();
+  const { showToast } = useUI();
+  const canEdit = can(useAdminMe().session, "products");
+  const perfumes = useProductDetails();
+  const items = useCatalogOverrides().items;
+  /** The product whose full form is open (its shop id), and whether it was just added (step 2 of Add product). */
+  const [editing, setEditing] = useState<{ id: string; isNew: boolean } | null>(null);
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ name: "", type: "Perfume decant" as InventoryKind, sizes: "3–100 ml", price: "", stock: "" });
+  const [form, setForm] = useState({ name: "", type: "Perfume decant" as InventoryKind, sizes: "", price: "", stock: "" });
+  const perfume = form.type === "Perfume decant";
   const [msg, setMsg] = useState("");
 
   const act = (r: InventoryRecord, a: "enabled" | "visible" | "archive" | "restore") => {
@@ -114,20 +122,22 @@ export function InventoryPanel() {
     e.preventDefault();
     const price = Number(form.price);
     const stock = Number(form.stock);
-    if (!form.name.trim() || !(price >= 0) || !(stock >= 0) || form.price === "" || form.stock === "") { setMsg("Please fill in all fields correctly."); return; }
-    const res = await adminApi.addInventory({ name: form.name.trim(), type: form.type, sizes: form.sizes.trim(), price, stock });
+    if (!form.name.trim() || !(stock >= 0) || form.stock === "" || (!perfume && (form.price === "" || !(price >= 0)))) { setMsg("Please fill in all fields correctly."); return; }
+    const res = await adminApi.addInventory({ name: form.name.trim(), type: form.type, sizes: form.sizes.trim(), price: perfume ? 0 : price, stock });
     if (!res.ok) { setMsg(res.error ?? "Could not save."); return; }
-    setForm({ name: "", type: "Perfume decant", sizes: "3–100 ml", price: "", stock: "" });
+    const shopId = (res.data as InventoryRecord | undefined)?.storefrontId;
+    showToast(form.type === "Custom bottle" ? `${form.name.trim()} added to stock.` : `${form.name.trim()} added.`);
+    setForm({ name: "", type: "Perfume decant", sizes: "", price: "", stock: "" });
     setMsg("");
     setOpen(false);
+    if (shopId && (perfume || form.type === "Gift set") && canEdit) setEditing({ id: shopId, isNew: true });
   };
 
   const btn = { fontSize: ".75rem" } as const;
-  const stepper = { width: 30, height: 30, border: 0, borderRadius: ".45rem", color: "var(--rose-deep)", background: "#f8eff1", fontWeight: 700, fontSize: "1rem" } as const;
 
   return (
     <>
-      <Panel title="Inventory control" subtitle="Perfume decants and oils are stocked in ml: set the total once and every order takes its size out of it. Gift sets are counted in pieces." action={<button className="admin-btn primary" type="button" onClick={() => setOpen(true)}>Add inventory</button>}>
+      <Panel title="Inventory control" subtitle="Perfume decants and oils are stocked in ml: set the total once and every order takes its size out of it. Gift sets are counted in pieces." action={<button className="admin-btn primary" type="button" onClick={() => setOpen(true)}>Add product</button>}>
         <table className="admin-table">
           <thead><tr><th>Product</th><th>Sizes</th><th>Stock</th><th>Sold</th><th>State</th><th>Actions</th></tr></thead>
           <tbody>
@@ -146,6 +156,7 @@ export function InventoryPanel() {
                       <button className="admin-btn" style={btn} type="button" onClick={() => act(r, "restore")}>Restore</button>
                     ) : (
                       <>
+                        {canEdit && r.storefrontId && <button className="admin-btn primary" style={btn} type="button" onClick={() => setEditing({ id: r.storefrontId!, isNew: false })}>Edit</button>}
                         <button className="admin-btn" style={{ ...btn, color: "var(--rose-deep)" }} type="button" onClick={() => act(r, "enabled")}>{r.enabled ? "Disable" : "Enable"}</button>
                         <button className="admin-btn" style={btn} type="button" onClick={() => act(r, "visible")}>{r.visible ? "Hide" : "Show"}</button>
                         <button className="admin-btn danger" style={btn} type="button" onClick={() => act(r, "archive")}>Archive</button>
@@ -159,7 +170,7 @@ export function InventoryPanel() {
         </table>
       </Panel>
 
-      <Modal open={open} onClose={() => { setOpen(false); setMsg(""); }} title="Add inventory record" subtitle="Add a new stock entry that the storefront will respect.">
+      <Modal open={open} onClose={() => { setOpen(false); setMsg(""); }} title="Add a product" subtitle="Perfumes, oils and gift sets appear in the shop and in every admin table. Custom bottles are stock only.">
         <form className="mgr-form" onSubmit={submit} noValidate>
           <div className="admin-field"><label htmlFor="invName">Product name</label><input id="invName" type="text" maxLength={62} placeholder="e.g. Rose Water Roll-On" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: ".75rem" }}>
@@ -168,17 +179,34 @@ export function InventoryPanel() {
                 {(["Perfume decant", "Perfume oil", "Gift set", "Custom bottle"] as const).map((t) => <option key={t}>{t}</option>)}
               </select>
             </div>
-            <div className="admin-field"><label htmlFor="invSizes">Sizes</label><input id="invSizes" type="text" placeholder="e.g. 3–100 ml" value={form.sizes} onChange={(e) => setForm({ ...form, sizes: e.target.value })} /></div>
-            <div className="admin-field"><label htmlFor="invPrice">Price (৳)</label><input id="invPrice" type="number" min={0} step={1} inputMode="numeric" placeholder="0" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} /></div>
+            {!perfume && <div className="admin-field"><label htmlFor="invPrice">Price (৳)</label><input id="invPrice" type="number" min={0} step={1} inputMode="numeric" placeholder="0" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} /></div>}
+            {form.type === "Custom bottle" && <div className="admin-field"><label htmlFor="invSizes">Sizes</label><input id="invSizes" type="text" placeholder="e.g. 50 ml" value={form.sizes} onChange={(e) => setForm({ ...form, sizes: e.target.value })} /></div>}
             <div className="admin-field"><label htmlFor="invStock">Opening stock ({form.type === "Perfume decant" || form.type === "Perfume oil" ? "total ml" : "pieces"})</label><input id="invStock" type="number" min={0} max={1000000} step={1} inputMode="numeric" placeholder={form.type === "Perfume decant" || form.type === "Perfume oil" ? "e.g. 500" : "0"} value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} /></div>
           </div>
+          {perfume && <small style={{ color: "var(--muted)" }}>Next you’ll add photos, brand, family, strength, notes and price per size, all in one form.</small>}
           <p className="admin-form-msg" aria-live="polite">{msg}</p>
           <div className="mgr-modal-actions">
             <button className="admin-btn" type="button" onClick={() => { setOpen(false); setMsg(""); }}>Cancel</button>
-            <button className="admin-btn primary" type="submit">Save record</button>
+            <button className="admin-btn primary" type="submit">{perfume || form.type === "Gift set" ? "Next" : "Add"}</button>
           </div>
         </form>
       </Modal>
+
+      {editing && (() => {
+        const p = perfumes.find((x) => String(x.id) === editing.id);
+        const oil = items?.oils.find((x) => x.id === editing.id);
+        const gift = items?.gifts.find((x) => x.id === editing.id);
+        const name = p?.name ?? oil?.name ?? gift?.name ?? "";
+        const close = () => setEditing(null);
+        return (
+          <Modal open wide={!!p} onClose={close} title={editing.isNew ? `Describe ${name}` : `Edit ${name}`}
+            subtitle={editing.isNew ? "Step 2 of 2: what customers see. It goes on sale once it has a price and stock." : "Everything customers see for this product. Stock is changed in the table."}>
+            {p ? <PerfumeEditor p={p} onClose={close} />
+              : oil || gift ? <ItemEditor item={(oil ?? gift)!} onClose={close} />
+              : <p style={{ color: "var(--muted)" }}>Loading…</p>}
+          </Modal>
+        );
+      })()}
     </>
   );
 }
@@ -228,16 +256,95 @@ export function HistoryPanel() {
   );
 }
 
+/* ───────────────────────── Sales (inside the Discounts tab) ───────────────────────── */
+/**
+ * Price cuts on one product, a scent family or a whole product type. The server applies them to shop prices,
+ * so the shop, bag, checkout and orders all agree; customers see the regular price crossed out.
+ */
+export function SalesPanel() {
+  const sales = useSales();
+  const { products, oils, gifts } = useCatalog();
+  const families = useAdminCategories().map((c) => c.name);
+  const { showToast } = useUI();
+  const [form, setForm] = useState({ target: "type:perfume", type: "percent" as "percent" | "flat", value: "", ends: "" });
+  const [msg, setMsg] = useState("");
+
+  const groups: [string, [string, string][]][] = [
+    ["Whole range", [["type:perfume", "All perfume decants"], ["type:oil", "All perfume oils"], ["type:gift", "All gift sets"]]],
+    ["Scent family", families.map((f) => [`family:${f.toLowerCase()}`, `${f} perfumes`])],
+    ["One perfume", products.map((p) => [`product:${p.id}`, p.name])],
+    ["One oil", oils.map((o) => [`product:${o.id}`, o.name])],
+    ["One gift set", gifts.map((g) => [`product:${g.id}`, g.name])],
+  ];
+  const labelOf = (t: string) => groups.flatMap(([, o]) => o).find(([v]) => v === t)?.[1] ?? (t.startsWith("family:") ? `${t.slice(7)} perfumes` : "Item no longer in the shop");
+
+  const add = async () => {
+    const value = Number(form.value);
+    if (!(value > 0)) { setMsg("Enter how much to take off."); return; }
+    const res = await adminApi.addSale({ target: form.target, type: form.type, value, endsAt: form.ends ? new Date(`${form.ends}T23:59:59`).toISOString() : null });
+    if (!res.ok) { setMsg(res.error ?? "Could not save."); return; }
+    setMsg(""); setForm({ ...form, value: "", ends: "" });
+    showToast(`Sale added: ${labelOf(form.target)}, ${form.type === "percent" ? `${value}%` : money(value)} off.`);
+  };
+
+  return (
+    <Panel title="Sales" subtitle="Take money off one product, a scent family or a whole range. Customers see the old price crossed out. If several sales match, the customer gets the biggest one; discount codes then apply on top.">
+      <div className="coupon-add-row">
+        <div className="admin-field"><label htmlFor="saleTarget">Applies to</label>
+          <select id="saleTarget" style={{ ...inputStyle, minWidth: 220 }} value={form.target} onChange={(e) => setForm({ ...form, target: e.target.value })}>
+            {groups.filter(([, o]) => o.length).map(([g, o]) => <optgroup key={g} label={g}>{o.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</optgroup>)}
+          </select>
+        </div>
+        <div className="admin-field"><label htmlFor="saleType">Type</label>
+          <select id="saleType" style={inputStyle} value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value as "percent" | "flat" })}>
+            <option value="percent">Percent off (%)</option><option value="flat">Taka off each (৳)</option>
+          </select>
+        </div>
+        <div className="admin-field"><label htmlFor="saleValue">Amount</label><input id="saleValue" type="number" min={1} max={form.type === "percent" ? 90 : undefined} placeholder={form.type === "percent" ? "e.g. 15" : "e.g. 100"} style={{ ...inputStyle, width: 120 }} value={form.value} onChange={(e) => { setForm({ ...form, value: e.target.value }); setMsg(""); }} /></div>
+        <div className="admin-field"><label htmlFor="saleEnds">Ends <small style={{ color: "var(--muted)", fontWeight: 500 }}>(optional)</small></label><input id="saleEnds" type="date" style={{ ...inputStyle, width: 160 }} value={form.ends} onChange={(e) => setForm({ ...form, ends: e.target.value })} /></div>
+        <button className="admin-btn primary" type="button" style={{ alignSelf: "flex-end", height: 42 }} onClick={add}>Add sale</button>
+      </div>
+      <p className="admin-form-msg" aria-live="polite" style={{ marginBottom: ".8rem" }}>{msg}</p>
+      <table className="admin-table">
+        <thead><tr><th>Applies to</th><th>Discount</th><th>Ends</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody>
+          {!sales.length && emptyRow(5, "No sales yet.")}
+          {sales.map((s) => {
+            const ended = !!s.endsAt && new Date(s.endsAt) < new Date();
+            return (
+              <tr key={s.id}>
+                <td><strong style={{ fontSize: ".9rem" }}>{labelOf(s.target)}</strong></td>
+                <td className="is-deal" style={{ fontWeight: 700 }}>{s.type === "percent" ? `${s.value}% off` : `${money(s.value)} off`}</td>
+                <td>{s.endsAt ? formatDate(s.endsAt) : "No end date"}</td>
+                <td><span className={`pill ${s.active && !ended ? "live" : "off"}`}>{!s.active ? "Off" : ended ? "Ended" : "On"}</span></td>
+                <td style={{ display: "flex", gap: ".4rem", flexWrap: "wrap" }}>
+                  <button className="admin-btn" style={{ fontSize: ".75rem", color: "var(--rose-deep)" }} type="button" onClick={() => void adminApi.setSaleActive(s.id, !s.active)}>{s.active ? "Turn off" : "Turn on"}</button>
+                  <button className="admin-btn danger" style={{ fontSize: ".75rem" }} type="button" onClick={() => { if (window.confirm(`Delete the sale on ${labelOf(s.target)}?`)) void adminApi.removeSale(s.id); }}>Delete</button>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </Panel>
+  );
+}
+
 /* ───────────────────────── Coupons ───────────────────────── */
 export function CouponsPanel() {
   const coupons = useCoupons();
-  const [form, setForm] = useState({ code: "", type: "percent" as "percent" | "flat", value: "" });
+  const [form, setForm] = useState({ code: "", type: "percent" as "percent" | "flat", value: "", expires: "", maxUses: "" });
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
 
   const add = async () => {
-    const res = await adminApi.addCoupon({ code: form.code, type: form.type, value: Number(form.value) });
+    const res = await adminApi.addCoupon({
+      code: form.code, type: form.type, value: Number(form.value),
+      // A date means "valid through that day" (shop's local time).
+      expiresAt: form.expires ? new Date(`${form.expires}T23:59:59`).toISOString() : null,
+      maxUses: form.maxUses ? Number(form.maxUses) : null,
+    });
     if (!res.ok) { setMsg({ text: res.error ?? "", ok: false }); return; }
-    setForm({ ...form, code: "", value: "" });
+    setForm({ ...form, code: "", value: "", expires: "", maxUses: "" });
     setMsg({ text: "Code added.", ok: true });
   };
 
@@ -251,21 +358,29 @@ export function CouponsPanel() {
           </select>
         </div>
         <div className="admin-field"><label htmlFor="newCouponValue">Value</label><input id="newCouponValue" type="number" min={1} placeholder="e.g. 10" style={{ ...inputStyle, width: 130 }} value={form.value} onChange={(e) => setForm({ ...form, value: e.target.value })} /></div>
+        <div className="admin-field"><label htmlFor="newCouponExpires">Valid until <small style={{ color: "var(--muted)", fontWeight: 500 }}>(optional)</small></label><input id="newCouponExpires" type="date" style={{ ...inputStyle, width: 160 }} value={form.expires} onChange={(e) => setForm({ ...form, expires: e.target.value })} /></div>
+        <div className="admin-field"><label htmlFor="newCouponMax">Max uses <small style={{ color: "var(--muted)", fontWeight: 500 }}>(optional)</small></label><input id="newCouponMax" type="number" min={1} placeholder="Unlimited" style={{ ...inputStyle, width: 120 }} value={form.maxUses} onChange={(e) => setForm({ ...form, maxUses: e.target.value })} /></div>
         <button className="admin-btn primary" type="button" style={{ alignSelf: "flex-end", height: 42 }} onClick={add}>Add code</button>
       </div>
       <p className="admin-form-msg" aria-live="polite" style={{ marginBottom: ".8rem", color: msg?.ok ? "#446046" : "#a84d58" }}>{msg?.text}</p>
       <table className="admin-table">
-        <thead><tr><th>Code</th><th>Type</th><th>Value</th><th>Status</th><th>Actions</th></tr></thead>
+        <thead><tr><th>Code</th><th>Type</th><th>Value</th><th>Used</th><th>Valid until</th><th>Status</th><th>Actions</th></tr></thead>
         <tbody>
           {coupons.map((c) => (
             <tr key={c.code}>
               <td><span className="coupon-tag">{c.code}</span></td>
               <td>{c.type === "percent" ? "Percent" : "Flat"}</td>
               <td>{c.type === "percent" ? `${c.value}%` : `৳${c.value}`}</td>
-              <td><span className={`pill ${c.active ? "live" : "off"}`}>{c.active ? "Active" : "Off"}</span></td>
+              <td>{c.uses ?? 0}{c.maxUses ? ` of ${c.maxUses}` : ""}</td>
+              <td>{c.expiresAt ? formatDate(c.expiresAt) : "No end date"}</td>
+              <td>{(() => {
+                const expired = !!c.expiresAt && new Date(c.expiresAt) < new Date();
+                const usedUp = !!c.maxUses && (c.uses ?? 0) >= c.maxUses;
+                return <span className={`pill ${c.active && !expired && !usedUp ? "live" : "off"}`}>{!c.active ? "Off" : expired ? "Expired" : usedUp ? "Used up" : "Active"}</span>;
+              })()}</td>
               <td style={{ display: "flex", gap: ".4rem", flexWrap: "wrap" }}>
                 <button className="admin-btn" style={{ fontSize: ".75rem", color: "var(--rose-deep)" }} type="button" onClick={() => void adminApi.toggleCoupon(c.code, !c.active)}>{c.active ? "Deactivate" : "Activate"}</button>
-                <button className="admin-btn danger" style={{ fontSize: ".75rem" }} type="button" onClick={() => void adminApi.removeCoupon(c.code)}>Delete</button>
+                <button className="admin-btn danger" style={{ fontSize: ".75rem" }} type="button" onClick={() => { if (window.confirm(`Delete the code ${c.code}?`)) void adminApi.removeCoupon(c.code); }}>Delete</button>
               </td>
             </tr>
           ))}
@@ -366,27 +481,26 @@ function PermRow({ label, value, onChange }: { label: string; value: boolean; on
   );
 }
 
-/* ───────────────────────── Prices & sprays ───────────────────────── */
+/* ───────────────────────── Sizes on sale (inside the Inventory tab) ───────────────────────── */
 type Draft = Record<string, string>;
 const draftOf = (vols: number[], values: Record<number, number | undefined>): Draft =>
   Object.fromEntries(vols.map((v) => [v, values[v] === undefined ? "" : String(values[v])]));
 const sameDraft = (keys: (number | string)[], a: Draft, b: Draft) => keys.every((k) => (a[k] ?? "") === (b[k] ?? ""));
 const num = (s: string | undefined) => (s === undefined || s.trim() === "" ? NaN : Number(s));
 const numInput = { ...inputStyle, width: 88, minHeight: 38, padding: ".45rem .55rem", textAlign: "right" as const };
-const editedPill = <span className="pill live" style={{ marginLeft: ".4rem" }}>Edited</span>;
 
 /**
  * Admin control of the volume sections customers can choose (add / delete), the spray count of each,
  * every perfume's price per volume (blank = not offered), and oil / gift-set prices.
  * Changes apply immediately to the storefront, product pop-up, filters, search, cart and checkout.
  */
-export function PricingPanel() {
+export function SizesPanel() {
   const overrides = useCatalogOverrides();
+  const perfumes = perfumesOf(overrides);
   const { showToast } = useUI();
   const volumes = activeVolumes(overrides);
   const sprays = effectiveSprays(overrides);
   const volKey = volumes.join(",");
-  const customised = !!overrides.volumes || Object.keys(overrides.sprays).length > 0;
 
   /* spray drafts */
   const savedSprays = draftOf(volumes, sprays);
@@ -407,63 +521,17 @@ export function PricingPanel() {
   /** Section prices as stored (ignoring Full bottle), so a section hidden by Full bottle still shows its prices here. */
   const sectionView: CatalogOverrides = { ...overrides, fullBottle: undefined };
   const replaced = sectionReplacedByFullBottle(overrides);
-  const previewBase = PRODUCTS.find((p) => p.id === previewId) ?? PRODUCTS[0];
+  const previewBase = perfumes.find((p) => p.id === previewId) ?? perfumes[0] ?? PRODUCTS[0];
   const previewProduct = applyToProduct(previewBase, sectionView);
-  const previewLive = applyToProduct(previewBase, overrides);
 
-  /* Full bottle section */
-  const fb = fullBottleOf(overrides);
-  const fbLive = fullBottleLive(overrides);
-  const fbSaved = { ml: String(fb.ml), sprays: String(fb.sprays), price: fb.price === null ? "" : String(fb.price) };
-  const [fbDraft, setFbDraft] = useState(fbSaved);
-  const [fbMsg, setFbMsg] = useState("");
-  const fbKey = JSON.stringify(overrides.fullBottle ?? {});
-  useEffect(() => { const f = fullBottleOf(overrides); setFbDraft({ ml: String(f.ml), sprays: String(f.sprays), price: f.price === null ? "" : String(f.price) }); setFbMsg(""); }, [fbKey]); // eslint-disable-line react-hooks/exhaustive-deps
-  const fbDirty = fbDraft.ml !== fbSaved.ml || fbDraft.sprays !== fbSaved.sprays || fbDraft.price !== fbSaved.price;
-  const fbDraftMl = num(fbDraft.ml);
-  const fbClash = Number.isInteger(fbDraftMl) && volumes.includes(fbDraftMl);
-  const fbSoldFor = PRODUCTS.filter((p) => fullBottleFor(p, overrides)).length;
 
-  /** Asks which section to keep when the Full bottle size equals an existing section. */
-  const confirmClash = (ml: number) => window.confirm(
-    `A ${ml} ml section already exists. A ${ml} ml full bottle is the same bottle, so customers can only be shown one of them.\n\n`
-    + `OK — show "Full bottle" and hide the ${ml} ml section while Full bottle is ON.\n`
-    + `Cancel — keep the ${ml} ml section (choose a different Full bottle size, or delete the ${ml} ml section).`,
-  );
-  const saveFullBottle = async (enabled: boolean) => {
-    const ml = num(fbDraft.ml);
-    const price = fbDraft.price.trim() === "" ? null : num(fbDraft.price);
-    if (fbDraft.ml.trim() === "") { setFbMsg("Enter the full bottle size in ml."); return; }
-    if (fbDraft.sprays.trim() === "") { setFbMsg("Enter the spray count."); return; }
-    if (enabled && price === null) { setFbMsg("Set the full bottle price before switching it ON."); return; }
-    const alreadyReplacing = fbLive && fb.ml === ml;
-    if (enabled && volumes.includes(ml) && !alreadyReplacing && !confirmClash(ml)) { setFbMsg(`Kept the ${ml} ml section. Choose a different Full bottle size, or delete the ${ml} ml section first.`); return; }
-    const res = await catalogOverridesApi.saveFullBottle({ enabled, ml, sprays: num(fbDraft.sprays), price });
-    if (!res.ok) { setFbMsg(res.error ?? ""); return; }
-    setFbMsg("");
-    showToast(enabled ? `Full bottle is ON (${ml} ml).` : "Full bottle saved — it's OFF, so customers don't see it.");
-  };
-  const toggleFullBottle = async () => {
-    if (fb.enabled) {
-      const res = await catalogOverridesApi.saveFullBottle({ ...fb, enabled: false });
-      if (!res.ok) { setFbMsg(res.error ?? ""); return; }
-      showToast("Full bottle is OFF — hidden from customers.");
-    } else {
-      await saveFullBottle(true);
-    }
-  };
-
-  const pricesAt = (v: number) => PRODUCTS.map((p) => applyToProduct(p, sectionView).prices[v]).filter((x): x is number => x !== undefined);
+  const pricesAt = (v: number) => perfumes.map((p) => applyToProduct(p, sectionView).prices[v]).filter((x): x is number => x !== undefined);
   const pricedCount = (v: number) => pricesAt(v).length;
   const priceSummary = (v: number) => {
     const ps = pricesAt(v);
     if (!ps.length) return "Not priced yet";
     const lo = Math.min(...ps), hi = Math.max(...ps);
     return lo === hi ? money(lo) : `${money(lo)} – ${money(hi)}`;
-  };
-  const goToPrices = (v: number) => {
-    document.getElementById("perfume-prices")?.scrollIntoView({ behavior: "smooth", block: "start" });
-    setTimeout(() => document.querySelector<HTMLInputElement>(`input[aria-label$=" ${v} ml price"]`)?.focus({ preventScroll: true }), 450);
   };
 
   const saveSprays = async () => {
@@ -490,23 +558,17 @@ export function PricingPanel() {
     if (!res.ok) { showToast(res.error ?? "Could not remove."); return; }
     showToast(`${v} ml removed from the shop.`);
   };
-  const restoreDefaults = async () => {
-    if (!window.confirm("Restore the default volumes (3, 6, 9, 15, 50, 100 ml), their spray counts and the original perfume prices?")) return;
-    await catalogOverridesApi.resetVolumes();
-    showToast("Default volumes, spray counts and prices restored.");
-  };
 
   return (
     <>
       <Panel
-        title="Volume sections"
-        subtitle="Each section is one size customers can choose: its volume, spray count and price. Delete a section to stop selling that size; add one to start selling a new size."
-        action={customised ? <button className="admin-btn" type="button" onClick={restoreDefaults}>Restore defaults</button> : undefined}
+        title="Sizes on sale"
+        subtitle="Each size customers can choose: its volume and spray count. Delete a size to stop selling it; add one to start selling a new size. Each perfume's own prices are set with Edit in the table above."
       >
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: ".6rem", marginBottom: ".4rem" }}>
           <label htmlFor="previewAs" style={{ fontSize: ".82rem", fontWeight: 700 }}>Customer view shown for</label>
           <select id="previewAs" style={{ ...inputStyle, width: "auto", minHeight: 36, padding: ".35rem .6rem" }} value={previewId} onChange={(e) => setPreviewId(Number(e.target.value))}>
-            {PRODUCTS.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            {perfumes.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
           <small style={{ color: "var(--muted)" }}>Prices can differ per perfume — pick one to see exactly what its customers see.</small>
         </div>
@@ -538,11 +600,10 @@ export function PricingPanel() {
                   <td>
                     {v === replaced
                       ? <span className="pill off">Hidden</span>
-                      : <span className={`pill ${n ? "live" : "off"}`}>{n} of {PRODUCTS.length} perfumes</span>}
+                      : <span className={`pill ${n ? "live" : "off"}`}>{n} of {perfumes.length} perfumes</span>}
                   </td>
                   <td style={{ whiteSpace: "nowrap" }}>
                     <div style={{ display: "flex", gap: ".4rem" }}>
-                      <button className="admin-btn" style={{ fontSize: ".75rem", color: "var(--rose-deep)" }} type="button" onClick={() => goToPrices(v)}>Set prices</button>
                       <button className="admin-btn danger" style={{ fontSize: ".75rem" }} type="button" disabled={volumes.length <= 1}
                         title={volumes.length <= 1 ? "At least one volume must stay on sale" : `Stop selling ${v} ml`} onClick={() => removeVolume(v)}>Delete</button>
                     </div>
@@ -592,44 +653,11 @@ export function PricingPanel() {
             <button className="admin-btn primary" type="submit" style={{ height: 40 }}>Add section</button>
           </div>
           <p className="admin-form-msg" aria-live="polite">{addMsg}</p>
-          <small style={{ color: "var(--muted)" }}>The new section goes on sale for every perfume at this price. To charge a different price for a particular perfume, change it in “Perfume prices” below.</small>
+          <small style={{ color: "var(--muted)" }}>The new section goes on sale for every perfume at this price. To charge a different price for one perfume, open it with Edit in the Inventory table.</small>
         </form>
       </Panel>
 
 
-      <div style={{ height: "1.25rem" }} />
-      <div id="perfume-prices" style={{ scrollMarginTop: "6rem" }} />
-      <Panel title="Perfume prices" subtitle="Price for each volume, in ৳. Leave a box empty to not offer that volume for that perfume. Edited prices apply everywhere, including bags customers have already filled.">
-        <table className="admin-table">
-          <thead><tr><th>Perfume</th>{volumes.map((v) => (
-            <th key={v} style={{ textAlign: "right", opacity: v === replaced ? 0.55 : 1 }}>
-              {v} ml
-              <small style={{ display: "block", fontWeight: 500, letterSpacing: 0, textTransform: "none", color: "var(--muted)" }}>
-                {v === replaced ? "hidden (Full bottle)" : sprays[v] !== undefined ? formatSprays(sprays[v]) : "—"}
-              </small>
-            </th>
-          ))}{fbLive && (
-            <th style={{ textAlign: "right" }}>
-              Full bottle
-              <small style={{ display: "block", fontWeight: 500, letterSpacing: 0, textTransform: "none", color: "var(--muted)" }}>{fb.ml} ml · {formatSprays(fb.sprays)}</small>
-            </th>
-          )}<th>Actions</th></tr></thead>
-          <tbody>
-            {PRODUCTS.map((p) => <PerfumePriceRow key={p.id} base={p} volumes={volumes} overrides={overrides} fullColumn={fbLive} />)}
-          </tbody>
-        </table>
-      </Panel>
-
-      <div style={{ height: "1.25rem" }} />
-      <Panel title="Perfume oils & gift sets" subtitle="Single-price items.">
-        <table className="admin-table">
-          <thead><tr><th>Item</th><th>Type</th><th style={{ textAlign: "right" }}>Price (৳)</th><th>Actions</th></tr></thead>
-          <tbody>
-            {GIFTS.map((g) => <ItemPriceRow key={g.id} id={g.id} name={g.name} kind="Gift set" base={g.price} custom={overrides.itemPrices[g.id]} />)}
-            {OILS.map((o) => <ItemPriceRow key={o.id} id={o.id} name={o.name} kind="Perfume oil · 6 ml" base={o.price} custom={overrides.itemPrices[o.id]} />)}
-          </tbody>
-        </table>
-      </Panel>
     </>
   );
 }
@@ -669,103 +697,5 @@ function CustomerTile({ ml, price, sprays, perfume, draft, full, fullMl, replace
       <span>{offered ? money(price) : draft ? "৳—" : "Not sold"}</span>
       {sprays !== undefined ? <small className="size-option-sprays">{formatSprays(sprays)}</small> : draft ? <small className="size-option-sprays">— sprays</small> : null}
     </div>
-  );
-}
-
-function PerfumePriceRow({ base, volumes, overrides, fullColumn }: { base: Product; volumes: number[]; overrides: CatalogOverrides; fullColumn: boolean }) {
-  const { showToast } = useUI();
-  const sectionView: CatalogOverrides = { ...overrides, fullBottle: undefined };
-  const effective = applyToProduct(base, sectionView);
-  const live = applyToProduct(base, overrides);
-  const fullKeys = fullColumn ? ["full"] : [];
-  const withFull = (d: Draft): Draft => (fullColumn ? { ...d, full: live.fullBottle ? String(live.fullBottle.price) : "" } : d);
-  const saved = withFull(draftOf(volumes, effective.prices));
-  const [draft, setDraft] = useState<Draft>(saved);
-  const [msg, setMsg] = useState("");
-  const custom = overrides.prices[String(base.id)];
-  const key = volumes.join(",") + JSON.stringify(custom ?? {});
-  const fbKey = JSON.stringify(overrides.fullBottle ?? {}) + String(fullColumn);
-  useEffect(() => { setDraft(saved); setMsg(""); }, [key, fbKey]); // eslint-disable-line react-hooks/exhaustive-deps
-  const dirty = !sameDraft([...volumes, ...fullKeys], draft, saved);
-  const edited = !!custom && Object.keys(custom).some((v) => volumes.includes(Number(v)) || (fullColumn && v === "full"));
-  const hidden = Object.keys(live.prices).length === 0 && !live.fullBottle;
-
-  const save = async () => {
-    const full = fullColumn ? ((draft.full ?? "").trim() === "" ? null : num(draft.full)) : undefined;
-    const res = await catalogOverridesApi.setProductPrices(base.id, Object.fromEntries(volumes.map((v) => [v, (draft[v] ?? "").trim() === "" ? null : num(draft[v])])), full);
-    if (!res.ok) { setMsg(res.error ?? ""); return; }
-    showToast(`${base.name} prices saved.`);
-  };
-
-  return (
-    <tr>
-      <td>
-        <strong style={{ fontSize: ".9rem" }}>{base.name}</strong>{edited && editedPill}
-        {hidden && <span className="pill off" style={{ marginLeft: ".4rem" }} title="No priced volume on sale — hidden from the shop">Hidden</span>}
-        <small style={{ display: "block", color: "var(--muted)", fontSize: ".73rem" }}>{base.family}</small>
-        {msg && <small style={{ display: "block", color: "#a84d58", fontWeight: 700, maxWidth: 260 }}>{msg}</small>}
-      </td>
-      {volumes.map((v) => (
-        <td key={v} style={{ textAlign: "right" }}>
-          <input
-            aria-label={`${base.name} ${v} ml price`} type="number" inputMode="numeric" min={0} step={1} style={numInput} placeholder="—"
-            title={base.prices[v] !== undefined ? `Default: ৳${base.prices[v]}. Empty = not offered.` : "New volume. Empty = not offered."}
-            value={draft[v] ?? ""} onChange={(e) => { setDraft({ ...draft, [v]: e.target.value }); setMsg(""); }}
-          />
-        </td>
-      ))}
-      {fullColumn && (
-        <td style={{ textAlign: "right" }}>
-          <input
-            aria-label={`${base.name} full bottle price`} type="number" inputMode="numeric" min={0} step={1} style={numInput} placeholder="—"
-            title={`Full bottle section price: ৳${fullBottleOf(overrides).price}. Empty = no full bottle for this perfume.`}
-            value={draft.full ?? ""} onChange={(e) => { setDraft({ ...draft, full: e.target.value }); setMsg(""); }}
-          />
-        </td>
-      )}
-      <td style={{ whiteSpace: "nowrap" }}>
-        <div style={{ display: "flex", gap: ".4rem" }}>
-          <button className="admin-btn primary" style={{ fontSize: ".75rem" }} type="button" disabled={!dirty} onClick={save}>Save</button>
-          {dirty && <button className="admin-btn" style={{ fontSize: ".75rem" }} type="button" onClick={() => { setDraft(saved); setMsg(""); }}>Cancel</button>}
-          {edited && !dirty && <button className="admin-btn" style={{ fontSize: ".75rem" }} type="button" onClick={async () => { await catalogOverridesApi.resetProductPrices(base.id); showToast(`${base.name} prices reset.`); }}>Reset</button>}
-        </div>
-      </td>
-    </tr>
-  );
-}
-
-function ItemPriceRow({ id, name, kind, base, custom }: { id: string; name: string; kind: string; base: number; custom?: number }) {
-  const { showToast } = useUI();
-  const saved = String(custom ?? base);
-  const [draft, setDraft] = useState(saved);
-  const [msg, setMsg] = useState("");
-  useEffect(() => { setDraft(String(custom ?? base)); setMsg(""); }, [custom, base]);
-  const dirty = draft !== saved;
-
-  const save = async () => {
-    const res = await catalogOverridesApi.setItemPrice(id, draft.trim() === "" ? NaN : Number(draft));
-    if (!res.ok) { setMsg(res.error ?? ""); return; }
-    showToast(`${name} price saved.`);
-  };
-
-  return (
-    <tr>
-      <td>
-        <strong style={{ fontSize: ".9rem" }}>{name}</strong>{custom !== undefined && editedPill}
-        {msg && <small style={{ display: "block", color: "#a84d58", fontWeight: 700 }}>{msg}</small>}
-      </td>
-      <td style={{ color: "var(--muted)", fontSize: ".82rem" }}>{kind}</td>
-      <td style={{ textAlign: "right" }}>
-        <input aria-label={`${name} price`} type="number" inputMode="numeric" min={0} step={1} style={numInput} title={`Default: ৳${base}`}
-          value={draft} onChange={(e) => { setDraft(e.target.value); setMsg(""); }} />
-      </td>
-      <td style={{ whiteSpace: "nowrap" }}>
-        <div style={{ display: "flex", gap: ".4rem" }}>
-          <button className="admin-btn primary" style={{ fontSize: ".75rem" }} type="button" disabled={!dirty} onClick={save}>Save</button>
-          {dirty && <button className="admin-btn" style={{ fontSize: ".75rem" }} type="button" onClick={() => { setDraft(saved); setMsg(""); }}>Cancel</button>}
-          {custom !== undefined && !dirty && <button className="admin-btn" style={{ fontSize: ".75rem" }} type="button" onClick={async () => { await catalogOverridesApi.resetItemPrice(id); showToast(`${name} price reset.`); }}>Reset</button>}
-        </div>
-      </td>
-    </tr>
   );
 }

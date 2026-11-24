@@ -6,7 +6,7 @@ import { cartService, cartTotals } from "@/lib/services/cart";
 import { EMPTY_OVERRIDES, fullBottleDetail } from "@/lib/services/catalogOverrides";
 import { hasAnySize } from "@/lib/volumes";
 import { useApi } from "@/lib/api/client";
-import { ADMIN, ordersUrl, type AdminMe, type AdminFaq, type AdminNotice, type Page, type ProductDetails, type PublicCategory } from "@/lib/api/admin";
+import { ADMIN, ordersUrl, type AdminMe, type AdminSale, type AdminFaq, type AdminNotice, type Page, type ProductDetails, type PublicCategory } from "@/lib/api/admin";
 import { ME, MY_ORDERS } from "@/lib/api/customer";
 import type {
   CartItem, CatalogOverrides, Coupon, GiftSet, InventoryRecord, LoginEvent, OilProduct, Order, Product, PublicCustomer, PublicManager,
@@ -126,7 +126,7 @@ export function useAdminMe() {
   return { session: data?.session ?? null, needsSetup: data?.needsSetup ?? false, loaded };
 }
 
-/** Admin price & spray overrides (Admin → Prices & sprays). */
+/** Admin price & spray overrides (Admin → Perfumes & prices). */
 export function useCatalogOverrides(): CatalogOverrides {
   const { data } = useApi<CatalogOverrides>(ADMIN.catalog);
   return useMemo(() => ({ ...EMPTY_OVERRIDES, ...(data ?? {}) }), [data]);
@@ -146,6 +146,7 @@ export function useOrders(page = 1, pageSize = 20, status?: string) {
 }
 export const useLoginHistory = () => useList<LoginEvent>(ADMIN.history);
 export const useCoupons = () => useList<Coupon>(ADMIN.coupons);
+export const useSales = () => useList<AdminSale>(ADMIN.sales);
 export const useAdminNotices = () => useList<AdminNotice>(ADMIN.notice);
 export const useAdminCategories = () => useList<PublicCategory>(ADMIN.categories);
 export const useAdminProducts = () => useList<{ id: number; name: string; family: string }>(ADMIN.products);

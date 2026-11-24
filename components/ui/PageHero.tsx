@@ -7,11 +7,13 @@ interface Props {
   noteTitle: string;
   note: string;
   orb: string;
+  /** Shorter hero for task pages (shop, checkout) so their content starts above the fold. */
+  compact?: boolean;
 }
 
-export function PageHero({ eyebrow, title, lead, noteTitle, note, orb }: Props) {
+export function PageHero({ eyebrow, title, lead, noteTitle, note, orb, compact }: Props) {
   return (
-    <section className="page-hero" style={{ "--page-orb": orb } as CSSProperties}>
+    <section className={`page-hero${compact ? " page-hero--compact" : ""}`} style={{ "--page-orb": orb } as CSSProperties}>
       <div className="container page-hero-inner">
         <div>
           <span className="eyebrow">{eyebrow}</span>

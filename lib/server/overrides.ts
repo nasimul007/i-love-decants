@@ -57,6 +57,11 @@ export async function getOverrides(tx: Tx | typeof db = db): Promise<CatalogOver
   return {
     volumes: sameAsDefault(volumes) ? undefined : volumes, prices, itemPrices, sprays,
     fullBottle: undefined, // the Full bottle option is retired: never reported to the admin
+    items: {
+      products: products.map(({ id, name, family }) => ({ id, name, family })),
+      oils: oils.map(({ id, name, price }) => ({ id, name, price })).sort((a, b) => a.name.localeCompare(b.name)),
+      gifts: gifts.map(({ id, name, price, description, accent }) => ({ id, name, price, description, accent })),
+    },
   };
 }
 
@@ -161,6 +166,7 @@ export const catalogOps = {
   },
 
   async resetProductPrices(tx: Tx, id: number) {
+    if (!PRODUCTS.some((p) => p.id === id)) throw bad("This perfume was added in the admin, so it has no default prices to go back to.");
     const vols = (await tx.volumeSetting.findMany({ where: { onSale: true } })).map((v) => v.volumeMl);
     await tx.productVariant.deleteMany({ where: { productId: id } });
     await defaultVariants(tx, vols, [id]);

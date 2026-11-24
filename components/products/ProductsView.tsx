@@ -9,11 +9,12 @@ import { useUI } from "@/components/providers/UIProvider";
 import { useCart, useCatalog, useFullBottle, useVolumes } from "@/hooks/useServices";
 import { priceFrom } from "@/lib/volumes";
 import { money } from "@/lib/format";
+import { AUDIENCES, STRENGTHS } from "@/lib/config";
 
 type Tab = "decants" | "oils" | "gifts";
 type Sort = "featured" | "price-low" | "price-high" | "name";
-interface Filters { family: string; size: string; price: string; sort: Sort }
-const DEFAULTS: Filters = { family: "all", size: "all", price: "all", sort: "featured" };
+interface Filters { family: string; brand: string; audience: string; strength: string; size: string; price: string; sort: Sort }
+const DEFAULTS: Filters = { family: "all", brand: "all", audience: "all", strength: "all", size: "all", price: "all", sort: "featured" };
 
 function Chip({ name, value, label, current, onPick }: { name: string; value: string; label: string; current: string; onPick: (v: string) => void }) {
   return (
@@ -62,10 +63,11 @@ export function ProductsView() {
     const list = products.filter((p) => {
       const min = priceFrom(p);
       const family = filters.family === "all" || p.family.toLowerCase() === filters.family;
+      const facets = (["brand", "audience", "strength"] as const).every((k) => filters[k] === "all" || p[k] === filters[k]);
       const size = filters.size === "all" || (filters.size === "full" ? !!p.fullBottle : Object.prototype.hasOwnProperty.call(p.prices, filters.size));
       const price = filters.price === "all" || (filters.price === "under300" ? min < 300 : min >= 300);
-      const hay = [p.name, p.family, p.notes, p.description].join(" ").toLowerCase();
-      return family && size && price && (!query || hay.includes(query));
+      const hay = [p.name, p.brand, p.family, p.notes, p.description, ...(p.keyNotes ?? [])].join(" ").toLowerCase();
+      return family && facets && size && price && (!query || hay.includes(query));
     });
     if (filters.sort === "price-low") list.sort((a, b) => priceFrom(a) - priceFrom(b));
     if (filters.sort === "price-high") list.sort((a, b) => priceFrom(b) - priceFrom(a));
@@ -74,6 +76,16 @@ export function ProductsView() {
   }, [products, filters, query]);
 
   const set = (key: keyof Filters) => (value: string) => setFilters((f) => ({ ...f, [key]: value }));
+  const used = (k: "brand" | "audience" | "strength", order?: readonly string[]) => {
+    const vals = [...new Set(products.map((p) => p[k]).filter((v): v is string => !!v))];
+    return order ? order.filter((v) => vals.includes(v)) : vals.sort();
+  };
+  const families = categories.filter((c) => products.some((p) => p.family.toLowerCase() === c.toLowerCase()));
+  const facetGroups: [keyof Filters, string, string[]][] = [
+    ["brand", "Brand", used("brand")],
+    ["audience", "For", used("audience", AUDIENCES)],
+    ["strength", "Strength", used("strength", STRENGTHS)],
+  ];
 
   // A category hidden by the admin can't stay selected as a filter.
   useEffect(() => {
@@ -126,7 +138,24 @@ export function ProductsView() {
               <span className="filter-group-title">Scent family</span>
               <div className="filter-options">
                 <Chip name="family" value="all" label="All" current={filters.family} onPick={set("family")} />
-                {categories.map((f) => <Chip key={f} name="family" value={f.toLowerCase()} label={f} current={filters.family} onPick={set("family")} />)}
+                {families.map((f) => <Chip key={f} name="family" value={f.toLowerCase()} label={f} current={filters.family} onPick={set("family")} />)}
+              </div>
+            </div>
+            {facetGroups.filter(([, , vals]) => vals.length > 1).map(([key, title, vals]) => (
+              <div className="filter-group" key={key}>
+                <span className="filter-group-title">{title}</span>
+                <div className="filter-options">
+                  <Chip name={key} value="all" label="All" current={filters[key]} onPick={set(key)} />
+                  {vals.map((v) => <Chip key={v} name={key} value={v} label={v} current={filters[key]} onPick={set(key)} />)}
+                </div>
+              </div>
+            ))}
+            <div className="filter-group">
+              <span className="filter-group-title">Size</span>
+              <div className="filter-options">
+                <Chip name="size" value="all" label="Any" current={filters.size} onPick={set("size")} />
+                {volumes.map((v) => <Chip key={v} name="size" value={String(v)} label={`${v} ml`} current={filters.size} onPick={set("size")} />)}
+                {fullBottle && <Chip name="size" value="full" label="Full bottle" current={filters.size} onPick={set("size")} />}
               </div>
             </div>
             <div className="filter-group">
@@ -176,10 +205,10 @@ export function ProductsView() {
         <div className="oil-grid">
           {oils.map((oil) => (
             <article className="faq-card oil-card" key={oil.id}>
-              <h3>{oil.brand}</h3>
+              <h3>{oil.name}</h3>
               <p>Alcohol-free 6 ml roll-on, easy to carry and reapply through the day.</p>
               <div className="oil-card-footer">
-                <span className="gift-price">{money(oil.price)}</span>
+                <span className="gift-price">{oil.wasPrice !== undefined && <s className="was-price">{money(oil.wasPrice)}</s>}{money(oil.price)}</span>
                 <button className="btn btn-primary btn-small" type="button" onClick={() => addOil(oil.id, oil.name)}>Add to cart</button>
               </div>
             </article>
@@ -223,7 +252,7 @@ export function ProductsView() {
               <h3>{g.name}</h3>
               <p>{g.description}</p>
               <div className="gift-card-footer">
-                <span className="gift-price">{money(g.price)}</span>
+                <span className="gift-price">{g.wasPrice !== undefined && <s className="was-price">{money(g.wasPrice)}</s>}{money(g.price)}</span>
                 <button className="btn btn-primary btn-small" type="button" onClick={() => addGift(g.id, g.name)}>Add to cart</button>
               </div>
             </article>

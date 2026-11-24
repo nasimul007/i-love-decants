@@ -26,6 +26,12 @@ model Product {
   ink         String
   shape       String
   scentTags   String[]
+  /// Perfume parameters (see lib/config.ts PERFUME_FIELDS). "" = not set yet; the storefront hides empty ones.
+  brand       String           @default("")
+  audience    String           @default("")
+  strength    String           @default("")
+  lasting     String           @default("")
+  keyNotes    String[]         @default([])
   variants    ProductVariant[]
   inventory   InventoryItem?
   images      ProductImage[]
@@ -307,4 +313,17 @@ model ProductImage {
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([productId, sort])
+}
+
+/// A sale on a product, a scent family or a whole product type, applied to shop prices by the server (lib/server/catalog.ts).
+/// target: "product:<shop id>" | "family:<lower-case family>" | "type:perfume" | "type:oil" | "type:gift".
+/// When several sales match a price, the customer gets the lowest resulting price.
+model Sale {
+  id        Int        @id @default(autoincrement())
+  target    String
+  type      CouponType
+  value     Int
+  active    Boolean    @default(true)
+  endsAt    DateTime?
+  createdAt DateTime   @default(now())
 }

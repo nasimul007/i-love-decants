@@ -2,7 +2,7 @@
 
 import { call, clearCache, mutate, refresh, refreshPrefix } from "./client";
 import type {
-  AdminSession, CatalogOverrides, Coupon, InventoryKind, InventoryRecord, ManagerPermissions, Order, PublicManager, ServiceResult,
+  AdminSession, BottleShape, CatalogOverrides, Coupon, InventoryKind, InventoryRecord, ManagerPermissions, Order, PublicManager, ServiceResult,
 } from "@/types";
 
 export const ADMIN = {
@@ -13,6 +13,7 @@ export const ADMIN = {
   customers: "/api/admin/customers",
   history: "/api/admin/history",
   coupons: "/api/admin/coupons",
+  sales: "/api/admin/sales",
   managers: "/api/admin/managers",
   orders: "/api/orders",
   notice: "/api/admin/notice",
@@ -27,11 +28,13 @@ export interface Page<T> { items: T[]; page: number; pageSize: number; total: nu
 export const ordersUrl = (page = 1, pageSize = 20, status?: string) =>
   `${ADMIN.orders}?page=${page}&pageSize=${pageSize}${status ? `&status=${status}` : ""}`;
 
+export interface AdminSale { id: number; target: string; type: "percent" | "flat"; value: number; active: boolean; endsAt: string | null }
 export interface AdminNotice { id: number; text: string; enabled: boolean }
 export interface PublicCategory { id: number; name: string; hidden: boolean; products: number }
 export interface AdminFaq { id: number; question: string; answer: string; enabled: boolean }
 export interface PublicFaq { id: number; question: string; answer: string }
-export interface ProductDetails { id: number; name: string; family: string; description: string; top: string; heart: string; base: string; images: number[] }
+export interface ProductDetails { id: number; name: string; badge: string; notes: string; family: string; description: string; top: string; heart: string; base: string; brand: string; audience: string; strength: string; lasting: string; keyNotes: string[]; liquid: string; pale: string; ink: string; shape: BottleShape; images: number[] }
+export type ProductDetailsDraft = Omit<ProductDetails, "id" | "family" | "images">;
 export interface AdminMe { session: AdminSession | null; needsSetup: boolean }
 
 /** Cached staff data must not outlive the staff session. */
@@ -65,7 +68,8 @@ export const adminApi = {
   /* inventory */
   async addInventory(input: { name: string; type: InventoryKind; sizes: string; price: number; stock: number }): Promise<ServiceResult<unknown>> {
     const res = await call<InventoryRecord>("POST", ADMIN.inventory, input);
-    await Promise.all([refresh(ADMIN.inventory), refresh(ADMIN.overview)]);
+    // A new perfume / oil / gift set must show up at once in every admin table, not only Inventory.
+    await Promise.all([refresh(ADMIN.inventory), refresh(ADMIN.overview), refresh(ADMIN.productDetails), refresh(ADMIN.products), refresh(ADMIN.catalog), refresh(ADMIN.categories), refresh("/api/products")]);
     return res;
   },
   async patchInventory(id: string, patch: { stockDelta?: number; stockSet?: number; enabled?: boolean; visible?: boolean; removed?: boolean }): Promise<ServiceResult<unknown>> {
@@ -75,7 +79,7 @@ export const adminApi = {
   },
 
   /* coupons */
-  async addCoupon(input: { code: string; type: Coupon["type"]; value: number }): Promise<ServiceResult<unknown>> {
+  async addCoupon(input: { code: string; type: Coupon["type"]; value: number; expiresAt?: string | null; maxUses?: number | null }): Promise<ServiceResult<unknown>> {
     const res = await call("POST", ADMIN.coupons, input);
     await refresh(ADMIN.coupons);
     return res;
@@ -83,6 +87,22 @@ export const adminApi = {
   async toggleCoupon(code: string, active: boolean): Promise<ServiceResult<unknown>> {
     const res = await call("PATCH", `${ADMIN.coupons}/${encodeURIComponent(code)}`, { active });
     await refresh(ADMIN.coupons);
+    return res;
+  },
+  /* sales: shop prices change at once, so the storefront catalogue is refreshed too */
+  async addSale(input: Omit<AdminSale, "id" | "active">): Promise<ServiceResult<unknown>> {
+    const res = await call("POST", ADMIN.sales, input);
+    await Promise.all([refresh(ADMIN.sales), refresh("/api/products")]);
+    return res;
+  },
+  async setSaleActive(id: number, active: boolean): Promise<ServiceResult<unknown>> {
+    const res = await call("PATCH", `${ADMIN.sales}/${id}`, { active });
+    await Promise.all([refresh(ADMIN.sales), refresh("/api/products")]);
+    return res;
+  },
+  async removeSale(id: number): Promise<ServiceResult<unknown>> {
+    const res = await call("DELETE", `${ADMIN.sales}/${id}`);
+    await Promise.all([refresh(ADMIN.sales), refresh("/api/products")]);
     return res;
   },
   async removeCoupon(code: string): Promise<ServiceResult<unknown>> {
@@ -156,9 +176,16 @@ export const adminApi = {
   removeFaq(id: number) { return this.faqOp(() => call<AdminFaq[]>("DELETE", `${ADMIN.faq}/${id}`)); },
 
   /* product text */
-  async saveProductDetails(id: number, d: Pick<ProductDetails, "description" | "top" | "heart" | "base">): Promise<ServiceResult<unknown>> {
+  async saveProductDetails(id: number, d: ProductDetailsDraft): Promise<ServiceResult<unknown>> {
     const res = await call("PATCH", `${ADMIN.productDetails}/${id}`, d);
-    await Promise.all([refresh(ADMIN.productDetails), refresh("/api/products")]);
+    await Promise.all([refresh(ADMIN.productDetails), refresh(ADMIN.products), refresh(ADMIN.catalog), refresh(ADMIN.inventory), refresh("/api/products")]);
+    return res;
+  },
+
+  /** Oils and gift sets: name, price and (gift sets) description. */
+  async saveItem(id: string, d: { name: string; price: number; description?: string; accent?: string }): Promise<ServiceResult<unknown>> {
+    const res = await call("PATCH", `/api/admin/items/${encodeURIComponent(id)}`, d);
+    await Promise.all([refresh(ADMIN.catalog), refresh(ADMIN.inventory), refresh("/api/products")]);
     return res;
   },
 
@@ -196,13 +223,7 @@ async function catalogOp<T extends { op: string }>(body: T): Promise<ServiceResu
 export const catalogOverridesApi = {
   addVolume: (ml: number, sprays: number, price?: number) => catalogOp({ op: "addVolume", ml: n(ml), sprays: n(sprays), price: price === undefined ? undefined : n(price) }),
   removeVolume: (ml: number) => catalogOp({ op: "removeVolume", ml }),
-  resetVolumes: () => catalogOp({ op: "resetVolumes" }),
   setSprays: (sprays: Record<number, number>) => catalogOp({ op: "setSprays", sprays: Object.fromEntries(Object.entries(sprays).map(([k, v]) => [k, n(v)])) }),
   setProductPrices: (id: number, prices: Record<number, number | null>, full?: number | null) =>
     catalogOp({ op: "setProductPrices", id, prices: Object.fromEntries(Object.entries(prices).map(([k, v]) => [k, nn(v)])), full: full === undefined ? undefined : nn(full) }),
-  resetProductPrices: (id: number) => catalogOp({ op: "resetProductPrices", id }),
-  setItemPrice: (id: string, price: number) => catalogOp({ op: "setItemPrice", id, price: n(price) }),
-  resetItemPrice: (id: string) => catalogOp({ op: "resetItemPrice", id }),
-  saveFullBottle: (v: { enabled: boolean; ml: number; sprays: number; price: number | null }) =>
-    catalogOp({ op: "saveFullBottle", enabled: v.enabled, ml: n(v.ml), sprays: n(v.sprays), price: nn(v.price) }),
 };

@@ -14,7 +14,7 @@ export default function HomePage() {
         <div className="container hero-grid">
           <div className="hero-copy">
             <h1 className="hero-title" id="homeTitle">A little scent.<br /><em>A lot of feeling.</em></h1>
-            <p className="hero-description">Meet perfume without the pressure. Choose only the volume you need—from a 3 ml first hello to a 100 ml favourite—and enjoy quiet elegance at an approachable price.</p>
+            <p className="hero-description">Meet perfume without the pressure. Choose only the volume you need, anywhere from <VolumeList separator="range" />, and enjoy quiet elegance at an approachable price.</p>
             <div className="hero-actions">
               <Link className="btn btn-primary" href="/products">Explore the collection <span aria-hidden="true">→</span></Link>
               <Link className="btn btn-secondary" href="/custom">Personalise a bottle</Link>
@@ -36,7 +36,7 @@ export default function HomePage() {
             <h2>Luxury made available.</h2>
           </div>
           <div className="welcome-copy">
-            <p>Beautiful perfume should feel welcoming. Start tiny, wear it slowly, and return only when it feels right. No intimidating counters, no oversized commitment—just carefully prepared decants and full bottles.</p>
+            <p>Beautiful perfume should feel welcoming. Start tiny, wear it slowly, and return only when it feels right. No intimidating counters, no oversized commitment—just carefully prepared decants from authentic bottles.</p>
             <div className="value-pills" aria-label="Our qualities">
               <span className="value-pill">Lightweight</span>
               <span className="value-pill">Accessible</span>
@@ -53,7 +53,7 @@ export default function HomePage() {
               <h2 id="featuredTitle">Find your easy reach.</h2>
             </div>
             <div>
-              <p>Swipe or scroll through favourites. Every perfume is available in <VolumeList />.</p>
+              <p>Swipe or scroll through favourites. Sizes range from <VolumeList separator="range" />; each perfume shows the sizes it comes in.</p>
               <Link className="quiet-link" href="/products">See the full collection</Link>
             </div>
           </div>

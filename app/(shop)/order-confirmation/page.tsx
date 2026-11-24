@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { PageHero, RouteView } from "@/components/ui/PageHero";
 import { ConfirmationView } from "@/components/checkout/ConfirmationView";
 
-export const metadata: Metadata = { title: "Order confirmation — I Love Decants" };
+export const metadata: Metadata = { title: "Order confirmation — I Love Decants", robots: { index: false } };
 
 export default function OrderConfirmationPage() {
   return (

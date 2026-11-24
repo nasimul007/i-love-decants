@@ -18,7 +18,7 @@ export function Panel({ title, subtitle, action, children }: { title: string; su
   );
 }
 
-export function Modal({ open, onClose, title, subtitle, children }: { open: boolean; onClose: () => void; title: string; subtitle: string; children: ReactNode }) {
+export function Modal({ open, onClose, title, subtitle, children, wide }: { open: boolean; onClose: () => void; title: string; subtitle: string; children: ReactNode; wide?: boolean }) {
   useEffect(() => {
     document.body.classList.toggle("drawer-open", open);
     return () => document.body.classList.remove("drawer-open");
@@ -28,7 +28,7 @@ export function Modal({ open, onClose, title, subtitle, children }: { open: bool
   // for `position: fixed` and push the dialog far below the visible area.
   return createPortal(
     <div style={{ position: "fixed", zIndex: 5000, inset: 0, display: "grid", placeItems: "center", padding: "1rem", background: "rgba(53,46,48,.52)", backdropFilter: "blur(5px)", overflowY: "auto" }} onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="mgr-modal" role="dialog" aria-modal="true" aria-label={title}>
+      <div className={`mgr-modal${wide ? " mgr-modal--wide" : ""}`} role="dialog" aria-modal="true" aria-label={title}>
         <h2>{title}</h2>
         <p>{subtitle}</p>
         {children}

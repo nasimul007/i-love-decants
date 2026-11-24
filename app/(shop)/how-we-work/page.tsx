@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { PageHero, RouteView, SectionHeading } from "@/components/ui/PageHero";
 
-export const metadata: Metadata = { title: "How we work — I Love Decants" };
+export const metadata: Metadata = { title: "How we work — I Love Decants", description: "How I Love Decants prepares, packs and delivers authentic perfume decants across Bangladesh." };
 
 const STEPS = [
   ["You choose", "Pick a scent, a volume from 3 ml to 100 ml, or a gift set that fits the moment."],
@@ -22,7 +22,7 @@ export default function HowWeWorkPage() {
       <section className="section welcome-band" aria-labelledby="howWeWorkTitle">
         <div className="container">
           <SectionHeading eyebrow="Simple, start to finish" title="Four steps, quietly done." id="howWeWorkTitle">
-            <p>The same calm approach whether you&apos;re trying a 3&nbsp;ml decant or gifting a full bottle.</p>
+            <p>The same calm approach whether you&apos;re trying a 3&nbsp;ml decant or gifting a curated set.</p>
           </SectionHeading>
           <div className="process-grid">
             {STEPS.map(([h, p], i) => <article className="process-card" key={h}><span className="process-number">{i + 1}</span><h3>{h}</h3><p>{p}</p></article>)}

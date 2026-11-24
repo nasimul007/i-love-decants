@@ -157,7 +157,7 @@ export function CheckoutView() {
             <div className="field">
               <label htmlFor="couponInput">Have a code?</label>
               <input
-                id="couponInput" type="text" placeholder="e.g. WELCOME10" autoComplete="off" style={{ textTransform: "uppercase" }}
+                id="couponInput" type="text" placeholder="Enter your code" autoComplete="off" style={{ textTransform: "uppercase" }}
                 value={couponInput}
                 onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
                 onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyCoupon(); } }}
@@ -188,12 +188,12 @@ export function CheckoutView() {
           ))}
         </div>
         <div className="summary-row"><span>Subtotal</span><strong>{money(subtotal)}</strong></div>
-        {bulk > 0 && <div className="summary-row" style={{ color: "var(--sage)" }}><span>{BULK_DISCOUNT.percent}% off orders of {money(BULK_DISCOUNT.minSubtotal)}+</span><strong>−{money(bulk)}</strong></div>}
-        {discount > 0 && <div className="summary-row" style={{ color: "var(--sage)" }}><span>Discount code{coupon ? ` (${coupon.code})` : ""}</span><strong>−{money(discount)}</strong></div>}
+        {bulk > 0 && <div className="summary-row is-deal"><span>Large-order discount ({BULK_DISCOUNT.percent}%)</span><strong>−{money(bulk)}</strong></div>}
+        {discount > 0 && <div className="summary-row is-deal"><span>Discount code{coupon ? ` (${coupon.code})` : ""}</span><strong>−{money(discount)}</strong></div>}
         <div className="summary-row"><span>Delivery</span><strong>{form.city ? money(delivery) : "Choose city"}</strong></div>
         <div className="summary-row summary-total"><span>Grand total</span><strong>{money(grandTotal)}</strong></div>
         <div className="summary-row summary-payment"><span>Payment</span><strong>Cash on Delivery</strong></div>
-        {bulk === 0 && items.length > 0 && <p className="cart-note">Add {money(toBulk)} more to get {BULK_DISCOUNT.percent}% off your order.</p>}
+        {bulk === 0 && items.length > 0 && <p className="deal-note">Add {money(toBulk)} more to get {BULK_DISCOUNT.percent}% off your order.</p>}
         <p className="cart-note">Prices include everything currently in your bag. Adjust quantities from the bag icon before placing your order.</p>
       </aside>
     </div>

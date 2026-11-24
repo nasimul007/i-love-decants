@@ -59,8 +59,8 @@ export function ConfirmationView() {
           )) : <p className="cart-note">Your completed order will appear here.</p>}
         </div>
         <div className="summary-row"><span>Subtotal</span><strong>{money(order?.subtotal ?? 0)}</strong></div>
-        {!!order?.bulkDiscount && <div className="summary-row" style={{ color: "var(--sage)" }}><span>Large-order discount</span><strong>−{money(order.bulkDiscount)}</strong></div>}
-        {!!order?.discount && <div className="summary-row" style={{ color: "var(--sage)" }}><span>Discount{order.couponCode ? ` (${order.couponCode})` : ""}</span><strong>−{money(order.discount)}</strong></div>}
+        {!!order?.bulkDiscount && <div className="summary-row is-deal"><span>Large-order discount</span><strong>−{money(order.bulkDiscount)}</strong></div>}
+        {!!order?.discount && <div className="summary-row is-deal"><span>Discount code{order.couponCode ? ` (${order.couponCode})` : ""}</span><strong>−{money(order.discount)}</strong></div>}
         <div className="summary-row"><span>Delivery</span><strong>{money(order?.delivery.charge ?? 0)}</strong></div>
         <div className="summary-row summary-total"><span>Grand total</span><strong>{money(grand)}</strong></div>
       </aside>
