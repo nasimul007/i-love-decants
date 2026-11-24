@@ -6,7 +6,8 @@ The brief came from *Perfume Parameters for I Love Decants (Level 1 Website)*.
 **Ground rules followed**
 - The desktop design is unchanged. Every phone-only rule sits inside one `@media (max-width: 680px)` block at the end of `app/globals.css`.
 - New UI reuses existing classes and tokens (`.notes-pyramid`, `.note-level`, `.filter-chip`, `.eyebrow` styling, `--rose-deep`, `--line`, `--muted`).
-- Checked on a local copy: desktop 1280 px, phone 375 px, store + admin. `npm run typecheck` and `next build` pass.
+- Checked on a local copy: desktop 1280, 1440 and 1920 px, phone 375 px, store + admin, in the built-in browser and in Chrome. `npm run typecheck`, `next build` and `npx tsx lib/sales.check.ts` pass.
+- Sections 1–7 are the first round; 7b–7e are later client review rounds. Where a later round replaced something, the earlier text says so. **Appendix A lists every changed file.**
 
 ---
 
@@ -50,19 +51,20 @@ Files:
 
 **Now:**
 - *Inventory → **Add product*** creates the real item and links it to stock:
-  - Perfume: a new `Product`. The form hides price and sizes, because a perfume is priced per size in *Perfumes & prices*. It stays hidden until it has a price and stock.
+  - Perfume: a new `Product`. It stays hidden from the shop until it has a price and stock. *(Round 3 added step 2: the full form, prices included, opens right after Add; see 7c.)*
   - Oil: a new `Oil` with its price.
   - Gift set: a new `GiftSet` with its price.
   - Custom bottle: a stock record only, as before.
   - Files: `app/api/admin/inventory/route.ts` and `components/admin/Panels.tsx` (`InventoryPanel`).
-- *Perfumes & prices* lists every perfume, oil and gift set from the database (`lib/server/overrides.ts` now returns `items`).
+- Inventory's **Sizes** column fills itself in: "Not priced yet" for a new perfume, then its size range once priced. Oils show "6 ml" and gift sets "Set", matching the seeded items.
+- *Perfumes & prices* lists every perfume, oil and gift set from the database (`lib/server/overrides.ts` now returns `items`). *(That tab was later merged into Inventory; see 7d.)*
   - Perfumes added in the admin have no "Edited" tag and no "Reset", because they have no catalogue defaults.
   - The server also refuses a reset for them, so a reset can't wipe their prices.
 - Verified end to end: add, price, show in the shop and add to the bag.
 
 ## 3. Store ↔ admin consistency fixes
 - **Admin tab:** renamed "Prices & sprays" to **"Perfumes & prices"**, with perfume details shown first and prices below. *(Later merged into Inventory and removed; see 7d.)*
-- **Discount names:** the same everywhere: "Large-order discount (10%)" and "Discount code (CODE)". Before, it was "Bulk discount", "Coupon", "Discount" or "10% off orders of…" depending on the screen.
+- **Discount names:** the same everywhere: "Large-order discount (10%)" and "Discount code (CODE)". Before, it was "Bulk discount", "Coupon", "Discount" or "10% off orders of…" depending on the screen. Files: `CartDrawer.tsx`, `CheckoutView.tsx`, `ConfirmationView.tsx`, `AccountView.tsx`.
 - **Delivery charges and large-order threshold:** read from `lib/config.ts` on the checkout and delivery pages. They were typed by hand and could drift.
 - **Sizes on the home page and "How decants work":** follow the admin's sizes (`<VolumeList/>`). They were hard-coded as "3 ml to 100 ml" and "3, 6, 9, 15 + 50 and 100 ml full bottles".
 - **Developer/demo text removed from what customers see:**
@@ -70,8 +72,8 @@ Files:
   - Contact FAQ: "This downloadable version is a frontend demo…", now replaced by a real payment answer.
   - "Full bottles" claims on the home page and in the Contact FAQ. Full bottles are retired in the code.
 - **Instagram:** the icon pointed to `instagram.com/yourusername`. It is hidden until a real link is set in `lib/config.ts`.
-- **Checkout:** the coupon box no longer shows a working code (`WELCOME10`) as its example to everyone.
-- **Category editor:** the hint said "e.g. Oriental", which the brief says is the outdated name. It now says "e.g. Woods".
+- **Checkout:** the coupon box no longer shows a working code (`WELCOME10`) as its example to everyone (`CheckoutView.tsx`).
+- **Category editor:** the hint said "e.g. Oriental", which the brief says is the outdated name. It now says "e.g. Woods" (`ContentPanel.tsx`).
 - **Demo families:** the demo catalogue now uses the brief's family names (`lib/data/catalog.ts`). This only affects fresh databases.
 - **Pop-up:** an empty description is no longer shown as an empty paragraph.
 
@@ -92,7 +94,7 @@ New tokens in `:root`:
 - **Classes:** `.is-deal` (text) and `.deal-note` (pale pill).
 
 ## 5. Conversion
-- **Bag drawer** now shows the large-order discount, or how much more is needed to get it, plus the delivery cost and "Pay cash on delivery, no advance payment" before checkout.
+- **Bag drawer** (`CartDrawer.tsx`) now shows the large-order discount, or how much more is needed to get it, plus the delivery cost and "Pay cash on delivery, no advance payment" before checkout.
 - Fewer surprises at checkout, no visible free code, and demo text removed (see section 3).
 
 ## 6. SEO
@@ -115,8 +117,8 @@ Store:
 
 Admin:
 - **Header:** the pinned header took about 45% of the screen, so it now scrolls away on phones. The top bar is more compact and its buttons no longer wrap.
-- **Wide tables** (prices, inventory, orders…) scroll sideways with the first column (item name) pinned.
-- **Perfume details table** (`.admin-table--stack`) stacks into cards, so its edit form fits the screen with no sideways scrolling.
+- **Wide tables** (inventory, orders, codes, sizes…) scroll sideways with the first column (item name) pinned.
+- **Product edit form:** it first sat inside a table, so a `.admin-table--stack` rule made it stack into cards. Since 7c/7d it opens in a window (`.mgr-modal--wide`) that fits a 375 px phone with no sideways scrolling. The stack rule is kept for any table that needs it.
 
 ## 7b. Desktop UX pass
 
@@ -259,3 +261,85 @@ Everything that tab did is now in **Inventory**:
 - **Full-bottle returns policy:** *Delivery & Returns* still has a "Full bottles" returns row. Keep it or remove it, depending on the business.
 - **Trust details (brief §6):** state where decants come from (sealed bottles from authorised sellers) and show batch codes. This needs the client's real facts before it's added.
 - **Deploy:** the database migration runs automatically with `vercel-build` (`prisma migrate deploy`).
+
+---
+
+## Appendix A: every file changed on this branch
+
+Compared with `main` at `5d89273` (A = added, M = modified, D = deleted). Section numbers point to the explanations above.
+
+**Storefront pages** (`app/(shop)/…`)
+| File | | What changed |
+|---|---|---|
+| `page.tsx` (home) | M | Sizes follow admin settings; no "full bottles" / "every perfume" claims (3, 7c) |
+| `products/page.tsx` | M | Shop title + description, product structured data for Google, compact hero (6, 7b) |
+| `checkout/page.tsx` | M | Delivery/discount numbers from settings, compact hero, `noindex` (3, 6, 7b) |
+| `contact/page.tsx` | M | Demo FAQ replaced with a real payment answer; full-bottle answer corrected; description (3, 6) |
+| `custom/page.tsx` | M | Page description (6) |
+| `delivery-returns/page.tsx` | M | Delivery charges from settings; description (3, 6) |
+| `how-decants-work/page.tsx` | M | Size list follows admin settings; description (3, 6) |
+| `how-we-work/page.tsx` | M | "Full bottle" wording corrected; description (6, 7c) |
+| `account/page.tsx`, `order-confirmation/page.tsx` | M | `noindex` (6) |
+
+**App-wide**
+| File | | What changed |
+|---|---|---|
+| `app/layout.tsx` | M | Site address, canonical URLs, Open Graph, better default description (6) |
+| `app/robots.ts`, `app/sitemap.ts` | A | Robots file and sitemap (6) |
+| `app/globals.css` | M | Discount colour tokens, parameter styles, phone-only block, desktop UX pass, sale styles, notice-bar pause, wide modal; ~28 dead rules removed (4, 7, 7b, 7c, 7e, 8) |
+
+**Server / API**
+| File | | What changed |
+|---|---|---|
+| `app/api/admin/product-details/route.ts` | M | Returns the new parameters, colours and shape (1, 7d) |
+| `app/api/admin/product-details/[id]/route.ts` | M | Saves and validates parameters, name/badge/tagline, colours/shape; renames the Inventory row (1, 7c, 7d) |
+| `app/api/admin/inventory/route.ts` | M | "Add product" creates the real perfume/oil/gift set and labels its sizes (2) |
+| `app/api/admin/items/[id]/route.ts` | A | Edit oil/gift name, price, gift description and colour (7c, 7d) |
+| `app/api/admin/sales/route.ts`, `sales/[id]/route.ts` | A | Create/list/switch/delete sales (7e) |
+| `lib/server/catalog.ts` | M | Applies sales to shop prices (`wasPrices` / `wasPrice`) (7e) |
+| `lib/server/overrides.ts` | M | Lists every product/oil/gift from the database; refuses resetting admin-added perfumes (2, 7d) |
+| `lib/sales.ts`, `lib/sales.check.ts` | A | Sale maths and its self-check (7e) |
+| `prisma/schema.prisma` | M | Perfume parameters on `Product`; new `Sale` model (1, 7e) |
+| `prisma/migrations/20261125120000_perfume_parameters/` | A | Parameter columns + the five families (1) |
+| `prisma/migrations/20261125180000_product_sales/` | A | `Sale` table (7e) |
+
+**Admin UI**
+| File | | What changed |
+|---|---|---|
+| `components/admin/ProductEditor.tsx` | A | Full perfume editor (photos, parameters, notes, card text, colour, shape, prices) and oil/gift editor (7c, 7d) |
+| `components/admin/ProductDetailsPanel.tsx` | D | Replaced by `ProductEditor.tsx` when "Perfumes & prices" was removed (7d) |
+| `components/admin/Panels.tsx` | M | Inventory: Add product (2 steps) + Edit; Sizes on sale panel; Sales panel; coupon expiry/limits/usage; price tables and dead code removed (2, 7c, 7d, 7e, 8) |
+| `components/admin/Dashboard.tsx` | M | Tabs: "Perfumes & prices" removed, Sizes under Inventory, Sales under Discounts (7d, 7e) |
+| `components/admin/ContentPanel.tsx` | M | Category hint "e.g. Woods"; unused import (3) |
+| `components/admin/shared.tsx` | M | `Modal` gets a `wide` option (7c) |
+| `lib/api/admin.ts` | M | New calls (product details, items, sales, coupon limits); add-product refreshes every list; unused calls removed (2, 7c, 7d, 7e) |
+| `lib/services/admin.ts` | M | Tab names: "Discounts", products permission label, products no longer a tab (7d, 7e) |
+| `hooks/useServices.ts` | M | `useSales`; renamed label comment (7e) |
+
+**Storefront components**
+| File | | What changed |
+|---|---|---|
+| `components/ui/ProductCard.tsx` | M | Brand + facts line, "Choose size" button, family from one field, empty badge hidden, sale badge + crossed-out price (1, 7b, 7d, 7e) |
+| `components/layout/ProductModal.tsx` | M | Facts grid, notes only when set, key-note chips, button text fix, sale prices (1, 7, 7b, 7e) |
+| `components/products/ProductsView.tsx` | M | Brand/For/Strength/Size filters, search on brand + notes, oil names, sale prices (1, 7b, 7e) |
+| `components/layout/CartDrawer.tsx` | M | Large-order nudge, delivery + cash-on-delivery line, demo text removed (3, 5) |
+| `components/checkout/CheckoutView.tsx` | M | Discount names and colour, no public coupon example (3, 4) |
+| `components/checkout/ConfirmationView.tsx`, `components/account/AccountView.tsx` | M | Discount names and colour (3, 4) |
+| `components/layout/NoticeBar.tsx` | M | 45 px/s speed, tap to pause (7c) |
+| `components/layout/Footer.tsx` | M | Instagram icon hidden until a real link exists (3) |
+| `components/custom/CustomEngraving.tsx` | M | WhatsApp + Messenger only, matching copy, pre-filled message (7b) |
+| `components/home/HeroSwitcher.tsx` | M | "From", "Select the bottle" (7b) |
+| `components/ui/PageHero.tsx` | M | `compact` option (7b) |
+| `components/ui/Icons.tsx` | M | `MessengerIcon` (7b) |
+
+**Shared logic, types and data**
+| File | | What changed |
+|---|---|---|
+| `lib/config.ts` | M | Allowed parameter values, `SITE_URL`, Instagram placeholder removed (1, 3, 6) |
+| `lib/volumes.ts` | M | `regularFrom`, `saleOff` for sale display (7e) |
+| `lib/services/catalogOverrides.ts` | M | `perfumesOf` (all database perfumes); dead helpers removed (2, 8) |
+| `lib/data/catalog.ts` | M | Demo families renamed to the brief's names; unused `FAMILIES` list removed (3) |
+| `types/index.ts` | M | Parameter, sale, coupon-limit and item fields (1, 7c, 7e) |
+| `docs/CHANGES-perfume-parameters.md` | A | This document |
+
+Not committed (local testing only): `.env` (local database address) and the dev-server launch config.
