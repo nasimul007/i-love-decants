@@ -53,7 +53,7 @@ export default function HomePage() {
               <h2 id="featuredTitle">Find your easy reach.</h2>
             </div>
             <div>
-              <p>Swipe or scroll through favourites. Every perfume is available in <VolumeList />.</p>
+              <p>Swipe or scroll through favourites. Sizes range from <VolumeList separator="range" />; each perfume shows the sizes it comes in.</p>
               <Link className="quiet-link" href="/products">See the full collection</Link>
             </div>
           </div>

@@ -1,4 +1,5 @@
 import { DEFAULT_FULL_BOTTLE, DEFAULT_SPRAYS, DEFAULT_VOLUMES } from "@/lib/config";
+import { PRODUCTS } from "@/lib/data/catalog";
 import type { CatalogOverrides, FullBottleSettings, Product } from "@/types";
 
 /**
@@ -89,3 +90,13 @@ export function effectiveSprays(o: CatalogOverrides): Record<number, number> {
   }
   return out;
 }
+
+/**
+ * Every perfume in the database as a `Product` for the price maths. Seeded perfumes keep their catalogue defaults
+ * (used for "Edited" / "Reset"); perfumes added in the admin have none, so all their prices come from the overrides.
+ */
+export const perfumesOf = (o: CatalogOverrides): Product[] =>
+  (o.items?.products ?? PRODUCTS).map((p) => {
+    const seeded = PRODUCTS.find((x) => x.id === p.id);
+    return { ...(seeded ?? { ...PRODUCTS[0], prices: {} }), id: p.id, name: p.name, family: p.family };
+  });

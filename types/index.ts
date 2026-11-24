@@ -76,6 +76,11 @@ export interface Coupon {
   type: CouponType;
   value: number;
   active: boolean;
+  /** ISO date-time after which the code stops working; null = never. */
+  expiresAt?: string | null;
+  /** Total uses allowed across all customers; null = unlimited. */
+  maxUses?: number | null;
+  uses?: number;
 }
 
 /* ───────────── Customers ───────────── */
@@ -198,7 +203,7 @@ export interface CatalogOverrides {
   items?: {
     products: { id: number; name: string; family: string }[];
     oils: { id: string; name: string; price: number }[];
-    gifts: { id: string; name: string; price: number }[];
+    gifts: { id: string; name: string; price: number; description: string }[];
   };
 }
 

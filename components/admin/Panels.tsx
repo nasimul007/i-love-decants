@@ -3,19 +3,20 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import {
-  useAdminOverview, useCatalogOverrides, useCoupons, useCustomers, useInventoryRecords, useLoginHistory, useManagers, useOrders,
+  useAdminMe, useAdminOverview, useCatalogOverrides, useCoupons, useCustomers, useInventoryRecords, useLoginHistory, useManagers, useOrders, useProductDetails,
 } from "@/hooks/useServices";
+import { ItemEditor, PerfumeEditor } from "./ProductDetailsPanel";
 import { useUI } from "@/components/providers/UIProvider";
 import { Modal, Panel, emptyRow, inputStyle } from "./shared";
 import { OrderDetailModal } from "./OrdersPanel";
 import {
-  activeVolumes, applyToProduct, effectiveSprays, formatSprays, fullBottleLive, fullBottleOf,
+  activeVolumes, applyToProduct, effectiveSprays, perfumesOf, formatSprays, fullBottleLive, fullBottleOf,
   sectionReplacedByFullBottle, suggestSprays,
 } from "@/lib/services/catalogOverrides";
 import { GIFTS, OILS, PRODUCTS } from "@/lib/data/catalog";
 import { DEFAULT_SPRAYS } from "@/lib/config";
 import { adminApi, catalogOverridesApi } from "@/lib/api/admin";
-import { ADMIN_SECTIONS } from "@/lib/services/admin";
+import { ADMIN_SECTIONS, can } from "@/lib/services/admin";
 import { formatDate, formatDateTime, money } from "@/lib/format";
 import type { CatalogOverrides, InventoryKind, InventoryRecord, ManagerPermissions, Order, Product, PublicManager } from "@/types";
 
@@ -100,6 +101,11 @@ function StockCell({ r }: { r: InventoryRecord }) {
 export function InventoryPanel() {
   const records = useInventoryRecords();
   const { showToast } = useUI();
+  const canEdit = can(useAdminMe().session, "products");
+  const perfumes = useProductDetails();
+  const items = useCatalogOverrides().items;
+  /** The product whose full form is open (its shop id), and whether it was just added (step 2 of Add product). */
+  const [editing, setEditing] = useState<{ id: string; isNew: boolean } | null>(null);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ name: "", type: "Perfume decant" as InventoryKind, sizes: "", price: "", stock: "" });
   const perfume = form.type === "Perfume decant";
@@ -119,11 +125,12 @@ export function InventoryPanel() {
     if (!form.name.trim() || !(stock >= 0) || form.stock === "" || (!perfume && (form.price === "" || !(price >= 0)))) { setMsg("Please fill in all fields correctly."); return; }
     const res = await adminApi.addInventory({ name: form.name.trim(), type: form.type, sizes: form.sizes.trim(), price: perfume ? 0 : price, stock });
     if (!res.ok) { setMsg(res.error ?? "Could not save."); return; }
-    showToast(perfume ? `${form.name.trim()} added. Set its prices and details in “Perfumes & prices” to put it on sale.`
-      : form.type === "Custom bottle" ? `${form.name.trim()} added to stock.` : `${form.name.trim()} added to the shop.`);
+    const shopId = (res.data as InventoryRecord | undefined)?.storefrontId;
+    showToast(form.type === "Custom bottle" ? `${form.name.trim()} added to stock.` : `${form.name.trim()} added.`);
     setForm({ name: "", type: "Perfume decant", sizes: "", price: "", stock: "" });
     setMsg("");
     setOpen(false);
+    if (shopId && (perfume || form.type === "Gift set") && canEdit) setEditing({ id: shopId, isNew: true });
   };
 
   const btn = { fontSize: ".75rem" } as const;
@@ -149,6 +156,7 @@ export function InventoryPanel() {
                       <button className="admin-btn" style={btn} type="button" onClick={() => act(r, "restore")}>Restore</button>
                     ) : (
                       <>
+                        {canEdit && r.storefrontId && <button className="admin-btn primary" style={btn} type="button" onClick={() => setEditing({ id: r.storefrontId!, isNew: false })}>Edit</button>}
                         <button className="admin-btn" style={{ ...btn, color: "var(--rose-deep)" }} type="button" onClick={() => act(r, "enabled")}>{r.enabled ? "Disable" : "Enable"}</button>
                         <button className="admin-btn" style={btn} type="button" onClick={() => act(r, "visible")}>{r.visible ? "Hide" : "Show"}</button>
                         <button className="admin-btn danger" style={btn} type="button" onClick={() => act(r, "archive")}>Archive</button>
@@ -175,14 +183,30 @@ export function InventoryPanel() {
             {form.type === "Custom bottle" && <div className="admin-field"><label htmlFor="invSizes">Sizes</label><input id="invSizes" type="text" placeholder="e.g. 50 ml" value={form.sizes} onChange={(e) => setForm({ ...form, sizes: e.target.value })} /></div>}
             <div className="admin-field"><label htmlFor="invStock">Opening stock ({form.type === "Perfume decant" || form.type === "Perfume oil" ? "total ml" : "pieces"})</label><input id="invStock" type="number" min={0} max={1000000} step={1} inputMode="numeric" placeholder={form.type === "Perfume decant" || form.type === "Perfume oil" ? "e.g. 500" : "0"} value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} /></div>
           </div>
-          {perfume && <small style={{ color: "var(--muted)" }}>Sizes and prices are set per perfume in “Perfumes & prices”; until then it stays hidden from the shop.</small>}
+          {perfume && <small style={{ color: "var(--muted)" }}>Next you’ll add photos, brand, family, strength, notes and price per size, all in one form.</small>}
           <p className="admin-form-msg" aria-live="polite">{msg}</p>
           <div className="mgr-modal-actions">
             <button className="admin-btn" type="button" onClick={() => { setOpen(false); setMsg(""); }}>Cancel</button>
-            <button className="admin-btn primary" type="submit">Add</button>
+            <button className="admin-btn primary" type="submit">{perfume || form.type === "Gift set" ? "Next" : "Add"}</button>
           </div>
         </form>
       </Modal>
+
+      {editing && (() => {
+        const p = perfumes.find((x) => String(x.id) === editing.id);
+        const oil = items?.oils.find((x) => x.id === editing.id);
+        const gift = items?.gifts.find((x) => x.id === editing.id);
+        const name = p?.name ?? oil?.name ?? gift?.name ?? "";
+        const close = () => setEditing(null);
+        return (
+          <Modal open wide={!!p} onClose={close} title={editing.isNew ? `Describe ${name}` : `Edit ${name}`}
+            subtitle={editing.isNew ? "Step 2 of 2: what customers see. It goes on sale once it has a price and stock." : "Everything customers see for this product. Stock is changed in the table."}>
+            {p ? <PerfumeEditor p={p} onClose={close} />
+              : oil || gift ? <ItemEditor item={(oil ?? gift)!} onClose={close} />
+              : <p style={{ color: "var(--muted)" }}>Loading…</p>}
+          </Modal>
+        );
+      })()}
     </>
   );
 }
@@ -235,13 +259,18 @@ export function HistoryPanel() {
 /* ───────────────────────── Coupons ───────────────────────── */
 export function CouponsPanel() {
   const coupons = useCoupons();
-  const [form, setForm] = useState({ code: "", type: "percent" as "percent" | "flat", value: "" });
+  const [form, setForm] = useState({ code: "", type: "percent" as "percent" | "flat", value: "", expires: "", maxUses: "" });
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
 
   const add = async () => {
-    const res = await adminApi.addCoupon({ code: form.code, type: form.type, value: Number(form.value) });
+    const res = await adminApi.addCoupon({
+      code: form.code, type: form.type, value: Number(form.value),
+      // A date means "valid through that day" (shop's local time).
+      expiresAt: form.expires ? new Date(`${form.expires}T23:59:59`).toISOString() : null,
+      maxUses: form.maxUses ? Number(form.maxUses) : null,
+    });
     if (!res.ok) { setMsg({ text: res.error ?? "", ok: false }); return; }
-    setForm({ ...form, code: "", value: "" });
+    setForm({ ...form, code: "", value: "", expires: "", maxUses: "" });
     setMsg({ text: "Code added.", ok: true });
   };
 
@@ -255,21 +284,29 @@ export function CouponsPanel() {
           </select>
         </div>
         <div className="admin-field"><label htmlFor="newCouponValue">Value</label><input id="newCouponValue" type="number" min={1} placeholder="e.g. 10" style={{ ...inputStyle, width: 130 }} value={form.value} onChange={(e) => setForm({ ...form, value: e.target.value })} /></div>
+        <div className="admin-field"><label htmlFor="newCouponExpires">Valid until <small style={{ color: "var(--muted)", fontWeight: 500 }}>(optional)</small></label><input id="newCouponExpires" type="date" style={{ ...inputStyle, width: 160 }} value={form.expires} onChange={(e) => setForm({ ...form, expires: e.target.value })} /></div>
+        <div className="admin-field"><label htmlFor="newCouponMax">Max uses <small style={{ color: "var(--muted)", fontWeight: 500 }}>(optional)</small></label><input id="newCouponMax" type="number" min={1} placeholder="Unlimited" style={{ ...inputStyle, width: 120 }} value={form.maxUses} onChange={(e) => setForm({ ...form, maxUses: e.target.value })} /></div>
         <button className="admin-btn primary" type="button" style={{ alignSelf: "flex-end", height: 42 }} onClick={add}>Add code</button>
       </div>
       <p className="admin-form-msg" aria-live="polite" style={{ marginBottom: ".8rem", color: msg?.ok ? "#446046" : "#a84d58" }}>{msg?.text}</p>
       <table className="admin-table">
-        <thead><tr><th>Code</th><th>Type</th><th>Value</th><th>Status</th><th>Actions</th></tr></thead>
+        <thead><tr><th>Code</th><th>Type</th><th>Value</th><th>Used</th><th>Valid until</th><th>Status</th><th>Actions</th></tr></thead>
         <tbody>
           {coupons.map((c) => (
             <tr key={c.code}>
               <td><span className="coupon-tag">{c.code}</span></td>
               <td>{c.type === "percent" ? "Percent" : "Flat"}</td>
               <td>{c.type === "percent" ? `${c.value}%` : `৳${c.value}`}</td>
-              <td><span className={`pill ${c.active ? "live" : "off"}`}>{c.active ? "Active" : "Off"}</span></td>
+              <td>{c.uses ?? 0}{c.maxUses ? ` of ${c.maxUses}` : ""}</td>
+              <td>{c.expiresAt ? formatDate(c.expiresAt) : "No end date"}</td>
+              <td>{(() => {
+                const expired = !!c.expiresAt && new Date(c.expiresAt) < new Date();
+                const usedUp = !!c.maxUses && (c.uses ?? 0) >= c.maxUses;
+                return <span className={`pill ${c.active && !expired && !usedUp ? "live" : "off"}`}>{!c.active ? "Off" : expired ? "Expired" : usedUp ? "Used up" : "Active"}</span>;
+              })()}</td>
               <td style={{ display: "flex", gap: ".4rem", flexWrap: "wrap" }}>
                 <button className="admin-btn" style={{ fontSize: ".75rem", color: "var(--rose-deep)" }} type="button" onClick={() => void adminApi.toggleCoupon(c.code, !c.active)}>{c.active ? "Deactivate" : "Activate"}</button>
-                <button className="admin-btn danger" style={{ fontSize: ".75rem" }} type="button" onClick={() => void adminApi.removeCoupon(c.code)}>Delete</button>
+                <button className="admin-btn danger" style={{ fontSize: ".75rem" }} type="button" onClick={() => { if (window.confirm(`Delete the code ${c.code}?`)) void adminApi.removeCoupon(c.code); }}>Delete</button>
               </td>
             </tr>
           ))}
@@ -384,16 +421,6 @@ const editedPill = <span className="pill live" style={{ marginLeft: ".4rem" }}>E
  * every perfume's price per volume (blank = not offered), and oil / gift-set prices.
  * Changes apply immediately to the storefront, product pop-up, filters, search, cart and checkout.
  */
-/**
- * Every perfume in the database as a `Product` for the price maths. Seeded perfumes keep their catalogue defaults
- * (used for "Edited" / "Reset"); perfumes added in the admin have none, so all their prices come from the overrides.
- */
-const perfumesOf = (o: CatalogOverrides): Product[] =>
-  (o.items?.products ?? PRODUCTS).map((p) => {
-    const seeded = PRODUCTS.find((x) => x.id === p.id);
-    return { ...(seeded ?? { ...PRODUCTS[0], prices: {} }), id: p.id, name: p.name, family: p.family };
-  });
-
 export function PricingPanel() {
   const overrides = useCatalogOverrides();
   const perfumes = perfumesOf(overrides);

@@ -140,6 +140,38 @@ Suggestions **not** done (they need a decision):
 - Oil cards all share the same description; a short line per oil (notes or strength) would help shoppers choose.
 - Each perfume could get its own page instead of only a pop-up. That's better for SEO and sharing (Level 2).
 
+## 7c. Admin product flow, notice bar, coupons (client review round 3)
+
+**Inventory is now the hub for products.** Before, adding a perfume in Inventory gave only Name / Type / Stock. Photos and parameters lived in another tab, and a new perfume didn't even appear there until the page was reloaded. That was a cache bug: adding a product refreshed only the Inventory list.
+
+New flow: **Inventory → Add product → (perfume / gift set) Next → full form → Save.** The product goes to its section (perfume decants, oils, gift sets).
+
+| Change | Where |
+|---|---|
+| One shared **PerfumeEditor** with photos, name, brand, family, audience, strength, lasting, description, key notes, top/heart/base, card badge/tagline and **price per size**, all saved with one button | `components/admin/ProductDetailsPanel.tsx` (`PerfumeEditor`) |
+| The same editor opens from **Inventory → Edit**, from **Add product → Next** (step 2 of 2) and from **Perfumes & prices → Edit**. One form, so the screens can't disagree | `Panels.tsx` (`InventoryPanel`), `ProductDetailsPanel.tsx` |
+| **ItemEditor** for oils and gift sets: name, price, and the gift-set description (wasn't editable anywhere before) | `ProductDetailsPanel.tsx` (`ItemEditor`), new API `app/api/admin/items/[id]/route.ts` |
+| Adding a product refreshes every admin list and the shop at once (fixes "I added Water but can't find it") | `lib/api/admin.ts` (`addInventory`) |
+| Renaming a perfume, oil or gift set also renames its Inventory row | `product-details/[id]/route.ts`, `items/[id]/route.ts` |
+| Wide modal for the full editor | `Modal wide` (`shared.tsx`), `.mgr-modal--wide` |
+| Edit buttons only show for staff with the "Perfumes & prices" permission (the server enforces the same) | `InventoryPanel` |
+
+**Notice bar speed.** Before, it crossed a full screen in 18 s whatever the text, about 160 px/s on a laptop, which is too fast to read.
+- It now moves at a fixed **45 px/s**, about 6–7 letters a second. The speed is measured from the real text width and re-measured on resize, so it's the same on every screen.
+- **Tap or click pauses** it (WCAG 2.2.2), as well as hover. Reduced-motion users still see static text.
+- File: `components/layout/NoticeBar.tsx`.
+- There is no industry-standard ticker speed. The guidance is a moderate fixed px/s speed, a way to pause, and respecting reduced motion: [W3C WCAG technique SCR36](https://www.w3.org/WAI/WCAG22/Techniques/client-side-script/SCR36), [Framer marquee (px/s, pause on hover)](https://www.framer.com/marketplace/components/steadymarquee/).
+
+**Discount codes.** The database and checkout already supported an expiry date and a usage limit, but the admin couldn't set or see them. The admin now has:
+- **Valid until** and **Max uses** fields when adding a code.
+- **Used** and **Valid until** columns in the codes table.
+- Status shows Active / Off / Expired / Used up.
+- Deleting a code now asks for confirmation, like every other Delete.
+
+**Storefront wording** (audit in Chrome; no broken links found):
+- **Home:** "Every perfume is available in 3–100 ml" was false, since each perfume has its own sizes. It now reads "Sizes range from 3 ml to 100 ml; each perfume shows the sizes it comes in."
+- **How we work:** "…or gifting a full bottle" (full bottles aren't sold) is now "…or gifting a curated set".
+
 ## 8. Code clean-up (no visual change)
 - **Unused CSS removed:** about 28 rules for elements that no longer exist (old profile panel, old switches, unused modals). The page fade-in keyframes are kept, since they are in use.
 - **Dead code removed:**

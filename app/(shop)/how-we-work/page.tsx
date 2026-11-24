@@ -22,7 +22,7 @@ export default function HowWeWorkPage() {
       <section className="section welcome-band" aria-labelledby="howWeWorkTitle">
         <div className="container">
           <SectionHeading eyebrow="Simple, start to finish" title="Four steps, quietly done." id="howWeWorkTitle">
-            <p>The same calm approach whether you&apos;re trying a 3&nbsp;ml decant or gifting a full bottle.</p>
+            <p>The same calm approach whether you&apos;re trying a 3&nbsp;ml decant or gifting a curated set.</p>
           </SectionHeading>
           <div className="process-grid">
             {STEPS.map(([h, p], i) => <article className="process-card" key={h}><span className="process-number">{i + 1}</span><h3>{h}</h3><p>{p}</p></article>)}

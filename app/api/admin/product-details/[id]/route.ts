@@ -25,7 +25,11 @@ export const PATCH = route(async (req, { params }: { params: Promise<{ id: strin
   await requireStaff("products");
   const id = Number((await params).id);
   const data = await body(req, schema);
-  const res = await db.product.updateMany({ where: { id }, data });
+  const res = await db.$transaction(async (tx) => {
+    const r = await tx.product.updateMany({ where: { id }, data });
+    await tx.inventoryItem.updateMany({ where: { productId: id }, data: { name: data.name } }); // Inventory shows the same name
+    return r;
+  });
   if (!res.count) throw new HttpError(404, "Perfume not found.");
   return ok({ id, ...data });
 });

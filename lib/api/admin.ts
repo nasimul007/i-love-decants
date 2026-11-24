@@ -66,7 +66,8 @@ export const adminApi = {
   /* inventory */
   async addInventory(input: { name: string; type: InventoryKind; sizes: string; price: number; stock: number }): Promise<ServiceResult<unknown>> {
     const res = await call<InventoryRecord>("POST", ADMIN.inventory, input);
-    await Promise.all([refresh(ADMIN.inventory), refresh(ADMIN.overview)]);
+    // A new perfume / oil / gift set must show up at once in every admin table, not only Inventory.
+    await Promise.all([refresh(ADMIN.inventory), refresh(ADMIN.overview), refresh(ADMIN.productDetails), refresh(ADMIN.products), refresh(ADMIN.catalog), refresh(ADMIN.categories), refresh("/api/products")]);
     return res;
   },
   async patchInventory(id: string, patch: { stockDelta?: number; stockSet?: number; enabled?: boolean; visible?: boolean; removed?: boolean }): Promise<ServiceResult<unknown>> {
@@ -76,7 +77,7 @@ export const adminApi = {
   },
 
   /* coupons */
-  async addCoupon(input: { code: string; type: Coupon["type"]; value: number }): Promise<ServiceResult<unknown>> {
+  async addCoupon(input: { code: string; type: Coupon["type"]; value: number; expiresAt?: string | null; maxUses?: number | null }): Promise<ServiceResult<unknown>> {
     const res = await call("POST", ADMIN.coupons, input);
     await refresh(ADMIN.coupons);
     return res;
@@ -159,7 +160,14 @@ export const adminApi = {
   /* product text */
   async saveProductDetails(id: number, d: ProductDetailsDraft): Promise<ServiceResult<unknown>> {
     const res = await call("PATCH", `${ADMIN.productDetails}/${id}`, d);
-    await Promise.all([refresh(ADMIN.productDetails), refresh("/api/products")]);
+    await Promise.all([refresh(ADMIN.productDetails), refresh(ADMIN.products), refresh(ADMIN.catalog), refresh(ADMIN.inventory), refresh("/api/products")]);
+    return res;
+  },
+
+  /** Oils and gift sets: name, price and (gift sets) description. */
+  async saveItem(id: string, d: { name: string; price: number; description?: string }): Promise<ServiceResult<unknown>> {
+    const res = await call("PATCH", `/api/admin/items/${encodeURIComponent(id)}`, d);
+    await Promise.all([refresh(ADMIN.catalog), refresh(ADMIN.inventory), refresh("/api/products")]);
     return res;
   },
 
