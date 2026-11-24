@@ -206,6 +206,44 @@ Everything that tab did is now in **Inventory**:
 
 **Custom Design page (client request):** customers are directed only to WhatsApp or Messenger (see 7b). This is confirmed still in place.
 
+## 7e. Sales on products and categories (client review round 5)
+
+**Problem:** the only way to give a discount was a coupon code. There was no way to put one perfume, a scent family or a whole range on sale.
+
+**Now: Admin → Discounts** (the "Coupons" tab, renamed) has a **Sales** panel above the discount codes:
+- **Applies to:**
+  - a whole range (all perfume decants, all oils, or all gift sets)
+  - a scent family (e.g. all Floral perfumes)
+  - one perfume, oil or gift set
+- **Discount:** % off (max 90%) or ৳ off each.
+- **Optional end date:** the sale stops by itself after that day.
+- **Controls:** turn on/off, delete (with confirmation), and the status shows On / Off / Ended.
+
+**How prices are worked out:**
+- **Server-side:** the **server** applies sales when it builds the shop price list (`lib/server/catalog.ts`). The shop, bag, checkout, coupon checks and saved orders all use the sale price, and a customer can't bypass it.
+- **No stacking:** if several sales match one price, the customer gets the **lowest price**.
+- **Coupons on top:** discount codes and the large-order discount then apply to the sale total.
+- **Rounding:** % sales round to whole taka, and a price never goes below ৳0.
+- **Self-check:** run `npx tsx lib/sales.check.ts`.
+- **Admin screens show regular prices:** the inventory "From" price and the edit form's price boxes are the regular prices; the sale is a layer on top.
+- **Verified:** with a 20% Floral sale and ৳50 off oils, a test order was charged ৳216 for a ৳270 decant and ৳300 per ৳350 oil.
+
+**What customers see** (only the discount colour `--deal`, which is reserved for savings):
+- **Perfume cards:** a **−20%** badge on the photo, and "From ~~৳270~~ ৳216" with the sale price in the discount colour.
+- **Pop-up:** every size shows its old price crossed out, and so does the main price.
+- **Oil and gift cards:** the old price is crossed out.
+
+**Files:**
+- **Database:** `prisma/schema.prisma` (model `Sale`) and migration `20261125180000_product_sales`.
+- **Pricing rule:** `lib/sales.ts` and `lib/sales.check.ts`.
+- **Server pricing:** `lib/server/catalog.ts` adds `wasPrices` and `wasPrice`.
+- **API:** `app/api/admin/sales/route.ts` and `app/api/admin/sales/[id]/route.ts`. They use the existing Discounts/Coupons staff permission.
+- **Admin:** `components/admin/Panels.tsx` (`SalesPanel`), `Dashboard.tsx`, `lib/api/admin.ts`, `hooks/useServices.ts`.
+- **Storefront:** `ProductCard.tsx`, `ProductModal.tsx`, `ProductsView.tsx`, and `lib/volumes.ts` (`regularFrom`, `saleOff`).
+- **CSS:** `.was-price` and `.sale-badge`.
+
+**Also fixed:** perfumes added in the admin with no card badge used to show an empty badge bubble. It's now hidden when empty.
+
 ## 8. Code clean-up (no visual change)
 - **Unused CSS removed:** about 28 rules for elements that no longer exist (old profile panel, old switches, unused modals). The page fade-in keyframes are kept, since they are in use.
 - **Dead code removed:**

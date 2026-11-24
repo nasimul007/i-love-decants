@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import {
-  useAdminMe, useAdminOverview, useCatalogOverrides, useCoupons, useCustomers, useInventoryRecords, useLoginHistory, useManagers, useOrders, useProductDetails,
+  useAdminCategories, useAdminMe, useAdminOverview, useCatalog, useCatalogOverrides, useCoupons, useCustomers, useInventoryRecords, useLoginHistory, useManagers, useOrders, useProductDetails, useSales,
 } from "@/hooks/useServices";
 import { ItemEditor, PerfumeEditor } from "./ProductEditor";
 import { useUI } from "@/components/providers/UIProvider";
@@ -250,6 +250,80 @@ export function HistoryPanel() {
               <td>{h.user || "—"}</td><td>{h.action}</td>
             </tr>
           ))}
+        </tbody>
+      </table>
+    </Panel>
+  );
+}
+
+/* ───────────────────────── Sales (inside the Discounts tab) ───────────────────────── */
+/**
+ * Price cuts on one product, a scent family or a whole product type. The server applies them to shop prices,
+ * so the shop, bag, checkout and orders all agree; customers see the regular price crossed out.
+ */
+export function SalesPanel() {
+  const sales = useSales();
+  const { products, oils, gifts } = useCatalog();
+  const families = useAdminCategories().map((c) => c.name);
+  const { showToast } = useUI();
+  const [form, setForm] = useState({ target: "type:perfume", type: "percent" as "percent" | "flat", value: "", ends: "" });
+  const [msg, setMsg] = useState("");
+
+  const groups: [string, [string, string][]][] = [
+    ["Whole range", [["type:perfume", "All perfume decants"], ["type:oil", "All perfume oils"], ["type:gift", "All gift sets"]]],
+    ["Scent family", families.map((f) => [`family:${f.toLowerCase()}`, `${f} perfumes`])],
+    ["One perfume", products.map((p) => [`product:${p.id}`, p.name])],
+    ["One oil", oils.map((o) => [`product:${o.id}`, o.name])],
+    ["One gift set", gifts.map((g) => [`product:${g.id}`, g.name])],
+  ];
+  const labelOf = (t: string) => groups.flatMap(([, o]) => o).find(([v]) => v === t)?.[1] ?? (t.startsWith("family:") ? `${t.slice(7)} perfumes` : "Item no longer in the shop");
+
+  const add = async () => {
+    const value = Number(form.value);
+    if (!(value > 0)) { setMsg("Enter how much to take off."); return; }
+    const res = await adminApi.addSale({ target: form.target, type: form.type, value, endsAt: form.ends ? new Date(`${form.ends}T23:59:59`).toISOString() : null });
+    if (!res.ok) { setMsg(res.error ?? "Could not save."); return; }
+    setMsg(""); setForm({ ...form, value: "", ends: "" });
+    showToast(`Sale added: ${labelOf(form.target)}, ${form.type === "percent" ? `${value}%` : money(value)} off.`);
+  };
+
+  return (
+    <Panel title="Sales" subtitle="Take money off one product, a scent family or a whole range. Customers see the old price crossed out. If several sales match, the customer gets the biggest one; discount codes then apply on top.">
+      <div className="coupon-add-row">
+        <div className="admin-field"><label htmlFor="saleTarget">Applies to</label>
+          <select id="saleTarget" style={{ ...inputStyle, minWidth: 220 }} value={form.target} onChange={(e) => setForm({ ...form, target: e.target.value })}>
+            {groups.filter(([, o]) => o.length).map(([g, o]) => <optgroup key={g} label={g}>{o.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</optgroup>)}
+          </select>
+        </div>
+        <div className="admin-field"><label htmlFor="saleType">Type</label>
+          <select id="saleType" style={inputStyle} value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value as "percent" | "flat" })}>
+            <option value="percent">Percent off (%)</option><option value="flat">Taka off each (৳)</option>
+          </select>
+        </div>
+        <div className="admin-field"><label htmlFor="saleValue">Amount</label><input id="saleValue" type="number" min={1} max={form.type === "percent" ? 90 : undefined} placeholder={form.type === "percent" ? "e.g. 15" : "e.g. 100"} style={{ ...inputStyle, width: 120 }} value={form.value} onChange={(e) => { setForm({ ...form, value: e.target.value }); setMsg(""); }} /></div>
+        <div className="admin-field"><label htmlFor="saleEnds">Ends <small style={{ color: "var(--muted)", fontWeight: 500 }}>(optional)</small></label><input id="saleEnds" type="date" style={{ ...inputStyle, width: 160 }} value={form.ends} onChange={(e) => setForm({ ...form, ends: e.target.value })} /></div>
+        <button className="admin-btn primary" type="button" style={{ alignSelf: "flex-end", height: 42 }} onClick={add}>Add sale</button>
+      </div>
+      <p className="admin-form-msg" aria-live="polite" style={{ marginBottom: ".8rem" }}>{msg}</p>
+      <table className="admin-table">
+        <thead><tr><th>Applies to</th><th>Discount</th><th>Ends</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody>
+          {!sales.length && emptyRow(5, "No sales yet.")}
+          {sales.map((s) => {
+            const ended = !!s.endsAt && new Date(s.endsAt) < new Date();
+            return (
+              <tr key={s.id}>
+                <td><strong style={{ fontSize: ".9rem" }}>{labelOf(s.target)}</strong></td>
+                <td className="is-deal" style={{ fontWeight: 700 }}>{s.type === "percent" ? `${s.value}% off` : `${money(s.value)} off`}</td>
+                <td>{s.endsAt ? formatDate(s.endsAt) : "No end date"}</td>
+                <td><span className={`pill ${s.active && !ended ? "live" : "off"}`}>{!s.active ? "Off" : ended ? "Ended" : "On"}</span></td>
+                <td style={{ display: "flex", gap: ".4rem", flexWrap: "wrap" }}>
+                  <button className="admin-btn" style={{ fontSize: ".75rem", color: "var(--rose-deep)" }} type="button" onClick={() => void adminApi.setSaleActive(s.id, !s.active)}>{s.active ? "Turn off" : "Turn on"}</button>
+                  <button className="admin-btn danger" style={{ fontSize: ".75rem" }} type="button" onClick={() => { if (window.confirm(`Delete the sale on ${labelOf(s.target)}?`)) void adminApi.removeSale(s.id); }}>Delete</button>
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </Panel>

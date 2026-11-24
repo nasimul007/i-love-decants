@@ -13,6 +13,7 @@ export const ADMIN = {
   customers: "/api/admin/customers",
   history: "/api/admin/history",
   coupons: "/api/admin/coupons",
+  sales: "/api/admin/sales",
   managers: "/api/admin/managers",
   orders: "/api/orders",
   notice: "/api/admin/notice",
@@ -27,6 +28,7 @@ export interface Page<T> { items: T[]; page: number; pageSize: number; total: nu
 export const ordersUrl = (page = 1, pageSize = 20, status?: string) =>
   `${ADMIN.orders}?page=${page}&pageSize=${pageSize}${status ? `&status=${status}` : ""}`;
 
+export interface AdminSale { id: number; target: string; type: "percent" | "flat"; value: number; active: boolean; endsAt: string | null }
 export interface AdminNotice { id: number; text: string; enabled: boolean }
 export interface PublicCategory { id: number; name: string; hidden: boolean; products: number }
 export interface AdminFaq { id: number; question: string; answer: string; enabled: boolean }
@@ -85,6 +87,22 @@ export const adminApi = {
   async toggleCoupon(code: string, active: boolean): Promise<ServiceResult<unknown>> {
     const res = await call("PATCH", `${ADMIN.coupons}/${encodeURIComponent(code)}`, { active });
     await refresh(ADMIN.coupons);
+    return res;
+  },
+  /* sales: shop prices change at once, so the storefront catalogue is refreshed too */
+  async addSale(input: Omit<AdminSale, "id" | "active">): Promise<ServiceResult<unknown>> {
+    const res = await call("POST", ADMIN.sales, input);
+    await Promise.all([refresh(ADMIN.sales), refresh("/api/products")]);
+    return res;
+  },
+  async setSaleActive(id: number, active: boolean): Promise<ServiceResult<unknown>> {
+    const res = await call("PATCH", `${ADMIN.sales}/${id}`, { active });
+    await Promise.all([refresh(ADMIN.sales), refresh("/api/products")]);
+    return res;
+  },
+  async removeSale(id: number): Promise<ServiceResult<unknown>> {
+    const res = await call("DELETE", `${ADMIN.sales}/${id}`);
+    await Promise.all([refresh(ADMIN.sales), refresh("/api/products")]);
     return res;
   },
   async removeCoupon(code: string): Promise<ServiceResult<unknown>> {

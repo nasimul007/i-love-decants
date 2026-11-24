@@ -7,7 +7,7 @@ export const ADMIN_SECTIONS: { id: AdminSection; label: string; tab?: false }[] 
   { id: "products", label: "Edit products, prices & sizes", tab: false },
   { id: "customers", label: "Customers" },
   { id: "history", label: "Login history" },
-  { id: "coupons", label: "Coupons" },
+  { id: "coupons", label: "Discounts" },
   { id: "content", label: "Notice, categories & FAQ" },
 ];
 

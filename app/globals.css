@@ -4408,3 +4408,13 @@ html.touch-mode .cursor-layer{display:none!important}
   /* Checkout: the order summary and total stay in view while filling the form */
   .order-summary-card { position: sticky; top: 7rem; }
 }
+
+/* Sales: regular price crossed out + badge, in the discount colour (--deal is for savings only) */
+.was-price { margin-right: .35em; color: var(--faint); font-size: .8em; font-weight: 500; text-decoration-thickness: 1px; }
+.sale-badge {
+  position: absolute; z-index: 2; top: 1rem; right: 1rem;
+  padding: .4rem .65rem; border-radius: 999px;
+  color: #fff; background: var(--deal);
+  font-size: .66rem; font-weight: 800; letter-spacing: .04em;
+}
+.product-price:has(.was-price), .modal-price:has(.was-price), .gift-price:has(.was-price) { color: var(--deal); }

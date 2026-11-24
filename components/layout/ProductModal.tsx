@@ -68,7 +68,7 @@ export function ProductModal() {
                 <div className="size-options" aria-label="Available volumes">
                   {volumes.map((s) => (
                     <button key={s} className={`size-option${s === selected ? " is-active" : ""}`} type="button" aria-pressed={s === selected} onClick={() => setSize(s)}>
-                      <strong>{s} ml</strong><span>{money(product.prices[s])}</span>{sprays[s] !== undefined && <small className="size-option-sprays">{formatSprays(sprays[s])}</small>}
+                      <strong>{s} ml</strong><span>{product.wasPrices?.[s] !== undefined && <s className="was-price">{money(product.wasPrices[s])}</s>}{money(product.prices[s])}</span>{sprays[s] !== undefined && <small className="size-option-sprays">{formatSprays(sprays[s])}</small>}
                     </button>
                   ))}
                   {full && (
@@ -79,7 +79,7 @@ export function ProductModal() {
                 </div>
               </div>
               <div className="modal-purchase">
-                <span className="modal-price">{money(selectedPrice)}</span>
+                <span className="modal-price">{selected !== "full" && product.wasPrices?.[selected] !== undefined && <s className="was-price">{money(product.wasPrices[selected])}</s>}{money(selectedPrice)}</span>
                 <button className="btn btn-primary" type="button" aria-label={`Add ${product.name} to cart`} onClick={add}><span>Add<span className="modal-add-name"> {product.name}</span> to cart</span></button>
               </div>
               {product.description && <p className="modal-description">{product.description}</p>}

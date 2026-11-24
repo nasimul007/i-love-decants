@@ -5,7 +5,7 @@ import type { AdminSection, AdminSession } from "@/types";
 import { ADMIN_SECTIONS } from "@/lib/services/admin";
 import { adminApi } from "@/lib/api/admin";
 import {
-  CouponsPanel, CustomersPanel, HistoryPanel, InventoryPanel, ManagersPanel, OverviewPanel, SizesPanel,
+  CouponsPanel, CustomersPanel, SalesPanel, HistoryPanel, InventoryPanel, ManagersPanel, OverviewPanel, SizesPanel,
 } from "./Panels";
 import { OrdersPanel } from "./OrdersPanel";
 import { ContentPanel } from "./ContentPanel";
@@ -61,7 +61,7 @@ export function Dashboard({ session, canSee }: Props) {
         {tab === "inventory" && canSee("inventory") && <><InventoryPanel />{canSee("products") && <><div style={{ height: "1.25rem" }} /><SizesPanel /></>}</>}
         {tab === "customers" && canSee("customers") && <CustomersPanel />}
         {tab === "history" && canSee("history") && <HistoryPanel />}
-        {tab === "coupons" && canSee("coupons") && <CouponsPanel />}
+        {tab === "coupons" && canSee("coupons") && <><SalesPanel /><div style={{ height: "1.25rem" }} /><CouponsPanel /></>}
         {tab === "managers" && session.role === "owner" && <ManagersPanel />}
       </div>
     </div>

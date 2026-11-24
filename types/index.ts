@@ -33,6 +33,8 @@ export interface Product {
   ink: string;
   shape: BottleShape;
   prices: Record<VolumeMl, number>;
+  /** Regular price of each size that is on sale right now (`prices` already holds the sale price). */
+  wasPrices?: Record<VolumeMl, number>;
   /** Ids of the uploaded photos (main photo first); served from /api/images/[id]. Empty → the drawn bottle is shown. */
   images?: number[];
   /** Set on the storefront copy of a product when the Full bottle section is ON for it. */
@@ -44,6 +46,8 @@ export interface GiftSet {
   name: string;
   description: string;
   price: number;
+  /** Regular price while a sale is on (`price` is the sale price). */
+  wasPrice?: number;
   accent: string;
 }
 
@@ -52,6 +56,8 @@ export interface OilProduct {
   brand: string;
   name: string;
   price: number;
+  /** Regular price while a sale is on (`price` is the sale price). */
+  wasPrice?: number;
 }
 
 /* ───────────── Cart ───────────── */

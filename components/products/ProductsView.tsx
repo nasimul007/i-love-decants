@@ -208,7 +208,7 @@ export function ProductsView() {
               <h3>{oil.name}</h3>
               <p>Alcohol-free 6 ml roll-on, easy to carry and reapply through the day.</p>
               <div className="oil-card-footer">
-                <span className="gift-price">{money(oil.price)}</span>
+                <span className="gift-price">{oil.wasPrice !== undefined && <s className="was-price">{money(oil.wasPrice)}</s>}{money(oil.price)}</span>
                 <button className="btn btn-primary btn-small" type="button" onClick={() => addOil(oil.id, oil.name)}>Add to cart</button>
               </div>
             </article>
@@ -252,7 +252,7 @@ export function ProductsView() {
               <h3>{g.name}</h3>
               <p>{g.description}</p>
               <div className="gift-card-footer">
-                <span className="gift-price">{money(g.price)}</span>
+                <span className="gift-price">{g.wasPrice !== undefined && <s className="was-price">{money(g.wasPrice)}</s>}{money(g.price)}</span>
                 <button className="btn btn-primary btn-small" type="button" onClick={() => addGift(g.id, g.name)}>Add to cart</button>
               </div>
             </article>

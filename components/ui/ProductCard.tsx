@@ -3,7 +3,7 @@
 import type { CSSProperties } from "react";
 import type { Product } from "@/types";
 import { money } from "@/lib/format";
-import { priceFrom, sizesLabel } from "@/lib/volumes";
+import { priceFrom, regularFrom, saleOff, sizesLabel } from "@/lib/volumes";
 import { useUI } from "@/components/providers/UIProvider";
 import { ProductBottle } from "./BottleVisual";
 
@@ -33,7 +33,8 @@ export function ProductCard({ product }: { product: Product }) {
   return (
     <article className="product-card" style={{ "--card-pale": product.pale } as CSSProperties}>
       <button className="product-card-visual" type="button" onClick={() => openProduct(product.id)} data-cursor-grab aria-label={`View ${product.name}`}>
-        <span className="product-badge">{product.badge}</span>
+        {product.badge && <span className="product-badge">{product.badge}</span>}
+        {saleOff(product) > 0 && <span className="sale-badge">−{saleOff(product)}%</span>}
         <ProductBottle product={product} />
       </button>
       <div className="product-card-body">
@@ -45,7 +46,7 @@ export function ProductCard({ product }: { product: Product }) {
         {factsOf(product).length > 0 && <p className="product-facts">{factsOf(product).map(([k, v]) => <span key={k}>{k === "Lasting" ? `Lasting ${v}` : v}</span>)}</p>}
         <p className="product-notes">{product.notes}</p>
         <div className="card-price-row">
-          <span className="product-price"><span className="product-price-prefix">From </span>{money(priceFrom(product))}</span>
+          <span className="product-price"><span className="product-price-prefix">From </span>{regularFrom(product) !== undefined && <s className="was-price">{money(regularFrom(product)!)}</s>}{money(priceFrom(product))}</span>
           <span className="size-range">{sizesLabel(product)}</span>
         </div>
         <div className="card-purchase-row">
