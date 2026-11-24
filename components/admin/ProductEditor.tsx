@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useUI } from "@/components/providers/UIProvider";
-import { useAdminCategories, useCatalogOverrides, useProductDetails } from "@/hooks/useServices";
+import { useAdminCategories, useCatalogOverrides } from "@/hooks/useServices";
 import { adminApi, catalogOverridesApi, type ProductDetails } from "@/lib/api/admin";
 import { activeVolumes, applyToProduct, perfumesOf } from "@/lib/services/catalogOverrides";
 import { AUDIENCES, LASTING, STRENGTHS } from "@/lib/config";
 import { shrinkImage } from "@/lib/imageResize";
-import { Panel, emptyRow, inputStyle } from "./shared";
+import { GIFTS, PRODUCTS } from "@/lib/data/catalog";
+import { inputStyle } from "./shared";
 
 const MAX: Partial<Record<keyof Draft, number>> = { name: 80, badge: 30, brand: 60, keyNotes: 300 }; // same limits as the API
 // Key notes are edited as "oud, vanilla" text and split on save.
@@ -68,6 +69,11 @@ const grid = { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(170
 const sectionTitle = { margin: ".4rem 0 0", fontSize: ".72rem", fontWeight: 800, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--rose-deep)" } as const;
 const hintStyle = { color: "var(--muted)", fontWeight: 500 } as const;
 type Result = { ok: boolean; error?: string };
+/** The shop's existing colour sets (one per original perfume), so new products match the design. */
+const COLOUR_NAMES = ["Rose", "Mocha", "Mist", "Vanilla", "Sage", "Lavender", "Amber", "Citrus", "Moon grey"];
+const PALETTES = PRODUCTS.map((p, i) => ({ name: COLOUR_NAMES[i] ?? p.name, liquid: p.liquid, pale: p.pale, ink: p.ink }));
+const SHAPES = ["arch", "square", "tall", "round"] as const;
+const swatch = (c: string) => <span aria-hidden="true" style={{ display: "inline-block", width: 18, height: 18, borderRadius: "50%", background: c, border: "1px solid var(--line)", verticalAlign: "middle", marginLeft: ".4rem" }} />;
 
 /**
  * Everything that defines a perfume, in one form: photos, name, parameters, description, notes and price per size.
@@ -151,7 +157,17 @@ export function PerfumeEditor({ p, onClose }: { p: ProductDetails; onClose: () =
       <div style={grid}>
         {field("badge", "Card badge", "e.g. Soft favourite")}
         {field("notes", "Card tagline", "e.g. Pear · peony · musk")}
+        <div className="admin-field">
+          <label htmlFor={id("colour")}>Colour {swatch(draft.liquid)}{swatch(draft.pale)}<small style={hintStyle}> — card background and drawn bottle</small></label>
+          <select id={id("colour")} style={inputStyle} value={draft.liquid}
+            onChange={(e) => { const c = PALETTES.find((x) => x.liquid === e.target.value); if (c) { setDraft({ ...draft, liquid: c.liquid, pale: c.pale, ink: c.ink }); setMsg(""); } }}>
+            {!PALETTES.some((c) => c.liquid === draft.liquid) && <option value={draft.liquid}>Current colour</option>}
+            {PALETTES.map((c) => <option key={c.liquid} value={c.liquid}>{c.name}</option>)}
+          </select>
+        </div>
+        {choice("shape", "Drawn bottle shape", SHAPES, null)}
       </div>
+      <small style={{ color: "var(--muted)" }}>The drawn bottle shows only until the first photo is added; the colour is always used for the card and pop-up background.</small>
       <h3 style={sectionTitle}>Price per size (৳) <small style={{ ...hintStyle, textTransform: "none", letterSpacing: 0 }}>— leave a size empty to not sell it. Sizes are managed in “Perfumes & prices”.</small></h3>
       <div style={{ display: "flex", flexWrap: "wrap", gap: ".6rem" }}>
         {volumes.map((v) => (
@@ -172,14 +188,14 @@ export function PerfumeEditor({ p, onClose }: { p: ProductDetails; onClose: () =
 }
 
 /** Oils and gift sets: name, price, and (gift sets) the description customers read. */
-export function ItemEditor({ item, onClose }: { item: { id: string; name: string; price: number; description?: string }; onClose: () => void }) {
+export function ItemEditor({ item, onClose }: { item: { id: string; name: string; price: number; description?: string; accent?: string }; onClose: () => void }) {
   const { showToast } = useUI();
   const gift = item.description !== undefined;
-  const [d, setD] = useState({ name: item.name, price: String(item.price), description: item.description ?? "" });
+  const [d, setD] = useState({ name: item.name, price: String(item.price), description: item.description ?? "", accent: item.accent ?? "" });
   const [msg, setMsg] = useState("");
-  const dirty = d.name !== item.name || d.price !== String(item.price) || d.description !== (item.description ?? "");
+  const dirty = d.name !== item.name || d.price !== String(item.price) || d.description !== (item.description ?? "") || d.accent !== (item.accent ?? "");
   const save = async () => {
-    const res = await adminApi.saveItem(item.id, { name: d.name, price: Number(d.price), ...(gift ? { description: d.description } : {}) });
+    const res = await adminApi.saveItem(item.id, { name: d.name, price: Number(d.price), ...(gift ? { description: d.description, accent: d.accent } : {}) });
     if (!res.ok) { setMsg(res.error ?? "Could not save."); return; }
     showToast(`${d.name} saved.`); onClose();
   };
@@ -190,43 +206,20 @@ export function ItemEditor({ item, onClose }: { item: { id: string; name: string
         <div className="admin-field"><label htmlFor={`ie-${item.id}-price`}>Price (৳)</label><input id={`ie-${item.id}-price`} type="number" inputMode="numeric" min={0} step={1} style={inputStyle} value={d.price} onChange={(e) => { setD({ ...d, price: e.target.value }); setMsg(""); }} /></div>
       </div>
       {gift && <div className="admin-field"><label htmlFor={`ie-${item.id}-desc`}>What’s in the set <small style={hintStyle}>— shown on the gift card</small></label><textarea id={`ie-${item.id}-desc`} rows={3} maxLength={300} style={{ ...inputStyle, minHeight: 72 }} value={d.description} onChange={(e) => { setD({ ...d, description: e.target.value }); setMsg(""); }} /></div>}
+      {gift && (
+        <div className="admin-field">
+          <label htmlFor={`ie-${item.id}-accent`}>Card colour {swatch(d.accent)}</label>
+          <select id={`ie-${item.id}-accent`} style={inputStyle} value={d.accent} onChange={(e) => setD({ ...d, accent: e.target.value })}>
+            {!GIFTS.some((g) => g.accent === d.accent) && <option value={d.accent}>Current colour</option>}
+            {GIFTS.map((g, i) => <option key={g.accent} value={g.accent}>{["Rose", "Sage", "Lavender"][i] ?? g.name}</option>)}
+          </select>
+        </div>
+      )}
       <p className="admin-form-msg" aria-live="polite">{msg}</p>
       <div style={{ display: "flex", gap: ".5rem", justifyContent: "flex-end" }}>
         <button className="admin-btn" type="button" onClick={onClose}>{dirty ? "Cancel" : "Close"}</button>
         <button className="admin-btn primary" type="button" disabled={!dirty || !d.name.trim() || d.price === ""} onClick={save}>Save</button>
       </div>
     </div>
-  );
-}
-
-function DetailsRow({ p }: { p: ProductDetails }) {
-  const [open, setOpen] = useState(false);
-  const facts = [p.brand, p.strength, p.audience, p.lasting && `${p.lasting} hrs`].filter(Boolean).join(" · ");
-  return (
-    <>
-      <tr>
-        <td style={{ display: "flex", alignItems: "center", gap: ".6rem" }}>{p.images[0] ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={`/api/images/${p.images[0]}`} alt="" width={40} height={40} style={{ objectFit: "cover", borderRadius: ".5rem" }} /> : null}<span><strong>{p.name}</strong><br /><small style={{ color: "var(--muted)" }}>{p.family}</small></span></td>
-        <td style={{ fontSize: ".8rem" }}>{facts || <span style={{ color: "var(--muted)" }}>Not set yet</span>}</td>
-        <td style={{ fontSize: ".8rem" }}>{[p.top, p.heart, p.base].filter(Boolean).join(" · ") || <span style={{ color: "var(--muted)" }}>—</span>}</td>
-        <td><button className="admin-btn" style={{ fontSize: ".75rem" }} type="button" onClick={() => setOpen((o) => !o)}>{open ? "Close" : "Edit"}</button></td>
-      </tr>
-      {open && <tr><td colSpan={4} style={{ background: "#fbf6f1" }}><PerfumeEditor p={p} onClose={() => setOpen(false)} /></td></tr>}
-    </>
-  );
-}
-
-/** Every perfume with what customers see; Edit opens the same form as Inventory → Edit. */
-export function ProductDetailsPanel() {
-  const products = useProductDetails();
-  return (
-    <Panel title="Perfume details & photos" subtitle="Brand, family, audience, strength, lasting, notes, photos and prices: exactly what customers see. Empty fields stay hidden from customers. New perfumes are added in Inventory → Add product.">
-      <table className="admin-table admin-table--stack">
-        <thead><tr><th>Perfume</th><th>Brand · strength · audience · lasting</th><th>Notes (top · heart · base)</th><th>Actions</th></tr></thead>
-        <tbody>
-          {!products.length && emptyRow(4, "No perfumes yet.")}
-          {products.map((p) => <DetailsRow key={p.id} p={p} />)}
-        </tbody>
-      </table>
-    </Panel>
   );
 }

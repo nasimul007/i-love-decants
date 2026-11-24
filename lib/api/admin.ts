@@ -2,7 +2,7 @@
 
 import { call, clearCache, mutate, refresh, refreshPrefix } from "./client";
 import type {
-  AdminSession, CatalogOverrides, Coupon, InventoryKind, InventoryRecord, ManagerPermissions, Order, PublicManager, ServiceResult,
+  AdminSession, BottleShape, CatalogOverrides, Coupon, InventoryKind, InventoryRecord, ManagerPermissions, Order, PublicManager, ServiceResult,
 } from "@/types";
 
 export const ADMIN = {
@@ -31,7 +31,7 @@ export interface AdminNotice { id: number; text: string; enabled: boolean }
 export interface PublicCategory { id: number; name: string; hidden: boolean; products: number }
 export interface AdminFaq { id: number; question: string; answer: string; enabled: boolean }
 export interface PublicFaq { id: number; question: string; answer: string }
-export interface ProductDetails { id: number; name: string; badge: string; notes: string; family: string; description: string; top: string; heart: string; base: string; brand: string; audience: string; strength: string; lasting: string; keyNotes: string[]; images: number[] }
+export interface ProductDetails { id: number; name: string; badge: string; notes: string; family: string; description: string; top: string; heart: string; base: string; brand: string; audience: string; strength: string; lasting: string; keyNotes: string[]; liquid: string; pale: string; ink: string; shape: BottleShape; images: number[] }
 export type ProductDetailsDraft = Omit<ProductDetails, "id" | "family" | "images">;
 export interface AdminMe { session: AdminSession | null; needsSetup: boolean }
 
@@ -165,7 +165,7 @@ export const adminApi = {
   },
 
   /** Oils and gift sets: name, price and (gift sets) description. */
-  async saveItem(id: string, d: { name: string; price: number; description?: string }): Promise<ServiceResult<unknown>> {
+  async saveItem(id: string, d: { name: string; price: number; description?: string; accent?: string }): Promise<ServiceResult<unknown>> {
     const res = await call("PATCH", `/api/admin/items/${encodeURIComponent(id)}`, d);
     await Promise.all([refresh(ADMIN.catalog), refresh(ADMIN.inventory), refresh("/api/products")]);
     return res;
@@ -205,13 +205,7 @@ async function catalogOp<T extends { op: string }>(body: T): Promise<ServiceResu
 export const catalogOverridesApi = {
   addVolume: (ml: number, sprays: number, price?: number) => catalogOp({ op: "addVolume", ml: n(ml), sprays: n(sprays), price: price === undefined ? undefined : n(price) }),
   removeVolume: (ml: number) => catalogOp({ op: "removeVolume", ml }),
-  resetVolumes: () => catalogOp({ op: "resetVolumes" }),
   setSprays: (sprays: Record<number, number>) => catalogOp({ op: "setSprays", sprays: Object.fromEntries(Object.entries(sprays).map(([k, v]) => [k, n(v)])) }),
   setProductPrices: (id: number, prices: Record<number, number | null>, full?: number | null) =>
     catalogOp({ op: "setProductPrices", id, prices: Object.fromEntries(Object.entries(prices).map(([k, v]) => [k, nn(v)])), full: full === undefined ? undefined : nn(full) }),
-  resetProductPrices: (id: number) => catalogOp({ op: "resetProductPrices", id }),
-  setItemPrice: (id: string, price: number) => catalogOp({ op: "setItemPrice", id, price: n(price) }),
-  resetItemPrice: (id: string) => catalogOp({ op: "resetItemPrice", id }),
-  saveFullBottle: (v: { enabled: boolean; ml: number; sprays: number; price: number | null }) =>
-    catalogOp({ op: "saveFullBottle", enabled: v.enabled, ml: n(v.ml), sprays: n(v.sprays), price: nn(v.price) }),
 };

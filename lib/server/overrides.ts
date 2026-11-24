@@ -60,7 +60,7 @@ export async function getOverrides(tx: Tx | typeof db = db): Promise<CatalogOver
     items: {
       products: products.map(({ id, name, family }) => ({ id, name, family })),
       oils: oils.map(({ id, name, price }) => ({ id, name, price })).sort((a, b) => a.name.localeCompare(b.name)),
-      gifts: gifts.map(({ id, name, price, description }) => ({ id, name, price, description })),
+      gifts: gifts.map(({ id, name, price, description, accent }) => ({ id, name, price, description, accent })),
     },
   };
 }

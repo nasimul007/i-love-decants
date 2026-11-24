@@ -35,7 +35,7 @@ Files:
   - `prisma/schema.prisma` gains `brand`, `audience`, `strength`, `lasting` and `keyNotes` on `Product`.
   - Migration `prisma/migrations/20261125120000_perfume_parameters/` adds the columns and adds the five families as categories. Old categories are kept.
 - **API:** `app/api/admin/product-details/route.ts` and `[id]/route.ts` read and save the new fields, plus name, badge and tagline.
-- **Admin:** `components/admin/ProductDetailsPanel.tsx` puts every perfume field in one form. The family change uses the same endpoint as *Notice, categories & FAQ*, so both screens agree.
+- **Admin:** `components/admin/ProductDetailsPanel.tsx` (now `ProductEditor.tsx`) puts every perfume field in one form. The family change uses the same endpoint as *Notice, categories & FAQ*, so both screens agree.
 - **Store:**
   - `components/ui/ProductCard.tsx` adds the brand line, a facts line, and the `factsOf()` helper.
   - `components/layout/ProductModal.tsx` shows a facts grid (re-uses `.notes-pyramid`), notes only when set, and key-note chips.
@@ -61,7 +61,7 @@ Files:
 - Verified end to end: add, price, show in the shop and add to the bag.
 
 ## 3. Store ↔ admin consistency fixes
-- **Admin tab:** renamed "Prices & sprays" to **"Perfumes & prices"**, with perfume details shown first and prices below.
+- **Admin tab:** renamed "Prices & sprays" to **"Perfumes & prices"**, with perfume details shown first and prices below. *(Later merged into Inventory and removed; see 7d.)*
 - **Discount names:** the same everywhere: "Large-order discount (10%)" and "Discount code (CODE)". Before, it was "Bulk discount", "Coupon", "Discount" or "10% off orders of…" depending on the screen.
 - **Delivery charges and large-order threshold:** read from `lib/config.ts` on the checkout and delivery pages. They were typed by hand and could drift.
 - **Sizes on the home page and "How decants work":** follow the admin's sizes (`<VolumeList/>`). They were hard-coded as "3 ml to 100 ml" and "3, 6, 9, 15 + 50 and 100 ml full bottles".
@@ -148,13 +148,13 @@ New flow: **Inventory → Add product → (perfume / gift set) Next → full for
 
 | Change | Where |
 |---|---|
-| One shared **PerfumeEditor** with photos, name, brand, family, audience, strength, lasting, description, key notes, top/heart/base, card badge/tagline and **price per size**, all saved with one button | `components/admin/ProductDetailsPanel.tsx` (`PerfumeEditor`) |
-| The same editor opens from **Inventory → Edit**, from **Add product → Next** (step 2 of 2) and from **Perfumes & prices → Edit**. One form, so the screens can't disagree | `Panels.tsx` (`InventoryPanel`), `ProductDetailsPanel.tsx` |
-| **ItemEditor** for oils and gift sets: name, price, and the gift-set description (wasn't editable anywhere before) | `ProductDetailsPanel.tsx` (`ItemEditor`), new API `app/api/admin/items/[id]/route.ts` |
+| One shared **PerfumeEditor** with photos, name, brand, family, audience, strength, lasting, description, key notes, top/heart/base, card badge/tagline and **price per size**, all saved with one button | `components/admin/ProductEditor.tsx` (`PerfumeEditor`) |
+| The same editor opens from **Inventory → Edit**, from **Add product → Next** (step 2 of 2) and (until 7d removed that tab) from Perfumes & prices. One form, so the screens can't disagree | `Panels.tsx` (`InventoryPanel`), `ProductEditor.tsx` |
+| **ItemEditor** for oils and gift sets: name, price, and the gift-set description (wasn't editable anywhere before) | `ProductEditor.tsx` (`ItemEditor`), new API `app/api/admin/items/[id]/route.ts` |
 | Adding a product refreshes every admin list and the shop at once (fixes "I added Water but can't find it") | `lib/api/admin.ts` (`addInventory`) |
 | Renaming a perfume, oil or gift set also renames its Inventory row | `product-details/[id]/route.ts`, `items/[id]/route.ts` |
 | Wide modal for the full editor | `Modal wide` (`shared.tsx`), `.mgr-modal--wide` |
-| Edit buttons only show for staff with the "Perfumes & prices" permission (the server enforces the same) | `InventoryPanel` |
+| Edit buttons only show for staff with the products permission ("Edit products, prices & sizes") (the server enforces the same) | `InventoryPanel` |
 
 **Notice bar speed.** Before, it crossed a full screen in 18 s whatever the text, about 160 px/s on a laptop, which is too fast to read.
 - It now moves at a fixed **45 px/s**, about 6–7 letters a second. The speed is measured from the real text width and re-measured on resize, so it's the same on every screen.
@@ -172,6 +172,40 @@ New flow: **Inventory → Add product → (perfume / gift set) Next → full for
 - **Home:** "Every perfume is available in 3–100 ml" was false, since each perfume has its own sizes. It now reads "Sizes range from 3 ml to 100 ml; each perfume shows the sizes it comes in."
 - **How we work:** "…or gifting a full bottle" (full bottles aren't sold) is now "…or gifting a curated set".
 
+## 7d. "Perfumes & prices" tab removed: Inventory is the single place (client review round 4)
+
+Everything that tab did is now in **Inventory**:
+
+| Was in Perfumes & prices | Now |
+|---|---|
+| Perfume details & photos list | **Inventory → Edit** (same full form) |
+| Price per perfume per size (big grid) | **Edit → Price per size** |
+| Oil / gift set prices | **Edit** on the oil or gift row |
+| Size sections: add/delete a size, spray counts, customer preview | **"Sizes on sale" panel under the Inventory table** (`SizesPanel`) |
+| "Reset" prices to defaults, "Restore defaults" | **Removed.** They reset to the 9 demo perfumes, and "Restore defaults" would wipe every price of admin-added perfumes and take them off the shop |
+
+- **Staff permission:** the "products" permission still exists and is now labelled **"Edit products, prices & sizes"**. It shows the Edit buttons and the Sizes panel inside Inventory. A manager needs the Inventory permission too, to see the tab at all.
+- **Code:**
+  - `ProductDetailsPanel.tsx` is renamed to **`ProductEditor.tsx`** and now only holds the editors.
+  - The old list, the price-grid rows and the full-bottle leftovers are deleted.
+  - Unused client calls are removed (`resetProductPrices`, `setItemPrice`, `resetItemPrice`, `saveFullBottle`, `resetVolumes`). Their server operations still exist but nothing calls them.
+
+**Check: every product detail customers see can be edited in Inventory → Edit**
+
+| Shown on the shop | Editable? |
+|---|---|
+| Perfume: name, brand, scent family, audience, strength, lasting, description, key notes, top/heart/base, card badge, card tagline, photos, price per size | ✅ (already) |
+| Perfume **colour** (card + pop-up background, drawn bottle) and **drawn-bottle shape** | ✅ **new.** Pick from the shop's 9 existing colour sets (Rose, Mocha, Mist, Vanilla, Sage, Lavender, Amber, Citrus, Moon grey) and 4 shapes, so new products match the design |
+| Gift set: name, price, description, **card colour** | ✅ (colour is **new**: Rose / Sage / Lavender) |
+| Oil: name, price | ✅ |
+| Shown / hidden / archived, stock | ✅ (Inventory table) |
+| Sizes on sale, spray counts | ✅ (Sizes on sale panel) |
+| Scent family on cards | ✅ The card now always shows the **Scent family** field. A hidden "scent tags" list that couldn't be edited anywhere used to override it |
+
+**Not product data, and still set in code** (`lib/config.ts`): delivery charges (৳80 / ৳130), the large-order discount (10% over ৳5,000), phone / WhatsApp / Messenger / Facebook links, and the fixed oil-card sentence. These could move into a "Store settings" admin panel later.
+
+**Custom Design page (client request):** customers are directed only to WhatsApp or Messenger (see 7b). This is confirmed still in place.
+
 ## 8. Code clean-up (no visual change)
 - **Unused CSS removed:** about 28 rules for elements that no longer exist (old profile panel, old switches, unused modals). The page fade-in keyframes are kept, since they are in use.
 - **Dead code removed:**
@@ -180,9 +214,9 @@ New flow: **Inventory → Add product → (perfume / gift set) Next → full for
   - Unused imports.
 
 ## 9. For the client / still open
-- **Fill in the parameters:** fill in Brand, Strength, Audience and Lasting for each perfume (*Admin → Perfumes & prices*).
+- **Fill in the parameters:** fill in Brand, Strength, Audience and Lasting for each perfume (*Admin → Inventory → Edit*).
 - **Merge old categories:** move perfumes from the old categories (Woody, Warm, Gourmand, Aromatic, Citrus, Musky) into the five families, then delete the old ones (*Notice, categories & FAQ*).
-- **Sizes:** the brief lists 3/6/9/15/30/50 ml. The live site uses 3–100 ml, so change it in *Perfumes & prices → Volume sections*.
+- **Sizes:** the brief lists 3/6/9/15/30/50 ml. The live site uses 3–100 ml, so change it in *Admin → Inventory → Sizes on sale*.
 - **Engraving copy:** it still says 50 and 100 ml bottles. Keep a 100 ml size or update the copy.
 - **Full-bottle returns policy:** *Delivery & Returns* still has a "Full bottles" returns row. Keep it or remove it, depending on the business.
 - **Trust details (brief §6):** state where decants come from (sealed bottles from authorised sellers) and show batch codes. This needs the client's real facts before it's added.

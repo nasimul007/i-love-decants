@@ -203,7 +203,7 @@ export interface CatalogOverrides {
   items?: {
     products: { id: number; name: string; family: string }[];
     oils: { id: string; name: string; price: number }[];
-    gifts: { id: string; name: string; price: number; description: string }[];
+    gifts: { id: string; name: string; price: number; description: string; accent: string }[];
   };
 }
 

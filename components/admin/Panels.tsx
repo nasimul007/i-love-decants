@@ -5,20 +5,20 @@ import type { FormEvent } from "react";
 import {
   useAdminMe, useAdminOverview, useCatalogOverrides, useCoupons, useCustomers, useInventoryRecords, useLoginHistory, useManagers, useOrders, useProductDetails,
 } from "@/hooks/useServices";
-import { ItemEditor, PerfumeEditor } from "./ProductDetailsPanel";
+import { ItemEditor, PerfumeEditor } from "./ProductEditor";
 import { useUI } from "@/components/providers/UIProvider";
 import { Modal, Panel, emptyRow, inputStyle } from "./shared";
 import { OrderDetailModal } from "./OrdersPanel";
 import {
-  activeVolumes, applyToProduct, effectiveSprays, perfumesOf, formatSprays, fullBottleLive, fullBottleOf,
+  activeVolumes, applyToProduct, effectiveSprays, perfumesOf, formatSprays,
   sectionReplacedByFullBottle, suggestSprays,
 } from "@/lib/services/catalogOverrides";
-import { GIFTS, OILS, PRODUCTS } from "@/lib/data/catalog";
+import { PRODUCTS } from "@/lib/data/catalog";
 import { DEFAULT_SPRAYS } from "@/lib/config";
 import { adminApi, catalogOverridesApi } from "@/lib/api/admin";
 import { ADMIN_SECTIONS, can } from "@/lib/services/admin";
 import { formatDate, formatDateTime, money } from "@/lib/format";
-import type { CatalogOverrides, InventoryKind, InventoryRecord, ManagerPermissions, Order, Product, PublicManager } from "@/types";
+import type { CatalogOverrides, InventoryKind, InventoryRecord, ManagerPermissions, Order, PublicManager } from "@/types";
 
 /* ───────────────────────── Overview ───────────────────────── */
 export const STATUSES: Order["status"][] = ["received", "confirmed", "shipped", "delivered", "cancelled"];
@@ -407,28 +407,26 @@ function PermRow({ label, value, onChange }: { label: string; value: boolean; on
   );
 }
 
-/* ───────────────────────── Perfumes & prices ───────────────────────── */
+/* ───────────────────────── Sizes on sale (inside the Inventory tab) ───────────────────────── */
 type Draft = Record<string, string>;
 const draftOf = (vols: number[], values: Record<number, number | undefined>): Draft =>
   Object.fromEntries(vols.map((v) => [v, values[v] === undefined ? "" : String(values[v])]));
 const sameDraft = (keys: (number | string)[], a: Draft, b: Draft) => keys.every((k) => (a[k] ?? "") === (b[k] ?? ""));
 const num = (s: string | undefined) => (s === undefined || s.trim() === "" ? NaN : Number(s));
 const numInput = { ...inputStyle, width: 88, minHeight: 38, padding: ".45rem .55rem", textAlign: "right" as const };
-const editedPill = <span className="pill live" style={{ marginLeft: ".4rem" }}>Edited</span>;
 
 /**
  * Admin control of the volume sections customers can choose (add / delete), the spray count of each,
  * every perfume's price per volume (blank = not offered), and oil / gift-set prices.
  * Changes apply immediately to the storefront, product pop-up, filters, search, cart and checkout.
  */
-export function PricingPanel() {
+export function SizesPanel() {
   const overrides = useCatalogOverrides();
   const perfumes = perfumesOf(overrides);
   const { showToast } = useUI();
   const volumes = activeVolumes(overrides);
   const sprays = effectiveSprays(overrides);
   const volKey = volumes.join(",");
-  const customised = !!overrides.volumes || Object.keys(overrides.sprays).length > 0;
 
   /* spray drafts */
   const savedSprays = draftOf(volumes, sprays);
@@ -452,9 +450,6 @@ export function PricingPanel() {
   const previewBase = perfumes.find((p) => p.id === previewId) ?? perfumes[0] ?? PRODUCTS[0];
   const previewProduct = applyToProduct(previewBase, sectionView);
 
-  /* Full bottle section */
-  const fb = fullBottleOf(overrides);
-  const fbLive = fullBottleLive(overrides);
 
   const pricesAt = (v: number) => perfumes.map((p) => applyToProduct(p, sectionView).prices[v]).filter((x): x is number => x !== undefined);
   const pricedCount = (v: number) => pricesAt(v).length;
@@ -463,10 +458,6 @@ export function PricingPanel() {
     if (!ps.length) return "Not priced yet";
     const lo = Math.min(...ps), hi = Math.max(...ps);
     return lo === hi ? money(lo) : `${money(lo)} – ${money(hi)}`;
-  };
-  const goToPrices = (v: number) => {
-    document.getElementById("perfume-prices")?.scrollIntoView({ behavior: "smooth", block: "start" });
-    setTimeout(() => document.querySelector<HTMLInputElement>(`input[aria-label$=" ${v} ml price"]`)?.focus({ preventScroll: true }), 450);
   };
 
   const saveSprays = async () => {
@@ -493,18 +484,12 @@ export function PricingPanel() {
     if (!res.ok) { showToast(res.error ?? "Could not remove."); return; }
     showToast(`${v} ml removed from the shop.`);
   };
-  const restoreDefaults = async () => {
-    if (!window.confirm("Restore the default volumes (3, 6, 9, 15, 50, 100 ml), their spray counts and the original perfume prices?")) return;
-    await catalogOverridesApi.resetVolumes();
-    showToast("Default volumes, spray counts and prices restored.");
-  };
 
   return (
     <>
       <Panel
-        title="Volume sections"
-        subtitle="Each section is one size customers can choose: its volume, spray count and price. Delete a section to stop selling that size; add one to start selling a new size."
-        action={customised ? <button className="admin-btn" type="button" onClick={restoreDefaults}>Restore defaults</button> : undefined}
+        title="Sizes on sale"
+        subtitle="Each size customers can choose: its volume and spray count. Delete a size to stop selling it; add one to start selling a new size. Each perfume's own prices are set with Edit in the table above."
       >
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: ".6rem", marginBottom: ".4rem" }}>
           <label htmlFor="previewAs" style={{ fontSize: ".82rem", fontWeight: 700 }}>Customer view shown for</label>
@@ -545,7 +530,6 @@ export function PricingPanel() {
                   </td>
                   <td style={{ whiteSpace: "nowrap" }}>
                     <div style={{ display: "flex", gap: ".4rem" }}>
-                      <button className="admin-btn" style={{ fontSize: ".75rem", color: "var(--rose-deep)" }} type="button" onClick={() => goToPrices(v)}>Set prices</button>
                       <button className="admin-btn danger" style={{ fontSize: ".75rem" }} type="button" disabled={volumes.length <= 1}
                         title={volumes.length <= 1 ? "At least one volume must stay on sale" : `Stop selling ${v} ml`} onClick={() => removeVolume(v)}>Delete</button>
                     </div>
@@ -595,44 +579,11 @@ export function PricingPanel() {
             <button className="admin-btn primary" type="submit" style={{ height: 40 }}>Add section</button>
           </div>
           <p className="admin-form-msg" aria-live="polite">{addMsg}</p>
-          <small style={{ color: "var(--muted)" }}>The new section goes on sale for every perfume at this price. To charge a different price for a particular perfume, change it in “Perfume prices” below.</small>
+          <small style={{ color: "var(--muted)" }}>The new section goes on sale for every perfume at this price. To charge a different price for one perfume, open it with Edit in the Inventory table.</small>
         </form>
       </Panel>
 
 
-      <div style={{ height: "1.25rem" }} />
-      <div id="perfume-prices" style={{ scrollMarginTop: "6rem" }} />
-      <Panel title="Perfume prices" subtitle="Price for each volume, in ৳. Leave a box empty to not offer that volume for that perfume. Edited prices apply everywhere, including bags customers have already filled.">
-        <table className="admin-table">
-          <thead><tr><th>Perfume</th>{volumes.map((v) => (
-            <th key={v} style={{ textAlign: "right", opacity: v === replaced ? 0.55 : 1 }}>
-              {v} ml
-              <small style={{ display: "block", fontWeight: 500, letterSpacing: 0, textTransform: "none", color: "var(--muted)" }}>
-                {v === replaced ? "hidden (Full bottle)" : sprays[v] !== undefined ? formatSprays(sprays[v]) : "—"}
-              </small>
-            </th>
-          ))}{fbLive && (
-            <th style={{ textAlign: "right" }}>
-              Full bottle
-              <small style={{ display: "block", fontWeight: 500, letterSpacing: 0, textTransform: "none", color: "var(--muted)" }}>{fb.ml} ml · {formatSprays(fb.sprays)}</small>
-            </th>
-          )}<th>Actions</th></tr></thead>
-          <tbody>
-            {perfumes.map((p) => <PerfumePriceRow key={p.id} base={p} volumes={volumes} overrides={overrides} fullColumn={fbLive} />)}
-          </tbody>
-        </table>
-      </Panel>
-
-      <div style={{ height: "1.25rem" }} />
-      <Panel title="Perfume oils & gift sets" subtitle="Single-price items.">
-        <table className="admin-table">
-          <thead><tr><th>Item</th><th>Type</th><th style={{ textAlign: "right" }}>Price (৳)</th><th>Actions</th></tr></thead>
-          <tbody>
-            {(overrides.items?.gifts ?? GIFTS).map((g) => <ItemPriceRow key={g.id} id={g.id} name={g.name} kind="Gift set" base={GIFTS.find((x) => x.id === g.id)?.price} price={overrides.itemPrices[g.id] ?? g.price} />)}
-            {(overrides.items?.oils ?? OILS).map((o) => <ItemPriceRow key={o.id} id={o.id} name={o.name} kind="Perfume oil · 6 ml" base={OILS.find((x) => x.id === o.id)?.price} price={overrides.itemPrices[o.id] ?? o.price} />)}
-          </tbody>
-        </table>
-      </Panel>
     </>
   );
 }
@@ -672,106 +623,5 @@ function CustomerTile({ ml, price, sprays, perfume, draft, full, fullMl, replace
       <span>{offered ? money(price) : draft ? "৳—" : "Not sold"}</span>
       {sprays !== undefined ? <small className="size-option-sprays">{formatSprays(sprays)}</small> : draft ? <small className="size-option-sprays">— sprays</small> : null}
     </div>
-  );
-}
-
-function PerfumePriceRow({ base, volumes, overrides, fullColumn }: { base: Product; volumes: number[]; overrides: CatalogOverrides; fullColumn: boolean }) {
-  const { showToast } = useUI();
-  const sectionView: CatalogOverrides = { ...overrides, fullBottle: undefined };
-  const effective = applyToProduct(base, sectionView);
-  const live = applyToProduct(base, overrides);
-  const fullKeys = fullColumn ? ["full"] : [];
-  const withFull = (d: Draft): Draft => (fullColumn ? { ...d, full: live.fullBottle ? String(live.fullBottle.price) : "" } : d);
-  const saved = withFull(draftOf(volumes, effective.prices));
-  const [draft, setDraft] = useState<Draft>(saved);
-  const [msg, setMsg] = useState("");
-  const custom = overrides.prices[String(base.id)];
-  const key = volumes.join(",") + JSON.stringify(custom ?? {});
-  const fbKey = JSON.stringify(overrides.fullBottle ?? {}) + String(fullColumn);
-  useEffect(() => { setDraft(saved); setMsg(""); }, [key, fbKey]); // eslint-disable-line react-hooks/exhaustive-deps
-  const dirty = !sameDraft([...volumes, ...fullKeys], draft, saved);
-  // "Edited" = differs from the catalogue defaults, which only seeded perfumes have.
-  const edited = PRODUCTS.some((x) => x.id === base.id) && !!custom && Object.keys(custom).some((v) => volumes.includes(Number(v)) || (fullColumn && v === "full"));
-  const hidden = Object.keys(live.prices).length === 0 && !live.fullBottle;
-
-  const save = async () => {
-    const full = fullColumn ? ((draft.full ?? "").trim() === "" ? null : num(draft.full)) : undefined;
-    const res = await catalogOverridesApi.setProductPrices(base.id, Object.fromEntries(volumes.map((v) => [v, (draft[v] ?? "").trim() === "" ? null : num(draft[v])])), full);
-    if (!res.ok) { setMsg(res.error ?? ""); return; }
-    showToast(`${base.name} prices saved.`);
-  };
-
-  return (
-    <tr>
-      <td>
-        <strong style={{ fontSize: ".9rem" }}>{base.name}</strong>{edited && editedPill}
-        {hidden && <span className="pill off" style={{ marginLeft: ".4rem" }} title="No priced volume on sale — hidden from the shop">Hidden</span>}
-        <small style={{ display: "block", color: "var(--muted)", fontSize: ".73rem" }}>{base.family}</small>
-        {msg && <small style={{ display: "block", color: "#a84d58", fontWeight: 700, maxWidth: 260 }}>{msg}</small>}
-      </td>
-      {volumes.map((v) => (
-        <td key={v} style={{ textAlign: "right" }}>
-          <input
-            aria-label={`${base.name} ${v} ml price`} type="number" inputMode="numeric" min={0} step={1} style={numInput} placeholder="—"
-            title={base.prices[v] !== undefined ? `Default: ৳${base.prices[v]}. Empty = not offered.` : "New volume. Empty = not offered."}
-            value={draft[v] ?? ""} onChange={(e) => { setDraft({ ...draft, [v]: e.target.value }); setMsg(""); }}
-          />
-        </td>
-      ))}
-      {fullColumn && (
-        <td style={{ textAlign: "right" }}>
-          <input
-            aria-label={`${base.name} full bottle price`} type="number" inputMode="numeric" min={0} step={1} style={numInput} placeholder="—"
-            title={`Full bottle section price: ৳${fullBottleOf(overrides).price}. Empty = no full bottle for this perfume.`}
-            value={draft.full ?? ""} onChange={(e) => { setDraft({ ...draft, full: e.target.value }); setMsg(""); }}
-          />
-        </td>
-      )}
-      <td style={{ whiteSpace: "nowrap" }}>
-        <div style={{ display: "flex", gap: ".4rem" }}>
-          <button className="admin-btn primary" style={{ fontSize: ".75rem" }} type="button" disabled={!dirty} onClick={save}>Save</button>
-          {dirty && <button className="admin-btn" style={{ fontSize: ".75rem" }} type="button" onClick={() => { setDraft(saved); setMsg(""); }}>Cancel</button>}
-          {edited && !dirty && <button className="admin-btn" style={{ fontSize: ".75rem" }} type="button" onClick={async () => { await catalogOverridesApi.resetProductPrices(base.id); showToast(`${base.name} prices reset.`); }}>Reset</button>}
-        </div>
-      </td>
-    </tr>
-  );
-}
-
-/** `base` = the catalogue default (absent for items added in the admin, which then have no "Reset"). */
-function ItemPriceRow({ id, name, kind, base, price }: { id: string; name: string; kind: string; base?: number; price: number }) {
-  const { showToast } = useUI();
-  const saved = String(price);
-  const edited = base !== undefined && price !== base;
-  const [draft, setDraft] = useState(saved);
-  const [msg, setMsg] = useState("");
-  useEffect(() => { setDraft(saved); setMsg(""); }, [saved]);
-  const dirty = draft !== saved;
-
-  const save = async () => {
-    const res = await catalogOverridesApi.setItemPrice(id, draft.trim() === "" ? NaN : Number(draft));
-    if (!res.ok) { setMsg(res.error ?? ""); return; }
-    showToast(`${name} price saved.`);
-  };
-
-  return (
-    <tr>
-      <td>
-        <strong style={{ fontSize: ".9rem" }}>{name}</strong>{edited && editedPill}
-        {msg && <small style={{ display: "block", color: "#a84d58", fontWeight: 700 }}>{msg}</small>}
-      </td>
-      <td style={{ color: "var(--muted)", fontSize: ".82rem" }}>{kind}</td>
-      <td style={{ textAlign: "right" }}>
-        <input aria-label={`${name} price`} type="number" inputMode="numeric" min={0} step={1} style={numInput} title={base !== undefined ? `Default: ৳${base}` : undefined}
-          value={draft} onChange={(e) => { setDraft(e.target.value); setMsg(""); }} />
-      </td>
-      <td style={{ whiteSpace: "nowrap" }}>
-        <div style={{ display: "flex", gap: ".4rem" }}>
-          <button className="admin-btn primary" style={{ fontSize: ".75rem" }} type="button" disabled={!dirty} onClick={save}>Save</button>
-          {dirty && <button className="admin-btn" style={{ fontSize: ".75rem" }} type="button" onClick={() => { setDraft(saved); setMsg(""); }}>Cancel</button>}
-          {edited && !dirty && <button className="admin-btn" style={{ fontSize: ".75rem" }} type="button" onClick={async () => { await catalogOverridesApi.resetItemPrice(id); showToast(`${name} price reset.`); }}>Reset</button>}
-        </div>
-      </td>
-    </tr>
   );
 }

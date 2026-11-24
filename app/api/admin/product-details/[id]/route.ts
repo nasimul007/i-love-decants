@@ -5,6 +5,7 @@ import { AUDIENCES, LASTING, STRENGTHS } from "@/lib/config";
 import { body, HttpError, ok, route } from "@/lib/server/http";
 
 // "" = not set: unknown notes and untested lasting stay blank rather than guessed.
+const HEX = /^#[0-9a-f]{6}$/i;
 const pick = (list: readonly string[]) => z.enum(["", ...list] as [string, ...string[]]);
 const schema = z.object({
   name: z.string().trim().min(1, "Enter the perfume name.").max(80),
@@ -18,6 +19,9 @@ const schema = z.object({
   audience: pick(AUDIENCES),
   strength: pick(STRENGTHS),
   lasting: pick(LASTING),
+  // Card / pop-up background and the drawn bottle shown until photos are uploaded.
+  liquid: z.string().regex(HEX), pale: z.string().regex(HEX), ink: z.string().regex(HEX),
+  shape: z.enum(["arch", "square", "tall", "round"]),
   keyNotes: z.array(z.string().trim().toLowerCase().min(1).max(30)).max(12).transform((a) => [...new Set(a)]),
 });
 

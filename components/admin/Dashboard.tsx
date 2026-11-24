@@ -5,11 +5,10 @@ import type { AdminSection, AdminSession } from "@/types";
 import { ADMIN_SECTIONS } from "@/lib/services/admin";
 import { adminApi } from "@/lib/api/admin";
 import {
-  CouponsPanel, CustomersPanel, HistoryPanel, InventoryPanel, ManagersPanel, OverviewPanel, PricingPanel,
+  CouponsPanel, CustomersPanel, HistoryPanel, InventoryPanel, ManagersPanel, OverviewPanel, SizesPanel,
 } from "./Panels";
 import { OrdersPanel } from "./OrdersPanel";
 import { ContentPanel } from "./ContentPanel";
-import { ProductDetailsPanel } from "./ProductDetailsPanel";
 
 type TabId = "overview" | "orders" | AdminSection | "managers";
 
@@ -22,7 +21,7 @@ export function Dashboard({ session, canSee }: Props) {
   const tabs: { id: TabId; label: string }[] = [
     { id: "overview", label: "Overview" },
     { id: "orders", label: "Orders" },
-    ...ADMIN_SECTIONS.filter((s) => canSee(s.id)).map((s) => ({ id: s.id as TabId, label: s.label })),
+    ...ADMIN_SECTIONS.filter((s) => s.tab !== false && canSee(s.id)).map((s) => ({ id: s.id as TabId, label: s.label })),
     ...(session.role === "owner" ? [{ id: "managers" as TabId, label: "Managers" }] : []),
   ];
   const [tab, setTab] = useState<TabId>("overview");
@@ -59,8 +58,7 @@ export function Dashboard({ session, canSee }: Props) {
         {tab === "overview" && <OverviewPanel />}
         {tab === "orders" && <OrdersPanel />}
         {tab === "content" && canSee("content") && <ContentPanel />}
-        {tab === "inventory" && canSee("inventory") && <InventoryPanel />}
-        {tab === "products" && canSee("products") && <><ProductDetailsPanel /><div style={{ height: "1.25rem" }} /><PricingPanel /></>}
+        {tab === "inventory" && canSee("inventory") && <><InventoryPanel />{canSee("products") && <><div style={{ height: "1.25rem" }} /><SizesPanel /></>}</>}
         {tab === "customers" && canSee("customers") && <CustomersPanel />}
         {tab === "history" && canSee("history") && <HistoryPanel />}
         {tab === "coupons" && canSee("coupons") && <CouponsPanel />}

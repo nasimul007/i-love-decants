@@ -8,8 +8,7 @@ import { useUI } from "@/components/providers/UIProvider";
 import { ProductBottle } from "./BottleVisual";
 
 export function ScentFamily({ product }: { product: Product }) {
-  const values = product.scentFamilies?.length ? product.scentFamilies : [product.family];
-  const families = [...new Set(values.map((v) => v.trim()).filter(Boolean))];
+  const families = [product.family.trim()].filter(Boolean);
   if (!families.length) return null;
   return (
     <p className="product-family">
