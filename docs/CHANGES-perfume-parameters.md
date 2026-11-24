@@ -1,13 +1,59 @@
-# I Love Decants: change log (branch `feat/perfume-parameters`)
+# I Love Decants: change log and developer handoff
 
-For the frontend designer and developer. This lists everything changed on this branch, why, and where.
-The brief came from *Perfume Parameters for I Love Decants (Level 1 Website)*.
+For the developer and the frontend designer. This lists every change made from the start of this piece of work to now: what changed, why, and where.
+The brief came from *Perfume Parameters for I Love Decants (Level 1 Website)*; later sections follow the client's review rounds.
+
+## 0. Developer handoff (read this first)
+
+**Status**
+- All work was done on branch `feat/perfume-parameters`, merged into `main` (merge commit `dd454b5`), and **pushed to GitHub `main` on 25 Nov 2026**. The branch `feat/perfume-parameters` itself was not pushed; everything is in `main`.
+- Commits, oldest first: `dafc6f4` parameters + product creation + UX/SEO → `c1b365f` Inventory as product hub, notice bar, coupon limits → `8b8bf0e` "Perfumes & prices" merged into Inventory → `0d5389c` sales on products/categories → `80dfe94` change log → `dd454b5` merge.
+- **Deploy not confirmed.** GitHub shows no deploy check on these commits (nor on earlier ones), so the push may not have triggered a deploy. Please check the hosting (Vercel) project, and deploy `main` if it didn't build by itself.
+
+**Deploy steps**
+1. Build command: `vercel-build` (`prisma migrate deploy && next build`), as already configured in `package.json`.
+2. **Two new database migrations** run during the build. Both only **add**; nothing is dropped or rewritten:
+   - `20261125120000_perfume_parameters`: adds `brand`, `audience`, `strength`, `lasting` (text, default `''`) and `keyNotes` (text array, default empty) to `Product`. It inserts the categories Fresh, Floral, Amber, Woods and Fruity only if they don't exist yet.
+   - `20261125180000_product_sales`: creates the `Sale` table.
+3. **Optional env var** `NEXT_PUBLIC_SITE_URL` (e.g. `https://ilovedecants.com`) sets the address used by the sitemap, robots file, canonical URLs and product structured data. Without it, Vercel's production URL is used.
+4. Nothing else is needed: no new packages, and no changes to existing env vars.
+
+**After deploying, please check** (≈10 minutes)
+- **Shop:**
+  - Product cards show "Choose size" and the brand/strength line when those fields are set.
+  - Filters for Brand, For, Strength and Size appear once at least two values exist.
+  - `/sitemap.xml` and `/robots.txt` load.
+- **Admin:**
+  - The tabs are Overview, Orders, Inventory, Customers, Login history, **Discounts** and Notice/categories/FAQ. "Perfumes & prices" is gone.
+  - **Inventory → Edit** on a perfume opens the full form (photos, parameters, notes, colour, price per size). Save, then check the shop.
+  - **Inventory → Add product → Next** shows the same form for the new item.
+  - **Inventory → Sizes on sale** lists the sizes and spray counts.
+  - **Discounts → Sales:** add a small sale and check the crossed-out price in the shop, then delete the sale. Try **Discount codes** with an end date or usage limit.
+- **Order:** place one test order with a sale active and check that the order shows the sale price.
+
+**Things the client still has to do in the admin** (after deploy)
+- Fill in Brand, Strength, Audience and Lasting for each perfume (*Inventory → Edit*).
+- Move perfumes from the old categories (Woody, Warm, Gourmand, Aromatic, Citrus, Musky) into the five families, then delete the old ones (*Notice, categories & FAQ*).
+- Set the sizes on sale. The brief lists 3/6/9/15/30/50 ml; the live site uses 3–100 ml (*Inventory → Sizes on sale*).
+
+**Known follow-ups (not done; they need a decision or more work)** — details in section 9 and 7b
+- **Store settings:** delivery charges, the large-order discount and contact links are still set in `lib/config.ts`. A "Store settings" admin panel would let the client change them.
+- **Product pages:** each perfume could get its own page instead of only a pop-up (SEO and sharing, Level 2).
+- **Unused server operations:** `resetProductPrices`, `resetItemPrice`, `saveFullBottle` and `resetVolumes` remain in `lib/server/overrides.ts` and `app/api/admin/catalog/route.ts`, but nothing in the UI calls them any more. They can be deleted.
+- **Old docs:** `HANDOFF.md` describes an older localStorage version of the app and is out of date. This file is the current reference for these changes.
+- **Permissions:** a manager with only the products permission ("Edit products, prices & sizes") also needs the Inventory permission to see the Inventory tab.
+- **Copy decisions:** the engraving copy (50/100 ml bottles), the "Full bottles" returns row, and the trust details from brief §6 (sealed bottles, batch codes).
+
+**Local test data.** While building this, a local test database was used with test items ("Test Oud Royale", "Water", "Rose Petal Test", "Test Musk Oil", "Test Gift Box"), two test sales and one test order. **None of this is in the repository or the live database.**
+
+---
 
 **Ground rules followed**
-- The desktop design is unchanged. Every phone-only rule sits inside one `@media (max-width: 680px)` block at the end of `app/globals.css`.
-- New UI reuses existing classes and tokens (`.notes-pyramid`, `.note-level`, `.filter-chip`, `.eyebrow` styling, `--rose-deep`, `--line`, `--muted`).
-- Checked on a local copy: desktop 1280, 1440 and 1920 px, phone 375 px, store + admin, in the built-in browser and in Chrome. `npm run typecheck`, `next build` and `npx tsx lib/sales.check.ts` pass.
-- Sections 1–7 are the first round; 7b–7e are later client review rounds. Where a later round replaced something, the earlier text says so. **Appendix A lists every changed file.**
+- **Design kept:** the same colours, type, shapes and components. The only new colour is the discount colour (section 4).
+- **Desktop:** layout fixes only, listed in 7b. Phone-only rules sit inside `@media (max-width: 680px)` blocks in `app/globals.css`.
+- **Reuse:** new UI reuses existing classes and tokens (`.notes-pyramid`, `.note-level`, `.filter-chip`, `.eyebrow` styling, `--rose-deep`, `--line`, `--muted`).
+- **Tested:** on a local copy at desktop 1280, 1440 and 1920 px and phone 375 px, store and admin, in the built-in browser and in Chrome. `npm run typecheck`, `next build` (also run on the merged `main`) and `npx tsx lib/sales.check.ts` pass.
+- **How to read this:** sections 1–7 are the first round, and 7b–7e are later client review rounds. Where a later round replaced something, the earlier text says so. **Appendix A lists every changed file.**
 
 ---
 
@@ -260,13 +306,13 @@ Everything that tab did is now in **Inventory**:
 - **Engraving copy:** it still says 50 and 100 ml bottles. Keep a 100 ml size or update the copy.
 - **Full-bottle returns policy:** *Delivery & Returns* still has a "Full bottles" returns row. Keep it or remove it, depending on the business.
 - **Trust details (brief §6):** state where decants come from (sealed bottles from authorised sellers) and show batch codes. This needs the client's real facts before it's added.
-- **Deploy:** the database migration runs automatically with `vercel-build` (`prisma migrate deploy`).
+- **Deploy:** see section 0. Both migrations run automatically with `vercel-build` (`prisma migrate deploy`).
 
 ---
 
 ## Appendix A: every file changed on this branch
 
-Compared with `main` at `5d89273` (A = added, M = modified, D = deleted). Section numbers point to the explanations above.
+Compared with the previous `main` (`5d89273`, before this work); all of it is now in `main` at `dd454b5`. A = added, M = modified, D = deleted. Section numbers point to the explanations above.
 
 **Storefront pages** (`app/(shop)/…`)
 | File | | What changed |
