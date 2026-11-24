@@ -3,14 +3,14 @@ import { PageHero, RouteView, SectionHeading } from "@/components/ui/PageHero";
 import { ContactForm } from "@/components/contact/ContactForm";
 import { CONFIG } from "@/lib/config";
 
-export const metadata: Metadata = { title: "Contact — I Love Decants" };
+export const metadata: Metadata = { title: "Contact — I Love Decants", description: "Questions about a scent, size, gift or order? Reach I Love Decants on WhatsApp, Messenger, Facebook or phone. Friendly help, no pressure." };
 
 const FAQ = [
   ["Which size should I try?", "Begin with 3 ml if the scent is new to you. It is enough for several wears without a large commitment."],
   ["Can I add a gift note?", "Yes. A short handwritten message can be included with any gift order."],
   ["How long does engraving take?", "Custom engraving generally adds one business day after spelling and placement are confirmed."],
-  ["Is this checkout active?", "This downloadable version is a frontend demo. Connect your preferred payment or store backend before selling."],
-  ["Do you have full bottles?", "Yes. Selected scents are offered in both 50 ml and 100 ml alongside the smaller decant volumes."],
+  ["How do I pay?", "Cash on Delivery: no advance payment, just pay the rider when your order arrives."],
+  ["Do you sell full bottles?", "Our shop sells decants, perfume oils and gift sets. Message us if you are looking for a full bottle and we will tell you what we can offer."],
   ["Can you recommend a scent?", "Absolutely. Tell us two scents you enjoy—or the mood you want—and we will help you shortlist gently."],
 ];
 

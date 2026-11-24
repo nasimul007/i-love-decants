@@ -6,6 +6,7 @@ import { useUI } from "@/components/providers/UIProvider";
 import { useCart } from "@/hooks/useServices";
 import { VolumeList } from "@/components/ui/VolumeText";
 import { money } from "@/lib/format";
+import { BULK_DISCOUNT, DELIVERY_CHARGE, bulkDiscountFor } from "@/lib/config";
 
 export function CartDrawer() {
   const router = useRouter();
@@ -43,7 +44,10 @@ export function CartDrawer() {
         </div>
         <div className="cart-summary">
           <div className="summary-row"><span>Subtotal</span><strong>{money(subtotal)}</strong></div>
-          <p className="cart-note">Your delivery total and transaction choice are confirmed at checkout. This static frontend keeps your bag on this device.</p>
+          {bulkDiscountFor(subtotal) > 0
+            ? <div className="summary-row is-deal"><span>Large-order discount ({BULK_DISCOUNT.percent}%)</span><strong>−{money(bulkDiscountFor(subtotal))}</strong></div>
+            : items.length > 0 && <p className="deal-note">Add {money(BULK_DISCOUNT.minSubtotal - subtotal)} more to get {BULK_DISCOUNT.percent}% off your order.</p>}
+          <p className="cart-note">Delivery: {money(DELIVERY_CHARGE.insideDhaka)} inside Dhaka, {money(DELIVERY_CHARGE.outsideDhaka)} elsewhere. Pay cash on delivery, no advance payment. Discount codes go in at checkout.</p>
           <button className="btn btn-primary" type="button" disabled={!items.length} onClick={() => { closeCart(); router.push("/checkout"); }}>
             Continue to checkout
           </button>

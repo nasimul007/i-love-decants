@@ -3,7 +3,7 @@
  * every service in `lib/services` reads and writes exactly these shapes.
  */
 
-/** A bottle volume in ml. The list on sale is admin-controlled (Admin → Prices & sprays). */
+/** A bottle volume in ml. The list on sale is admin-controlled (Admin → Perfumes & prices). */
 export type VolumeMl = number;
 export type BottleShape = "arch" | "square" | "tall" | "round";
 /** A category name (admin-managed). */
@@ -21,6 +21,13 @@ export interface Product {
   top: string;
   heart: string;
   base: string;
+  /** Perfume parameters; "" / [] = not set (hidden on the storefront). Allowed values: lib/config.ts. */
+  brand?: string;
+  audience?: string;
+  strength?: string;
+  /** Wear-time range in hours, e.g. "8–10". */
+  lasting?: string;
+  keyNotes?: string[];
   liquid: string;
   pale: string;
   ink: string;
@@ -187,6 +194,12 @@ export interface CatalogOverrides {
    * While ON, a regular section of the same ml is hidden from customers (they are the same bottle).
    */
   fullBottle?: FullBottleSettings;
+  /** Every perfume / oil / gift set in the database (incl. ones added in the admin), so the price tables list them all. */
+  items?: {
+    products: { id: number; name: string; family: string }[];
+    oils: { id: string; name: string; price: number }[];
+    gifts: { id: string; name: string; price: number }[];
+  };
 }
 
 export interface FullBottleSettings {

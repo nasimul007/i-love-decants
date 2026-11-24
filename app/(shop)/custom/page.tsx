@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { PageHero, RouteView, SectionHeading } from "@/components/ui/PageHero";
 import { CustomEngraving } from "@/components/custom/CustomEngraving";
 
-export const metadata: Metadata = { title: "Custom Design — I Love Decants" };
+export const metadata: Metadata = { title: "Custom Design — I Love Decants", description: "Personalise a perfume bottle with a name, date or message. Custom engraving from I Love Decants, Dhaka." };
 
 const STEPS = [
   ["Choose", "Select a 50 ml or 100 ml bottle and the fragrance you love."],

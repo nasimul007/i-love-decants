@@ -41,7 +41,7 @@ export function Footer() {
         <span>© {new Date().getFullYear()} I Love Decants. · <Link className="footer-admin-link" href="/admin">Admin</Link></span>
         <div className="footer-socials" aria-label="Social media">
           <a href={CONFIG.facebook} target="_blank" rel="noreferrer" aria-label="Facebook"><FacebookIcon width={17} height={17} /></a>
-          <a href={CONFIG.instagram} target="_blank" rel="noreferrer" aria-label="Instagram"><InstagramIcon width={17} height={17} /></a>
+          {CONFIG.instagram && <a href={CONFIG.instagram} target="_blank" rel="noreferrer" aria-label="Instagram"><InstagramIcon width={17} height={17} /></a>}
         </div>
       </div>
     </footer>

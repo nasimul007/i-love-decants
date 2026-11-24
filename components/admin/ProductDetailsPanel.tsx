@@ -2,13 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { useUI } from "@/components/providers/UIProvider";
-import { useProductDetails } from "@/hooks/useServices";
+import { useAdminCategories, useProductDetails } from "@/hooks/useServices";
 import { adminApi, type ProductDetails } from "@/lib/api/admin";
+import { AUDIENCES, LASTING, STRENGTHS } from "@/lib/config";
 import { shrinkImage } from "@/lib/imageResize";
 import { Panel, emptyRow, inputStyle } from "./shared";
 
-type Draft = Pick<ProductDetails, "description" | "top" | "heart" | "base">;
-const draftOf = (p: ProductDetails): Draft => ({ description: p.description, top: p.top, heart: p.heart, base: p.base });
+const MAX: Partial<Record<keyof Draft, number>> = { name: 80, badge: 30, brand: 60, keyNotes: 300 }; // same limits as the API
+// Key notes are edited as "oud, vanilla" text and split on save.
+type Draft = Omit<ProductDetails, "id" | "images" | "keyNotes"> & { keyNotes: string };
+const draftOf = ({ id: _i, images: _img, keyNotes, ...rest }: ProductDetails): Draft => ({ ...rest, keyNotes: keyNotes.join(", ") });
 
 /** Photos of one perfume: upload several, choose the main one, re-order, delete. Stored in the database. */
 function PhotoManager({ p }: { p: ProductDetails }) {
@@ -60,7 +63,7 @@ function PhotoManager({ p }: { p: ProductDetails }) {
   );
 }
 
-function DetailsRow({ p }: { p: ProductDetails }) {
+function DetailsRow({ p, families }: { p: ProductDetails; families: string[] }) {
   const { showToast } = useUI();
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<Draft>(draftOf(p));
@@ -68,29 +71,45 @@ function DetailsRow({ p }: { p: ProductDetails }) {
   const [saving, setSaving] = useState(false);
   useEffect(() => { if (!open) setDraft(draftOf(p)); }, [p, open]);
 
-  const dirty = (Object.keys(draft) as (keyof Draft)[]).some((k) => draft[k] !== p[k]);
+  const saved = draftOf(p);
+  const dirty = (Object.keys(draft) as (keyof Draft)[]).some((k) => draft[k] !== saved[k]);
   const save = async () => {
     setSaving(true);
-    const res = await adminApi.saveProductDetails(p.id, draft);
+    const { family, keyNotes, ...rest } = draft;
+    // Family uses the same endpoint as Notice & categories, so both screens always agree.
+    let res = family !== p.family ? await adminApi.assignCategory(p.id, family) : { ok: true, error: undefined as string | undefined };
+    if (res.ok) res = await adminApi.saveProductDetails(p.id, { ...rest, keyNotes: keyNotes.split(",").map((n) => n.trim()).filter(Boolean) });
     setSaving(false);
     if (!res.ok) { setMsg(res.error ?? "Could not save."); return; }
     setMsg(""); setOpen(false); showToast(`${p.name} updated.`);
   };
-  const field = (k: keyof Draft, label: string, rows = 1) => (
+  const set = (k: keyof Draft) => (e: { target: { value: string } }) => setDraft({ ...draft, [k]: e.target.value });
+  const id = (k: string) => `pd-${p.id}-${k}`;
+  const field = (k: keyof Draft, label: string, hint = "") => (
     <div className="admin-field">
-      <label htmlFor={`pd-${p.id}-${k}`}>{label}</label>
-      {rows > 1
-        ? <textarea id={`pd-${p.id}-${k}`} rows={rows} maxLength={1000} style={{ ...inputStyle, minHeight: 84 }} value={draft[k]} onChange={(e) => setDraft({ ...draft, [k]: e.target.value })} />
-        : <input id={`pd-${p.id}-${k}`} type="text" maxLength={120} style={inputStyle} value={draft[k]} onChange={(e) => setDraft({ ...draft, [k]: e.target.value })} />}
+      <label htmlFor={id(k)}>{label}{hint && <small style={{ color: "var(--muted)", fontWeight: 500 }}> — {hint}</small>}</label>
+      {k === "description"
+        ? <textarea id={id(k)} rows={3} maxLength={1000} style={{ ...inputStyle, minHeight: 84 }} value={draft[k]} onChange={set(k)} />
+        : <input id={id(k)} type="text" maxLength={MAX[k] ?? 120} style={inputStyle} value={draft[k]} onChange={set(k)} />}
     </div>
   );
+  const choice = (k: keyof Draft, label: string, options: readonly string[], blank: string | null, suffix = "") => (
+    <div className="admin-field">
+      <label htmlFor={id(k)}>{label}</label>
+      <select id={id(k)} style={inputStyle} value={draft[k]} onChange={set(k)}>
+        {blank !== null ? <option value="">{blank}</option> : !options.includes(draft[k]) && <option value={draft[k]}>{draft[k]}</option>}
+        {options.map((o) => <option key={o} value={o}>{o}{suffix}</option>)}
+      </select>
+    </div>
+  );
+  const facts = [p.brand, p.strength, p.audience, p.lasting && `${p.lasting} hrs`].filter(Boolean).join(" · ");
 
   return (
     <>
       <tr>
         <td style={{ display: "flex", alignItems: "center", gap: ".6rem" }}>{p.images[0] ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={`/api/images/${p.images[0]}`} alt="" width={40} height={40} style={{ objectFit: "cover", borderRadius: ".5rem" }} /> : null}<span><strong>{p.name}</strong><br /><small style={{ color: "var(--muted)" }}>{p.family}</small></span></td>
-        <td style={{ maxWidth: 320, fontSize: ".82rem", color: "var(--muted)" }}>{p.description.length > 90 ? `${p.description.slice(0, 90)}…` : p.description}</td>
-        <td style={{ fontSize: ".8rem" }}>{p.top} · {p.heart} · {p.base}</td>
+        <td style={{ fontSize: ".8rem" }}>{facts || <span style={{ color: "var(--muted)" }}>Not set yet</span>}</td>
+        <td style={{ fontSize: ".8rem" }}>{[p.top, p.heart, p.base].filter(Boolean).join(" · ") || <span style={{ color: "var(--muted)" }}>—</span>}</td>
         <td><button className="admin-btn" style={{ fontSize: ".75rem" }} type="button" onClick={() => setOpen((o) => !o)}>{open ? "Close" : "Edit"}</button></td>
       </tr>
       {open && (
@@ -98,11 +117,25 @@ function DetailsRow({ p }: { p: ProductDetails }) {
           <td colSpan={4} style={{ background: "#fbf6f1" }}>
             <div style={{ display: "grid", gap: ".7rem", padding: ".4rem 0" }}>
               <PhotoManager p={p} />
-              {field("description", "Description", 3)}
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: ".7rem" }}>
-                {field("top", "Top notes")}
-                {field("heart", "Heart notes")}
-                {field("base", "Base notes")}
+                {field("name", "Name", "as on the original bottle")}
+                {field("badge", "Card badge", "e.g. Soft favourite")}
+                {field("notes", "Card tagline", "e.g. Pear · peony · musk")}
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: ".7rem" }}>
+                {field("brand", "Brand", "as on the bottle")}
+                {choice("family", "Scent family", families, null)}
+                {choice("audience", "Audience", AUDIENCES, "Not set")}
+                {choice("strength", "Strength", STRENGTHS, "Not set")}
+                {choice("lasting", "Lasting", LASTING, "Not tested yet", " hrs")}
+              </div>
+              <small style={{ color: "var(--muted)" }}>Strength is the label printed on the bottle (an attar is “Attar/oil”, never EDT/EDP). Set Lasting only after a wear test or from community reports; blank is better than a guess.</small>
+              {field("description", "Short description", "2–3 sentences")}
+              {field("keyNotes", "Key notes", "separate with commas, e.g. oud, vanilla, bergamot")}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: ".7rem" }}>
+                {field("top", "Top notes", "blank if unknown")}
+                {field("heart", "Heart notes", "blank if unknown")}
+                {field("base", "Base notes", "blank if unknown")}
               </div>
               <p className="admin-form-msg" aria-live="polite">{msg}</p>
               <div style={{ display: "flex", gap: ".5rem" }}>
@@ -117,16 +150,17 @@ function DetailsRow({ p }: { p: ProductDetails }) {
   );
 }
 
-/** Edit each perfume's description and top / heart / base notes (shown in the product pop-up). */
+/** Everything that defines a perfume for customers: photos, parameters, description and notes. */
 export function ProductDetailsPanel() {
   const products = useProductDetails();
+  const families = useAdminCategories().map((c) => c.name);
   return (
-    <Panel title="Perfume details & photos" subtitle="Edit the description, the top / heart / base notes and the photos customers see on the shop, the homepage and in the product pop-up.">
-      <table className="admin-table">
-        <thead><tr><th>Perfume</th><th>Description</th><th>Notes (top · heart · base)</th><th>Actions</th></tr></thead>
+    <Panel title="Perfume details & photos" subtitle="Brand, family, audience, strength, lasting, notes and photos: exactly what customers see on the shop, the homepage and in the product pop-up. Empty fields stay hidden from customers.">
+      <table className="admin-table admin-table--stack">
+        <thead><tr><th>Perfume</th><th>Brand · strength · audience · lasting</th><th>Notes (top · heart · base)</th><th>Actions</th></tr></thead>
         <tbody>
           {!products.length && emptyRow(4, "No perfumes yet.")}
-          {products.map((p) => <DetailsRow key={p.id} p={p} />)}
+          {products.map((p) => <DetailsRow key={p.id} p={p} families={families} />)}
         </tbody>
       </table>
     </Panel>

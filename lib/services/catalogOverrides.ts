@@ -1,6 +1,5 @@
 import { DEFAULT_FULL_BOTTLE, DEFAULT_SPRAYS, DEFAULT_VOLUMES } from "@/lib/config";
-import { GIFTS, OILS, PRODUCTS } from "@/lib/data/catalog";
-import type { CartItem, CatalogOverrides, FullBottleSettings, GiftSet, OilProduct, Product, ServiceResult } from "@/types";
+import type { CatalogOverrides, FullBottleSettings, Product } from "@/types";
 
 /**
  * Admin-controlled catalogue settings:
@@ -23,11 +22,6 @@ export const formatSprays = (n: number) => `${n}+ sprays`;
 /** Suggested spray count for a newly added volume (≈15 sprays/ml for small decants, ≈11/ml for full bottles). */
 export const suggestSprays = (ml: number) => Math.max(1, Math.round(ml * (ml <= 15 ? 15 : 11)));
 
-const clean = (o: Partial<CatalogOverrides> | null | undefined): CatalogOverrides => ({
-  volumes: Array.isArray(o?.volumes) && o!.volumes.length ? o!.volumes : undefined,
-  prices: o?.prices ?? {}, itemPrices: o?.itemPrices ?? {}, sprays: o?.sprays ?? {},
-  fullBottle: o?.fullBottle,
-});
 
 /** Full bottle section settings (defaults: OFF, 100 ml, 1100 sprays, no price yet). */
 export const fullBottleOf = (o: CatalogOverrides): FullBottleSettings => ({ ...DEFAULT_FULL_BOTTLE, ...(o.fullBottle ?? {}) });
@@ -86,12 +80,7 @@ export function fullBottleFor(p: Product, o: CatalogOverrides) {
 }
 
 export const fullBottleDetail = (ml: number, family?: string) => `Full bottle (${ml} ml)${family ? ` · ${family}` : ""}`;
-export const applyToOil = (x: OilProduct, o: CatalogOverrides): OilProduct =>
-  o.itemPrices[x.id] !== undefined ? { ...x, price: o.itemPrices[x.id] } : x;
-export const applyToGift = (x: GiftSet, o: CatalogOverrides): GiftSet =>
-  o.itemPrices[x.id] !== undefined ? { ...x, price: o.itemPrices[x.id] } : x;
 
-/** Spray count for each active volume (volumes with no known count are omitted). */
 export function effectiveSprays(o: CatalogOverrides): Record<number, number> {
   const out: Record<number, number> = {};
   for (const v of activeVolumes(o)) {
@@ -100,27 +89,3 @@ export function effectiveSprays(o: CatalogOverrides): Record<number, number> {
   }
   return out;
 }
-
-/**
- * Current price for a cart line. `undefined` means the item can no longer be bought
- * (volume removed or not offered for that perfume) — the cart drops such lines.
- */
-export function currentLinePrice(item: CartItem, o: CatalogOverrides): number | undefined {
-  if (item.full && typeof item.id === "number") {
-    const p = PRODUCTS.find((x) => x.id === item.id);
-    return p ? fullBottleFor(p, o)?.price : undefined;
-  }
-  if (typeof item.id === "number" && item.size) {
-    const p = PRODUCTS.find((x) => x.id === item.id);
-    return p ? applyToProduct(p, o).prices[item.size] : undefined;
-  }
-  const oil = OILS.find((x) => x.id === item.id);
-  if (oil) return applyToOil(oil, o).price;
-  const gift = GIFTS.find((x) => x.id === item.id);
-  if (gift) return applyToGift(gift, o).price;
-  return item.price;
-}
-
-const validPrice = (n: unknown) => Number.isInteger(n) && (n as number) >= 0 && (n as number) <= MAX_PRICE;
-const validSprays = (n: unknown) => Number.isInteger(n) && (n as number) >= 1 && (n as number) <= MAX_SPRAYS;
-const rangeText = (vs: number[]) => (vs.length ? (vs.length === 1 ? `${vs[0]} ml` : `${vs[0]}–${vs[vs.length - 1]} ml`) : "—");

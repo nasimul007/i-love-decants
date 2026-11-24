@@ -24,6 +24,11 @@ export function ScentFamily({ product }: { product: Product }) {
   );
 }
 
+/** The perfume parameters that are set, as [label, value]; empty ones are skipped, never guessed. */
+export const factsOf = (p: Product): [string, string][] =>
+  ([["Strength", p.strength], ["For", p.audience], ["Lasting", p.lasting && `${p.lasting} hrs`]] as [string, string | undefined][])
+    .filter((f): f is [string, string] => !!f[1]);
+
 export function ProductCard({ product }: { product: Product }) {
   const { openProduct } = useUI();
   return (
@@ -34,17 +39,18 @@ export function ProductCard({ product }: { product: Product }) {
       </button>
       <div className="product-card-body">
         <button className="product-name-button" type="button" onClick={() => openProduct(product.id)}>
+          {product.brand && <span className="product-brand">{product.brand}</span>}
           <h3 className="product-name">{product.name}</h3>
         </button>
         <ScentFamily product={product} />
+        {factsOf(product).length > 0 && <p className="product-facts">{factsOf(product).map(([k, v]) => <span key={k}>{k === "Lasting" ? `Lasting ${v}` : v}</span>)}</p>}
         <p className="product-notes">{product.notes}</p>
         <div className="card-price-row">
           <span className="product-price"><span className="product-price-prefix">From </span>{money(priceFrom(product))}</span>
           <span className="size-range">{sizesLabel(product)}</span>
         </div>
         <div className="card-purchase-row">
-          <button className="btn btn-primary btn-small" type="button" onClick={() => openProduct(product.id)}>Add to cart</button>
-          <span className="choose-volume-note">Choose a volume before adding</span>
+          <button className="btn btn-primary btn-small" type="button" onClick={() => openProduct(product.id)} aria-label={`Choose a size of ${product.name}`}>Choose size</button>
         </div>
       </div>
     </article>

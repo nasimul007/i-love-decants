@@ -21,7 +21,7 @@ export const PRODUCTS: Product[] =
 {
   id: 2,
   name: "Soft Oud",
-  family: "Woody",
+  family: "Woods",
   badge: "Quiet depth",
   notes: "Saffron · soft oud · skin amber",
   description: "Oud made calm and wearable: warm, smooth, and intimate rather than loud. A reassuring evening scent with an easy, polished trail.",
@@ -53,7 +53,7 @@ export const PRODUCTS: Product[] =
 {
   id: 4,
   name: "Vanilla Veil",
-  family: "Gourmand",
+  family: "Amber",
   badge: "Comfort scent",
   notes: "Vanilla milk · almond · sandalwood",
   description: "A soft vanilla without sticky sweetness. Milky almond and sandalwood keep it creamy, clean, and comforting from morning to late evening.",
@@ -69,7 +69,7 @@ export const PRODUCTS: Product[] =
 {
   id: 5,
   name: "Sage Rain",
-  family: "Aromatic",
+  family: "Fresh",
   badge: "Clean calm",
   notes: "Sage leaf · rainwater · pale cedar",
   description: "Cool green air after rain. Gentle sage and translucent woods create a mild, quietly refreshing scent for warm days and clear minds.",
@@ -101,7 +101,7 @@ export const PRODUCTS: Product[] =
 {
   id: 7,
   name: "Amber Light",
-  family: "Warm",
+  family: "Amber",
   badge: "Golden glow",
   notes: "Mandarin · sheer amber · tonka",
   description: "A golden amber with plenty of breathing room. Mandarin opens the scent, while sheer resins and tonka settle into a soft, familiar warmth.",
@@ -117,7 +117,7 @@ export const PRODUCTS: Product[] =
 {
   id: 8,
   name: "Citrus Silk",
-  family: "Citrus",
+  family: "Fresh",
   badge: "Bright & mild",
   notes: "Yuzu · orange blossom · silk musk",
   description: "A smooth citrus with none of the sharp edges. Yuzu and orange blossom feel bright and clean, then settle into a silky skin musk.",
@@ -133,7 +133,7 @@ export const PRODUCTS: Product[] =
 {
   id: 9,
   name: "Moon Musk",
-  family: "Musky",
+  family: "Floral",
   badge: "Skin scent",
   notes: "Aldehydes · white rose · cloud musk",
   description: "A clean, softly glowing musk that feels like freshly moisturised skin. Subtle florals keep it polished while the finish remains intimate.",
@@ -184,7 +184,5 @@ export const OILS: OilProduct[] = OIL_BRANDS.map((brand, index) => ({
   name: `${brand} Roll-On`,
   price: 350,
 }));
-
-export const FAMILIES = ["floral", "fresh", "woody", "gourmand", "aromatic", "warm", "citrus", "musky"] as const;
 
 export const CUSTOM_SCENTS = ["Quiet Bloom", "Soft Oud", "Linen Sky", "Vanilla Veil", "Sage Rain", "Lavender Hush"];

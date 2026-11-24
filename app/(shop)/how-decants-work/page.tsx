@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import { PageHero, RouteView, SectionHeading } from "@/components/ui/PageHero";
+import { VolumeList } from "@/components/ui/VolumeText";
 
-export const metadata: Metadata = { title: "How decants work — I Love Decants" };
+export const metadata: Metadata = { title: "How decants work — I Love Decants", description: "What a perfume decant is, which sizes to choose, and how to store it so it lasts as long as the original bottle." };
 
-const BASICS = [
+const BASICS: [string, ReactNode][] = [
   ["What is a decant?", "A small portion of an original, authentic perfume transferred into a travel-friendly bottle."],
   ["Why choose one?", "You get to properly wear a scent for days before deciding whether a full bottle is worth it."],
-  ["Sizes available", "3, 6, 9, and 15 ml decants, alongside 50 and 100 ml full bottles."],
+  ["Sizes available", <>Choose from <VolumeList />, each priced size by size.</>],
   ["How long do they last?", "Stored away from heat and direct light, a decant keeps just as well as the original bottle."],
 ];
 const CARE = [

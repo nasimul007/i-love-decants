@@ -60,7 +60,7 @@ export function Dashboard({ session, canSee }: Props) {
         {tab === "orders" && <OrdersPanel />}
         {tab === "content" && canSee("content") && <ContentPanel />}
         {tab === "inventory" && canSee("inventory") && <InventoryPanel />}
-        {tab === "products" && canSee("products") && <><PricingPanel /><div style={{ height: "1.25rem" }} /><ProductDetailsPanel /></>}
+        {tab === "products" && canSee("products") && <><ProductDetailsPanel /><div style={{ height: "1.25rem" }} /><PricingPanel /></>}
         {tab === "customers" && canSee("customers") && <CustomersPanel />}
         {tab === "history" && canSee("history") && <HistoryPanel />}
         {tab === "coupons" && canSee("coupons") && <CouponsPanel />}

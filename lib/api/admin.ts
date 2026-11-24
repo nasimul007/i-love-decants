@@ -31,7 +31,8 @@ export interface AdminNotice { id: number; text: string; enabled: boolean }
 export interface PublicCategory { id: number; name: string; hidden: boolean; products: number }
 export interface AdminFaq { id: number; question: string; answer: string; enabled: boolean }
 export interface PublicFaq { id: number; question: string; answer: string }
-export interface ProductDetails { id: number; name: string; family: string; description: string; top: string; heart: string; base: string; images: number[] }
+export interface ProductDetails { id: number; name: string; badge: string; notes: string; family: string; description: string; top: string; heart: string; base: string; brand: string; audience: string; strength: string; lasting: string; keyNotes: string[]; images: number[] }
+export type ProductDetailsDraft = Omit<ProductDetails, "id" | "family" | "images">;
 export interface AdminMe { session: AdminSession | null; needsSetup: boolean }
 
 /** Cached staff data must not outlive the staff session. */
@@ -156,7 +157,7 @@ export const adminApi = {
   removeFaq(id: number) { return this.faqOp(() => call<AdminFaq[]>("DELETE", `${ADMIN.faq}/${id}`)); },
 
   /* product text */
-  async saveProductDetails(id: number, d: Pick<ProductDetails, "description" | "top" | "heart" | "base">): Promise<ServiceResult<unknown>> {
+  async saveProductDetails(id: number, d: ProductDetailsDraft): Promise<ServiceResult<unknown>> {
     const res = await call("PATCH", `${ADMIN.productDetails}/${id}`, d);
     await Promise.all([refresh(ADMIN.productDetails), refresh("/api/products")]);
     return res;

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { PageHero, RouteView } from "@/components/ui/PageHero";
 import { AccountView } from "@/components/account/AccountView";
 
-export const metadata: Metadata = { title: "My account — I Love Decants" };
+export const metadata: Metadata = { title: "My account — I Love Decants", robots: { index: false } };
 
 export default function AccountPage() {
   return (

@@ -26,6 +26,12 @@ model Product {
   ink         String
   shape       String
   scentTags   String[]
+  /// Perfume parameters (see lib/config.ts PERFUME_FIELDS). "" = not set yet; the storefront hides empty ones.
+  brand       String           @default("")
+  audience    String           @default("")
+  strength    String           @default("")
+  lasting     String           @default("")
+  keyNotes    String[]         @default([])
   variants    ProductVariant[]
   inventory   InventoryItem?
   images      ProductImage[]

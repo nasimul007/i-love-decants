@@ -126,7 +126,7 @@ export function useAdminMe() {
   return { session: data?.session ?? null, needsSetup: data?.needsSetup ?? false, loaded };
 }
 
-/** Admin price & spray overrides (Admin → Prices & sprays). */
+/** Admin price & spray overrides (Admin → Perfumes & prices). */
 export function useCatalogOverrides(): CatalogOverrides {
   const { data } = useApi<CatalogOverrides>(ADMIN.catalog);
   return useMemo(() => ({ ...EMPTY_OVERRIDES, ...(data ?? {}) }), [data]);

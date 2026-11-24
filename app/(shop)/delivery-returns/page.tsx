@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import { PageHero, RouteView, SectionHeading } from "@/components/ui/PageHero";
+import { money } from "@/lib/format";
+import { DELIVERY_CHARGE } from "@/lib/config";
 
-export const metadata: Metadata = { title: "Delivery & Returns — I Love Decants" };
+export const metadata: Metadata = { title: "Delivery & Returns — I Love Decants", description: "Delivery charges and times inside and outside Dhaka, Cash on Delivery, and the returns policy for decants and engraved bottles." };
 
 const DELIVERY = [
-  ["Inside Dhaka city — ৳80", "Usually delivered within 1–2 business days of your order being confirmed."],
-  ["Outside Dhaka — ৳130", "Usually delivered within 2–4 business days, depending on your area."],
+  [`Inside Dhaka city — ${money(DELIVERY_CHARGE.insideDhaka)}`, "Usually delivered within 1–2 business days of your order being confirmed."],
+  [`Outside Dhaka — ${money(DELIVERY_CHARGE.outsideDhaka)}`, "Usually delivered within 2–4 business days, depending on your area."],
   ["Order tracking", "We will update you by phone or WhatsApp once your order ships."],
   ["Order confirmation", "Payment is Cash on Delivery: no advance payment, just pay the rider when your order arrives."],
 ];

@@ -5,7 +5,7 @@ import type { CSSProperties } from "react";
 import { CloseIcon } from "@/components/ui/Icons";
 import { ProductBottle } from "@/components/ui/BottleVisual";
 import { ProductGallery } from "@/components/products/ProductGallery";
-import { ScentFamily } from "@/components/ui/ProductCard";
+import { ScentFamily, factsOf } from "@/components/ui/ProductCard";
 import { useUI } from "@/components/providers/UIProvider";
 import { useCart, useCatalog, useSprays } from "@/hooks/useServices";
 import { formatSprays } from "@/lib/services/catalogOverrides";
@@ -60,8 +60,9 @@ export function ProductModal() {
             <button ref={closeBtn} className="icon-btn modal-close" type="button" aria-label="Close product details" onClick={closeProduct}><CloseIcon /></button>
             <div className={`modal-visual${product.images?.length ? " has-photos" : ""}`}>{product.images?.length ? <ProductGallery key={product.id} product={product} /> : <ProductBottle product={product} />}</div>
             <div className="modal-copy">
-              <ScentFamily product={product} />
+              {product.brand && <span className="product-brand">{product.brand}</span>}
               <h2 id="modalTitle">{product.name}</h2>
+              <ScentFamily product={product} />
               <div className="modal-size-block">
                 <span className="size-label">Choose your volume <small aria-live="polite">{selectedLabel} selected</small></span>
                 <div className="size-options" aria-label="Available volumes">
@@ -79,14 +80,21 @@ export function ProductModal() {
               </div>
               <div className="modal-purchase">
                 <span className="modal-price">{money(selectedPrice)}</span>
-                <button className="btn btn-primary" type="button" onClick={add}>Add {product.name} to cart</button>
+                <button className="btn btn-primary" type="button" aria-label={`Add ${product.name} to cart`} onClick={add}><span>Add<span className="modal-add-name"> {product.name}</span> to cart</span></button>
               </div>
-              <p className="modal-description">{product.description}</p>
-              <div className="notes-pyramid" aria-label="Fragrance notes">
-                <div className="note-level"><strong>Top</strong><span>{product.top}</span></div>
-                <div className="note-level"><strong>Heart</strong><span>{product.heart}</span></div>
-                <div className="note-level"><strong>Base</strong><span>{product.base}</span></div>
-              </div>
+              {product.description && <p className="modal-description">{product.description}</p>}
+              {factsOf(product).length > 0 && (
+                <dl className="notes-pyramid" aria-label="Perfume details">
+                  {factsOf(product).map(([k, v]) => <div key={k} className="note-level"><dt>{k}</dt><dd>{v}</dd></div>)}
+                </dl>
+              )}
+              {product.lasting && <p className="modal-fineprint">Lasting is a general guide from wear tests; skin, weather and the number of sprays change it.</p>}
+              {[product.top, product.heart, product.base].some(Boolean) && (
+                <dl className="notes-pyramid" aria-label="Fragrance notes">
+                  {([["Top", product.top], ["Heart", product.heart], ["Base", product.base]] as const).filter(([, v]) => v).map(([k, v]) => <div key={k} className="note-level"><dt>{k}</dt><dd>{v}</dd></div>)}
+                </dl>
+              )}
+              {!!product.keyNotes?.length && <p className="key-notes" aria-label="Key notes">{product.keyNotes.map((n) => <span key={n}>{n}</span>)}</p>}
             </div>
           </>
         )}

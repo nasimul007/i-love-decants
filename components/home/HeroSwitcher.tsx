@@ -77,8 +77,8 @@ export function HeroSwitcher() {
             </div>
             <div className="hero-caption">
               <strong>{product.name}</strong>
-              <span>{product.notes} · from {money(priceFrom(product))}</span>
-              <small>Tap the bottle to choose a volume</small>
+              <span>{product.notes} · From {money(priceFrom(product))}</span>
+              <small>Select the bottle to choose a volume</small>
             </div>
             <div className="hero-dots" aria-label="Hero perfumes">
               {heroProducts.map((p, i) => (

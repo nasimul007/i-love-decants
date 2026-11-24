@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { PageHero, RouteView, SectionHeading } from "@/components/ui/PageHero";
 
-export const metadata: Metadata = { title: "How we work — I Love Decants" };
+export const metadata: Metadata = { title: "How we work — I Love Decants", description: "How I Love Decants prepares, packs and delivers authentic perfume decants across Bangladesh." };
 
 const STEPS = [
   ["You choose", "Pick a scent, a volume from 3 ml to 100 ml, or a gift set that fits the moment."],

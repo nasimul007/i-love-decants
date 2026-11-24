@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { FormEvent, ReactNode } from "react";
+import type { FormEvent } from "react";
 import {
   useAdminOverview, useCatalogOverrides, useCoupons, useCustomers, useInventoryRecords, useLoginHistory, useManagers, useOrders,
 } from "@/hooks/useServices";
@@ -9,7 +9,7 @@ import { useUI } from "@/components/providers/UIProvider";
 import { Modal, Panel, emptyRow, inputStyle } from "./shared";
 import { OrderDetailModal } from "./OrdersPanel";
 import {
-  activeVolumes, applyToProduct, effectiveSprays, formatSprays, fullBottleFor, fullBottleLive, fullBottleOf,
+  activeVolumes, applyToProduct, effectiveSprays, formatSprays, fullBottleLive, fullBottleOf,
   sectionReplacedByFullBottle, suggestSprays,
 } from "@/lib/services/catalogOverrides";
 import { GIFTS, OILS, PRODUCTS } from "@/lib/data/catalog";
@@ -99,8 +99,10 @@ function StockCell({ r }: { r: InventoryRecord }) {
 
 export function InventoryPanel() {
   const records = useInventoryRecords();
+  const { showToast } = useUI();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ name: "", type: "Perfume decant" as InventoryKind, sizes: "3–100 ml", price: "", stock: "" });
+  const [form, setForm] = useState({ name: "", type: "Perfume decant" as InventoryKind, sizes: "", price: "", stock: "" });
+  const perfume = form.type === "Perfume decant";
   const [msg, setMsg] = useState("");
 
   const act = (r: InventoryRecord, a: "enabled" | "visible" | "archive" | "restore") => {
@@ -114,20 +116,21 @@ export function InventoryPanel() {
     e.preventDefault();
     const price = Number(form.price);
     const stock = Number(form.stock);
-    if (!form.name.trim() || !(price >= 0) || !(stock >= 0) || form.price === "" || form.stock === "") { setMsg("Please fill in all fields correctly."); return; }
-    const res = await adminApi.addInventory({ name: form.name.trim(), type: form.type, sizes: form.sizes.trim(), price, stock });
+    if (!form.name.trim() || !(stock >= 0) || form.stock === "" || (!perfume && (form.price === "" || !(price >= 0)))) { setMsg("Please fill in all fields correctly."); return; }
+    const res = await adminApi.addInventory({ name: form.name.trim(), type: form.type, sizes: form.sizes.trim(), price: perfume ? 0 : price, stock });
     if (!res.ok) { setMsg(res.error ?? "Could not save."); return; }
-    setForm({ name: "", type: "Perfume decant", sizes: "3–100 ml", price: "", stock: "" });
+    showToast(perfume ? `${form.name.trim()} added. Set its prices and details in “Perfumes & prices” to put it on sale.`
+      : form.type === "Custom bottle" ? `${form.name.trim()} added to stock.` : `${form.name.trim()} added to the shop.`);
+    setForm({ name: "", type: "Perfume decant", sizes: "", price: "", stock: "" });
     setMsg("");
     setOpen(false);
   };
 
   const btn = { fontSize: ".75rem" } as const;
-  const stepper = { width: 30, height: 30, border: 0, borderRadius: ".45rem", color: "var(--rose-deep)", background: "#f8eff1", fontWeight: 700, fontSize: "1rem" } as const;
 
   return (
     <>
-      <Panel title="Inventory control" subtitle="Perfume decants and oils are stocked in ml: set the total once and every order takes its size out of it. Gift sets are counted in pieces." action={<button className="admin-btn primary" type="button" onClick={() => setOpen(true)}>Add inventory</button>}>
+      <Panel title="Inventory control" subtitle="Perfume decants and oils are stocked in ml: set the total once and every order takes its size out of it. Gift sets are counted in pieces." action={<button className="admin-btn primary" type="button" onClick={() => setOpen(true)}>Add product</button>}>
         <table className="admin-table">
           <thead><tr><th>Product</th><th>Sizes</th><th>Stock</th><th>Sold</th><th>State</th><th>Actions</th></tr></thead>
           <tbody>
@@ -159,7 +162,7 @@ export function InventoryPanel() {
         </table>
       </Panel>
 
-      <Modal open={open} onClose={() => { setOpen(false); setMsg(""); }} title="Add inventory record" subtitle="Add a new stock entry that the storefront will respect.">
+      <Modal open={open} onClose={() => { setOpen(false); setMsg(""); }} title="Add a product" subtitle="Perfumes, oils and gift sets appear in the shop and in every admin table. Custom bottles are stock only.">
         <form className="mgr-form" onSubmit={submit} noValidate>
           <div className="admin-field"><label htmlFor="invName">Product name</label><input id="invName" type="text" maxLength={62} placeholder="e.g. Rose Water Roll-On" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: ".75rem" }}>
@@ -168,14 +171,15 @@ export function InventoryPanel() {
                 {(["Perfume decant", "Perfume oil", "Gift set", "Custom bottle"] as const).map((t) => <option key={t}>{t}</option>)}
               </select>
             </div>
-            <div className="admin-field"><label htmlFor="invSizes">Sizes</label><input id="invSizes" type="text" placeholder="e.g. 3–100 ml" value={form.sizes} onChange={(e) => setForm({ ...form, sizes: e.target.value })} /></div>
-            <div className="admin-field"><label htmlFor="invPrice">Price (৳)</label><input id="invPrice" type="number" min={0} step={1} inputMode="numeric" placeholder="0" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} /></div>
+            {!perfume && <div className="admin-field"><label htmlFor="invPrice">Price (৳)</label><input id="invPrice" type="number" min={0} step={1} inputMode="numeric" placeholder="0" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} /></div>}
+            {form.type === "Custom bottle" && <div className="admin-field"><label htmlFor="invSizes">Sizes</label><input id="invSizes" type="text" placeholder="e.g. 50 ml" value={form.sizes} onChange={(e) => setForm({ ...form, sizes: e.target.value })} /></div>}
             <div className="admin-field"><label htmlFor="invStock">Opening stock ({form.type === "Perfume decant" || form.type === "Perfume oil" ? "total ml" : "pieces"})</label><input id="invStock" type="number" min={0} max={1000000} step={1} inputMode="numeric" placeholder={form.type === "Perfume decant" || form.type === "Perfume oil" ? "e.g. 500" : "0"} value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} /></div>
           </div>
+          {perfume && <small style={{ color: "var(--muted)" }}>Sizes and prices are set per perfume in “Perfumes & prices”; until then it stays hidden from the shop.</small>}
           <p className="admin-form-msg" aria-live="polite">{msg}</p>
           <div className="mgr-modal-actions">
             <button className="admin-btn" type="button" onClick={() => { setOpen(false); setMsg(""); }}>Cancel</button>
-            <button className="admin-btn primary" type="submit">Save record</button>
+            <button className="admin-btn primary" type="submit">Add</button>
           </div>
         </form>
       </Modal>
@@ -366,7 +370,7 @@ function PermRow({ label, value, onChange }: { label: string; value: boolean; on
   );
 }
 
-/* ───────────────────────── Prices & sprays ───────────────────────── */
+/* ───────────────────────── Perfumes & prices ───────────────────────── */
 type Draft = Record<string, string>;
 const draftOf = (vols: number[], values: Record<number, number | undefined>): Draft =>
   Object.fromEntries(vols.map((v) => [v, values[v] === undefined ? "" : String(values[v])]));
@@ -380,8 +384,19 @@ const editedPill = <span className="pill live" style={{ marginLeft: ".4rem" }}>E
  * every perfume's price per volume (blank = not offered), and oil / gift-set prices.
  * Changes apply immediately to the storefront, product pop-up, filters, search, cart and checkout.
  */
+/**
+ * Every perfume in the database as a `Product` for the price maths. Seeded perfumes keep their catalogue defaults
+ * (used for "Edited" / "Reset"); perfumes added in the admin have none, so all their prices come from the overrides.
+ */
+const perfumesOf = (o: CatalogOverrides): Product[] =>
+  (o.items?.products ?? PRODUCTS).map((p) => {
+    const seeded = PRODUCTS.find((x) => x.id === p.id);
+    return { ...(seeded ?? { ...PRODUCTS[0], prices: {} }), id: p.id, name: p.name, family: p.family };
+  });
+
 export function PricingPanel() {
   const overrides = useCatalogOverrides();
+  const perfumes = perfumesOf(overrides);
   const { showToast } = useUI();
   const volumes = activeVolumes(overrides);
   const sprays = effectiveSprays(overrides);
@@ -407,53 +422,14 @@ export function PricingPanel() {
   /** Section prices as stored (ignoring Full bottle), so a section hidden by Full bottle still shows its prices here. */
   const sectionView: CatalogOverrides = { ...overrides, fullBottle: undefined };
   const replaced = sectionReplacedByFullBottle(overrides);
-  const previewBase = PRODUCTS.find((p) => p.id === previewId) ?? PRODUCTS[0];
+  const previewBase = perfumes.find((p) => p.id === previewId) ?? perfumes[0] ?? PRODUCTS[0];
   const previewProduct = applyToProduct(previewBase, sectionView);
-  const previewLive = applyToProduct(previewBase, overrides);
 
   /* Full bottle section */
   const fb = fullBottleOf(overrides);
   const fbLive = fullBottleLive(overrides);
-  const fbSaved = { ml: String(fb.ml), sprays: String(fb.sprays), price: fb.price === null ? "" : String(fb.price) };
-  const [fbDraft, setFbDraft] = useState(fbSaved);
-  const [fbMsg, setFbMsg] = useState("");
-  const fbKey = JSON.stringify(overrides.fullBottle ?? {});
-  useEffect(() => { const f = fullBottleOf(overrides); setFbDraft({ ml: String(f.ml), sprays: String(f.sprays), price: f.price === null ? "" : String(f.price) }); setFbMsg(""); }, [fbKey]); // eslint-disable-line react-hooks/exhaustive-deps
-  const fbDirty = fbDraft.ml !== fbSaved.ml || fbDraft.sprays !== fbSaved.sprays || fbDraft.price !== fbSaved.price;
-  const fbDraftMl = num(fbDraft.ml);
-  const fbClash = Number.isInteger(fbDraftMl) && volumes.includes(fbDraftMl);
-  const fbSoldFor = PRODUCTS.filter((p) => fullBottleFor(p, overrides)).length;
 
-  /** Asks which section to keep when the Full bottle size equals an existing section. */
-  const confirmClash = (ml: number) => window.confirm(
-    `A ${ml} ml section already exists. A ${ml} ml full bottle is the same bottle, so customers can only be shown one of them.\n\n`
-    + `OK — show "Full bottle" and hide the ${ml} ml section while Full bottle is ON.\n`
-    + `Cancel — keep the ${ml} ml section (choose a different Full bottle size, or delete the ${ml} ml section).`,
-  );
-  const saveFullBottle = async (enabled: boolean) => {
-    const ml = num(fbDraft.ml);
-    const price = fbDraft.price.trim() === "" ? null : num(fbDraft.price);
-    if (fbDraft.ml.trim() === "") { setFbMsg("Enter the full bottle size in ml."); return; }
-    if (fbDraft.sprays.trim() === "") { setFbMsg("Enter the spray count."); return; }
-    if (enabled && price === null) { setFbMsg("Set the full bottle price before switching it ON."); return; }
-    const alreadyReplacing = fbLive && fb.ml === ml;
-    if (enabled && volumes.includes(ml) && !alreadyReplacing && !confirmClash(ml)) { setFbMsg(`Kept the ${ml} ml section. Choose a different Full bottle size, or delete the ${ml} ml section first.`); return; }
-    const res = await catalogOverridesApi.saveFullBottle({ enabled, ml, sprays: num(fbDraft.sprays), price });
-    if (!res.ok) { setFbMsg(res.error ?? ""); return; }
-    setFbMsg("");
-    showToast(enabled ? `Full bottle is ON (${ml} ml).` : "Full bottle saved — it's OFF, so customers don't see it.");
-  };
-  const toggleFullBottle = async () => {
-    if (fb.enabled) {
-      const res = await catalogOverridesApi.saveFullBottle({ ...fb, enabled: false });
-      if (!res.ok) { setFbMsg(res.error ?? ""); return; }
-      showToast("Full bottle is OFF — hidden from customers.");
-    } else {
-      await saveFullBottle(true);
-    }
-  };
-
-  const pricesAt = (v: number) => PRODUCTS.map((p) => applyToProduct(p, sectionView).prices[v]).filter((x): x is number => x !== undefined);
+  const pricesAt = (v: number) => perfumes.map((p) => applyToProduct(p, sectionView).prices[v]).filter((x): x is number => x !== undefined);
   const pricedCount = (v: number) => pricesAt(v).length;
   const priceSummary = (v: number) => {
     const ps = pricesAt(v);
@@ -506,7 +482,7 @@ export function PricingPanel() {
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: ".6rem", marginBottom: ".4rem" }}>
           <label htmlFor="previewAs" style={{ fontSize: ".82rem", fontWeight: 700 }}>Customer view shown for</label>
           <select id="previewAs" style={{ ...inputStyle, width: "auto", minHeight: 36, padding: ".35rem .6rem" }} value={previewId} onChange={(e) => setPreviewId(Number(e.target.value))}>
-            {PRODUCTS.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            {perfumes.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
           <small style={{ color: "var(--muted)" }}>Prices can differ per perfume — pick one to see exactly what its customers see.</small>
         </div>
@@ -538,7 +514,7 @@ export function PricingPanel() {
                   <td>
                     {v === replaced
                       ? <span className="pill off">Hidden</span>
-                      : <span className={`pill ${n ? "live" : "off"}`}>{n} of {PRODUCTS.length} perfumes</span>}
+                      : <span className={`pill ${n ? "live" : "off"}`}>{n} of {perfumes.length} perfumes</span>}
                   </td>
                   <td style={{ whiteSpace: "nowrap" }}>
                     <div style={{ display: "flex", gap: ".4rem" }}>
@@ -615,7 +591,7 @@ export function PricingPanel() {
             </th>
           )}<th>Actions</th></tr></thead>
           <tbody>
-            {PRODUCTS.map((p) => <PerfumePriceRow key={p.id} base={p} volumes={volumes} overrides={overrides} fullColumn={fbLive} />)}
+            {perfumes.map((p) => <PerfumePriceRow key={p.id} base={p} volumes={volumes} overrides={overrides} fullColumn={fbLive} />)}
           </tbody>
         </table>
       </Panel>
@@ -625,8 +601,8 @@ export function PricingPanel() {
         <table className="admin-table">
           <thead><tr><th>Item</th><th>Type</th><th style={{ textAlign: "right" }}>Price (৳)</th><th>Actions</th></tr></thead>
           <tbody>
-            {GIFTS.map((g) => <ItemPriceRow key={g.id} id={g.id} name={g.name} kind="Gift set" base={g.price} custom={overrides.itemPrices[g.id]} />)}
-            {OILS.map((o) => <ItemPriceRow key={o.id} id={o.id} name={o.name} kind="Perfume oil · 6 ml" base={o.price} custom={overrides.itemPrices[o.id]} />)}
+            {(overrides.items?.gifts ?? GIFTS).map((g) => <ItemPriceRow key={g.id} id={g.id} name={g.name} kind="Gift set" base={GIFTS.find((x) => x.id === g.id)?.price} price={overrides.itemPrices[g.id] ?? g.price} />)}
+            {(overrides.items?.oils ?? OILS).map((o) => <ItemPriceRow key={o.id} id={o.id} name={o.name} kind="Perfume oil · 6 ml" base={OILS.find((x) => x.id === o.id)?.price} price={overrides.itemPrices[o.id] ?? o.price} />)}
           </tbody>
         </table>
       </Panel>
@@ -687,7 +663,8 @@ function PerfumePriceRow({ base, volumes, overrides, fullColumn }: { base: Produ
   const fbKey = JSON.stringify(overrides.fullBottle ?? {}) + String(fullColumn);
   useEffect(() => { setDraft(saved); setMsg(""); }, [key, fbKey]); // eslint-disable-line react-hooks/exhaustive-deps
   const dirty = !sameDraft([...volumes, ...fullKeys], draft, saved);
-  const edited = !!custom && Object.keys(custom).some((v) => volumes.includes(Number(v)) || (fullColumn && v === "full"));
+  // "Edited" = differs from the catalogue defaults, which only seeded perfumes have.
+  const edited = PRODUCTS.some((x) => x.id === base.id) && !!custom && Object.keys(custom).some((v) => volumes.includes(Number(v)) || (fullColumn && v === "full"));
   const hidden = Object.keys(live.prices).length === 0 && !live.fullBottle;
 
   const save = async () => {
@@ -734,12 +711,14 @@ function PerfumePriceRow({ base, volumes, overrides, fullColumn }: { base: Produ
   );
 }
 
-function ItemPriceRow({ id, name, kind, base, custom }: { id: string; name: string; kind: string; base: number; custom?: number }) {
+/** `base` = the catalogue default (absent for items added in the admin, which then have no "Reset"). */
+function ItemPriceRow({ id, name, kind, base, price }: { id: string; name: string; kind: string; base?: number; price: number }) {
   const { showToast } = useUI();
-  const saved = String(custom ?? base);
+  const saved = String(price);
+  const edited = base !== undefined && price !== base;
   const [draft, setDraft] = useState(saved);
   const [msg, setMsg] = useState("");
-  useEffect(() => { setDraft(String(custom ?? base)); setMsg(""); }, [custom, base]);
+  useEffect(() => { setDraft(saved); setMsg(""); }, [saved]);
   const dirty = draft !== saved;
 
   const save = async () => {
@@ -751,19 +730,19 @@ function ItemPriceRow({ id, name, kind, base, custom }: { id: string; name: stri
   return (
     <tr>
       <td>
-        <strong style={{ fontSize: ".9rem" }}>{name}</strong>{custom !== undefined && editedPill}
+        <strong style={{ fontSize: ".9rem" }}>{name}</strong>{edited && editedPill}
         {msg && <small style={{ display: "block", color: "#a84d58", fontWeight: 700 }}>{msg}</small>}
       </td>
       <td style={{ color: "var(--muted)", fontSize: ".82rem" }}>{kind}</td>
       <td style={{ textAlign: "right" }}>
-        <input aria-label={`${name} price`} type="number" inputMode="numeric" min={0} step={1} style={numInput} title={`Default: ৳${base}`}
+        <input aria-label={`${name} price`} type="number" inputMode="numeric" min={0} step={1} style={numInput} title={base !== undefined ? `Default: ৳${base}` : undefined}
           value={draft} onChange={(e) => { setDraft(e.target.value); setMsg(""); }} />
       </td>
       <td style={{ whiteSpace: "nowrap" }}>
         <div style={{ display: "flex", gap: ".4rem" }}>
           <button className="admin-btn primary" style={{ fontSize: ".75rem" }} type="button" disabled={!dirty} onClick={save}>Save</button>
           {dirty && <button className="admin-btn" style={{ fontSize: ".75rem" }} type="button" onClick={() => { setDraft(saved); setMsg(""); }}>Cancel</button>}
-          {custom !== undefined && !dirty && <button className="admin-btn" style={{ fontSize: ".75rem" }} type="button" onClick={async () => { await catalogOverridesApi.resetItemPrice(id); showToast(`${name} price reset.`); }}>Reset</button>}
+          {edited && !dirty && <button className="admin-btn" style={{ fontSize: ".75rem" }} type="button" onClick={async () => { await catalogOverridesApi.resetItemPrice(id); showToast(`${name} price reset.`); }}>Reset</button>}
         </div>
       </td>
     </tr>
