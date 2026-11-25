@@ -16,7 +16,7 @@ export const PRODUCTS: Product[] =
   pale: "#edd8df",
   ink: "#704352",
   shape: "arch",
-  prices: { 3: 260, 6: 470, 9: 650, 15: 990, 50: 2850, 100: 4950 }
+  prices: { 3: 260, 6: 470, 9: 650, 15: 990, 50: 2850 }
 },
 {
   id: 2,
@@ -32,7 +32,7 @@ export const PRODUCTS: Product[] =
   pale: "#e7d6c8",
   ink: "#654838",
   shape: "square",
-  prices: { 3: 320, 6: 580, 9: 790, 15: 1200, 50: 3350, 100: 5700 }
+  prices: { 3: 320, 6: 580, 9: 790, 15: 1200, 50: 3350 }
 },
 {
   id: 3,
@@ -48,7 +48,7 @@ export const PRODUCTS: Product[] =
   pale: "#dfeae7",
   ink: "#45605b",
   shape: "tall",
-  prices: { 3: 240, 6: 430, 9: 590, 15: 890, 50: 2500, 100: 4350 }
+  prices: { 3: 240, 6: 430, 9: 590, 15: 890, 50: 2500 }
 },
 {
   id: 4,
@@ -64,7 +64,7 @@ export const PRODUCTS: Product[] =
   pale: "#f0e3ca",
   ink: "#6f5434",
   shape: "round",
-  prices: { 3: 280, 6: 500, 9: 690, 15: 1050, 50: 3000, 100: 5200 }
+  prices: { 3: 280, 6: 500, 9: 690, 15: 1050, 50: 3000 }
 },
 {
   id: 5,
@@ -80,7 +80,7 @@ export const PRODUCTS: Product[] =
   pale: "#dce7d9",
   ink: "#455b45",
   shape: "square",
-  prices: { 3: 250, 6: 450, 9: 620, 15: 940, 50: 2700, 100: 4650 }
+  prices: { 3: 250, 6: 450, 9: 620, 15: 940, 50: 2700 }
 },
 {
   id: 6,
@@ -96,7 +96,7 @@ export const PRODUCTS: Product[] =
   pale: "#e7e2ef",
   ink: "#5f5471",
   shape: "arch",
-  prices: { 3: 270, 6: 490, 9: 670, 15: 1020, 50: 2900, 100: 5000 }
+  prices: { 3: 270, 6: 490, 9: 670, 15: 1020, 50: 2900 }
 },
 {
   id: 7,
@@ -112,7 +112,7 @@ export const PRODUCTS: Product[] =
   pale: "#eddcbe",
   ink: "#6b4a26",
   shape: "round",
-  prices: { 3: 300, 6: 540, 9: 740, 15: 1120, 50: 3200, 100: 5500 }
+  prices: { 3: 300, 6: 540, 9: 740, 15: 1120, 50: 3200 }
 },
 {
   id: 8,
@@ -128,7 +128,7 @@ export const PRODUCTS: Product[] =
   pale: "#f1eac7",
   ink: "#6e622b",
   shape: "tall",
-  prices: { 3: 230, 6: 420, 9: 570, 15: 860, 50: 2450, 100: 4200 }
+  prices: { 3: 230, 6: 420, 9: 570, 15: 860, 50: 2450 }
 },
 {
   id: 9,
@@ -144,7 +144,7 @@ export const PRODUCTS: Product[] =
   pale: "#ebe4e7",
   ink: "#62555c",
   shape: "square",
-  prices: { 3: 290, 6: 520, 9: 710, 15: 1080, 50: 3100, 100: 5350 }
+  prices: { 3: 290, 6: 520, 9: 710, 15: 1080, 50: 3100 }
 }
 ];
 

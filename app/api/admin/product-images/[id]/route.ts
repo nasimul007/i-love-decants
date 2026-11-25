@@ -11,9 +11,10 @@ export const PATCH = route(async (req, { params }: Ctx) => {
   const id = Number((await params).id);
   const { move } = await body(req, z.object({ move: z.enum(["earlier", "later", "first"]) }));
   await db.$transaction(async (tx) => {
-    const cur = await tx.productImage.findUnique({ where: { id }, select: { productId: true } });
+    const cur = await tx.productImage.findUnique({ where: { id }, select: { productId: true, itemId: true } });
     if (!cur) throw new HttpError(404, "Photo not found.");
-    const all = await tx.productImage.findMany({ where: { productId: cur.productId }, orderBy: [{ sort: "asc" }, { id: "asc" }], select: { id: true } });
+    const group = cur.productId !== null ? { productId: cur.productId } : { itemId: cur.itemId };
+    const all = await tx.productImage.findMany({ where: group, orderBy: [{ sort: "asc" }, { id: "asc" }], select: { id: true } });
     const order = all.map((i) => i.id);
     const i = order.indexOf(id);
     if (move === "first") { order.splice(i, 1); order.unshift(id); }

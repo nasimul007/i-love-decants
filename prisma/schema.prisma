@@ -304,15 +304,18 @@ model Faq {
 /// Product photos stored in the database itself (served by /api/images/[id], cached forever: a new upload gets a new id).
 model ProductImage {
   id        Int      @id @default(autoincrement())
-  productId Int
+  /// Set for perfume photos; null for oil / gift-set photos, which use itemId ("oil-…", "gift-…").
+  productId Int?
+  itemId    String?
   mime      String
   data      Bytes
   size      Int
   sort      Int      @default(0)
   createdAt DateTime @default(now())
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product   Product? @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([productId, sort])
+  @@index([itemId, sort])
 }
 
 /// A sale on a product, a scent family or a whole product type, applied to shop prices by the server (lib/server/catalog.ts).

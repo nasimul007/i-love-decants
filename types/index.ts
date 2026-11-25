@@ -49,6 +49,8 @@ export interface GiftSet {
   /** Regular price while a sale is on (`price` is the sale price). */
   wasPrice?: number;
   accent: string;
+  /** Uploaded photo ids, main first (empty → the drawn gift box). */
+  images?: number[];
 }
 
 export interface OilProduct {
@@ -58,6 +60,8 @@ export interface OilProduct {
   price: number;
   /** Regular price while a sale is on (`price` is the sale price). */
   wasPrice?: number;
+  /** Uploaded photo ids, main first. */
+  images?: number[];
 }
 
 /* ───────────── Cart ───────────── */
@@ -208,8 +212,8 @@ export interface CatalogOverrides {
   /** Every perfume / oil / gift set in the database (incl. ones added in the admin), so the price tables list them all. */
   items?: {
     products: { id: number; name: string; family: string }[];
-    oils: { id: string; name: string; price: number }[];
-    gifts: { id: string; name: string; price: number; description: string; accent: string }[];
+    oils: { id: string; name: string; price: number; images: number[] }[];
+    gifts: { id: string; name: string; price: number; description: string; accent: string; images: number[] }[];
   };
 }
 

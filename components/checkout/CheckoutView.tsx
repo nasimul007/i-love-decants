@@ -76,7 +76,15 @@ export function CheckoutView() {
     if (!form.address.trim()) next.address = required;
     if (!form.city) next.city = "Please choose your city.";
     setErrors(next);
-    if (Object.keys(next).length) { setFormError("Please complete the highlighted fields before confirming."); return; }
+    if (Object.keys(next).length) {
+      setFormError("Please complete the highlighted fields before confirming.");
+      // Take the shopper to the first field that needs fixing (it is usually scrolled out of view).
+      const first = (["fullName", "phone", "address", "city"] as const).find((k) => next[k]);
+      const el = first && document.getElementById({ fullName: "checkoutName", phone: "checkoutPhone", address: "checkoutAddress", city: "checkoutCity" }[first]);
+      el?.scrollIntoView({ block: "center", behavior: "smooth" });
+      el?.focus({ preventScroll: true });
+      return;
+    }
     setFormError("");
 
     setSubmitted(true);
@@ -176,7 +184,7 @@ export function CheckoutView() {
           {submitted ? <><span className="btn-spinner" aria-hidden="true" />Placing your order…</> : "Place order, pay on delivery"}
         </button>
         {submitted && <p className="placing-note" role="status">Please wait and don’t close this page. This can take a few seconds.</p>}
-        <div className={`form-status${formError ? " is-visible" : ""}`} role="status">{formError}</div>
+        <div className={`form-status${formError ? " is-visible is-error" : ""}`} role="alert">{formError}</div>
       </form>
 
       <aside className="order-summary-card">

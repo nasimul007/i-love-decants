@@ -70,7 +70,7 @@ export default function HomePage() {
           <article className="teaser-card custom">
             <span className="eyebrow">Made personal</span>
             <h3>Your words, softly engraved.</h3>
-            <p>Add a name, date, or private message to selected 50 ml and 100 ml bottles.</p>
+            <p>Add a name, date, or private message to selected 50 ml bottles.</p>
             <Link className="btn btn-soft" href="/custom">Design yours</Link>
             <div className="teaser-object" aria-hidden="true">
               <div className="bottle-visual" data-shape="arch" style={{ "--liquid": "#a9b9a8", "--bottle-ink": "#435644" } as CSSProperties}>

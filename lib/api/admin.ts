@@ -139,9 +139,9 @@ export const adminApi = {
   },
 
   /* product photos */
-  async uploadProductImage(productId: number, file: Blob): Promise<ServiceResult<{ id: number }>> {
+  async uploadProductImage(owner: number | string, file: Blob): Promise<ServiceResult<{ id: number }>> {
     const form = new FormData();
-    form.set("productId", String(productId));
+    form.set(typeof owner === "number" ? "productId" : "itemId", String(owner)); // perfume id, or "oil-…" / "gift-…"
     form.set("file", file, "photo.webp");
     try {
       const res = await fetch("/api/admin/product-images", { method: "POST", body: form, credentials: "same-origin" });
@@ -160,7 +160,7 @@ export const adminApi = {
     await this.photosChanged();
     return res;
   },
-  async photosChanged() { await Promise.all([refresh(ADMIN.productDetails), refresh("/api/products")]); },
+  async photosChanged() { await Promise.all([refresh(ADMIN.productDetails), refresh(ADMIN.catalog), refresh("/api/products")]); },
 
   /* FAQ */
   async faqOp(op: () => Promise<ServiceResult<AdminFaq[]>>): Promise<ServiceResult<unknown>> {

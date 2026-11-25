@@ -23,6 +23,10 @@ export const regularFrom = (p: Product): number | undefined => {
 export const saleOff = (p: Product): number =>
   Math.max(0, ...Object.entries(p.wasPrices ?? {}).map(([v, was]) => Math.round(((was - p.prices[Number(v)]) / was) * 100)));
 
+/** Everything a shopper might search for; shared by the header search and the shop page so their results agree. */
+export const searchText = (p: Product): string =>
+  [p.name, p.brand, p.family, p.notes, p.description, p.top, p.heart, p.base, ...(p.keyNotes ?? [])].join(" ").toLowerCase();
+
 /** True if the perfume can be bought in at least one size. */
 export const hasAnySize = (p: Product): boolean => volumesOf(p).length > 0 || !!p.fullBottle;
 
@@ -32,13 +36,13 @@ export const sizesLabel = (p: Product): string => {
   return p.fullBottle ? (ml ? `${ml} · Full bottle` : "Full bottle") : ml;
 };
 
-/** "3, 6, 9, 15, 50 & 100 ml" */
+/** "3, 6, 9, 15 & 50 ml" */
 export function formatVolumes(vs: readonly number[]): string {
   if (!vs.length) return "";
   if (vs.length === 1) return `${vs[0]} ml`;
   return `${vs.slice(0, -1).join(", ")} & ${vs[vs.length - 1]} ml`;
 }
 
-/** "3 ml to 100 ml" */
+/** "3 ml to 50 ml" */
 export const formatRange = (vs: readonly number[]): string =>
   !vs.length ? "" : vs.length === 1 ? `${vs[0]} ml` : `${vs[0]} ml to ${vs[vs.length - 1]} ml`;
