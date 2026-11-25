@@ -57,6 +57,9 @@ body {
   line-height: 1.65;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
+  /* clip (not hidden) still stops sideways scrolling but keeps position: sticky working
+     (filters, checkout summary, admin header); browsers without clip keep "hidden". */
+  overflow-x: clip;
 }
 
 body.drawer-open,
@@ -3148,7 +3151,9 @@ main > section > .container {
 
 .route-view.route-active {
   display: block;
-  animation: page-enter 0.6s var(--ease) both;
+  /* "backwards", not "both": a transform kept after the fade-in turns this wrapper into the frame for every
+     position: fixed child, so the phone filter drawer opened at the top of the page instead of the screen. */
+  animation: page-enter 0.6s var(--ease) backwards;
 }
 
 /* ==========================================================================
@@ -4454,3 +4459,20 @@ html.touch-mode .cursor-layer{display:none!important}
 /* Required-field star */
 .req { margin-left: .2rem; color: var(--rose-deep); font-weight: 700; }
 .required-note { margin: 0 0 .6rem; color: var(--muted); font-size: .76rem; }
+
+/* Shop filters (desktop/laptop, wider than the phone drawer): the panel stays beside the products while
+   scrolling and never grows past the window; long filter lists scroll inside it, "Clear all" stays on top. */
+@media (min-width: 901px) {
+  .filters {
+    top: 1.5rem;
+    max-height: calc(100vh - 3rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+  }
+  .filter-top {
+    position: sticky; top: -1.25rem; z-index: 1;
+    margin: -1.25rem -1.25rem 1rem; padding: 1.25rem 1.25rem .6rem;
+    background: #fffdf9; border-bottom: 1px solid var(--line);
+  }
+}
