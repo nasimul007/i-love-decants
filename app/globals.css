@@ -4536,3 +4536,17 @@ html.touch-mode .cursor-layer{display:none!important}
 @keyframes bag-ring { 0% { box-shadow: 0 0 0 0 rgba(159, 95, 115, 0.45); } 45%, 100% { box-shadow: 0 0 0 14px rgba(159, 95, 115, 0); } }
 @media (max-width: 680px) { .floating-bag { --chat: 56px; --size: 48px; } }
 @media (prefers-reduced-motion: reduce) { .floating-bag, .floating-bag::after { animation: none; } }
+
+/* Gallery arrows: faded at the photo edges, clearer on hover/focus; step through photos (wraps around) */
+.gallery-stage { position: relative; }
+.gallery-arrow {
+  position: absolute; top: calc(50% - 20px); z-index: 2;
+  display: grid; width: 40px; height: 40px; place-items: center; padding: 0 0 3px;
+  border: 0; border-radius: 50%; color: var(--ink); background: rgba(255, 253, 249, 0.55);
+  font-size: 1.6rem; line-height: 1; cursor: pointer; opacity: 0.55;
+  transition: opacity 0.2s ease, background 0.2s ease;
+}
+.gallery-arrow--prev { left: 0.5rem; }
+.gallery-arrow--next { right: 0.5rem; }
+.gallery-stage:hover .gallery-arrow, .gallery-arrow:focus-visible { opacity: 0.9; background: rgba(255, 253, 249, 0.9); }
+@media (hover: none) { .gallery-arrow { opacity: 0.8; } } /* touch screens have no hover: keep them findable */
