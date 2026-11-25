@@ -4490,10 +4490,10 @@ html.touch-mode .cursor-layer{display:none!important}
 /* Error messages use the error colour, never the success green */
 .form-status.is-error { border-color: rgba(168, 77, 88, 0.3); color: #8f3b47; background: #fbeef0; }
 
-/* Oil and gift-set photos (uploaded in Admin → Inventory → Edit) */
-.item-photo { display: block; width: 100%; aspect-ratio: 4 / 3; margin-bottom: 1rem; border-radius: var(--radius-sm); object-fit: cover; }
-.gift-card-art.has-photo { padding: 0; overflow: hidden; }
-.gift-card-art.has-photo img { width: 100%; height: 100%; object-fit: cover; }
+/* Oil and gift-set photos (uploaded in Admin → Inventory → Edit): same gallery as perfumes, wider photo for cards */
+.item-gallery { margin-bottom: 1rem; }
+.item-gallery .gallery { max-width: none; }
+.item-gallery .gallery-main img { aspect-ratio: 4 / 3; }
 
 /* Sale prices stay on one line ("From ৳270 ৳216" used to wrap in narrow cards) */
 .product-price { white-space: nowrap; }
@@ -4536,3 +4536,25 @@ html.touch-mode .cursor-layer{display:none!important}
 @keyframes bag-ring { 0% { box-shadow: 0 0 0 0 rgba(159, 95, 115, 0.45); } 45%, 100% { box-shadow: 0 0 0 14px rgba(159, 95, 115, 0); } }
 @media (max-width: 680px) { .floating-bag { --chat: 56px; --size: 48px; } }
 @media (prefers-reduced-motion: reduce) { .floating-bag, .floating-bag::after { animation: none; } }
+
+/* Gallery arrows: faded at the photo edges, clearer on hover/focus; step through photos (wraps around) */
+.gallery-stage { position: relative; }
+.gallery-arrow {
+  position: absolute; top: calc(50% - 20px); z-index: 2;
+  display: grid; width: 40px; height: 40px; place-items: center; padding: 0 0 3px;
+  border: 0; border-radius: 50%; color: var(--ink); background: rgba(255, 253, 249, 0.55);
+  font-size: 1.6rem; line-height: 1; cursor: pointer; opacity: 0.55;
+  transition: opacity 0.2s ease, background 0.2s ease;
+}
+.gallery-arrow--prev { left: 0.5rem; }
+.gallery-arrow--next { right: 0.5rem; }
+.gallery-stage:hover .gallery-arrow, .gallery-arrow:focus-visible { opacity: 0.9; background: rgba(255, 253, 249, 0.9); }
+@media (hover: none) { .gallery-arrow { opacity: 0.8; } } /* touch screens have no hover: keep them findable */
+
+/* Hover magnifier on product photos: mouse/trackpad only; touch keeps tap-to-open the full viewer */
+.gallery-main img { transition: transform 0.25s var(--ease); transform-origin: var(--zx, 50%) var(--zy, 50%); }
+@media (hover: hover) and (pointer: fine) {
+  .gallery-main:hover img { transform: scale(2); }
+  .gallery-main:hover .gallery-zoom { opacity: 0; } /* the badge would sit on top of the magnified detail */
+}
+@media (prefers-reduced-motion: reduce) { .gallery-main img { transition: none; } }
