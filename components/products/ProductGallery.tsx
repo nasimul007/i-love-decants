@@ -16,7 +16,13 @@ export function ProductGallery({ product }: { product: { name: string; images?: 
   return (
     <div className="gallery">
       <div className="gallery-stage">
-        <button type="button" className="gallery-main" aria-label={`Enlarge photo of ${product.name}`} onClick={() => setViewer(true)}>
+        <button type="button" className="gallery-main" aria-label={`Enlarge photo of ${product.name}`} onClick={() => setViewer(true)}
+          // Hover magnifier (mouse only, see CSS): the zoom is centred on the cursor.
+          onMouseMove={(e) => {
+            const r = e.currentTarget.getBoundingClientRect();
+            e.currentTarget.style.setProperty("--zx", `${((e.clientX - r.left) / r.width) * 100}%`);
+            e.currentTarget.style.setProperty("--zy", `${((e.clientY - r.top) / r.height) * 100}%`);
+          }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={current.src} alt={current.alt} decoding="async" />
           <span className="gallery-zoom" aria-hidden="true">⤢ Zoom</span>

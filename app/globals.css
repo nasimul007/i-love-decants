@@ -4550,3 +4550,11 @@ html.touch-mode .cursor-layer{display:none!important}
 .gallery-arrow--next { right: 0.5rem; }
 .gallery-stage:hover .gallery-arrow, .gallery-arrow:focus-visible { opacity: 0.9; background: rgba(255, 253, 249, 0.9); }
 @media (hover: none) { .gallery-arrow { opacity: 0.8; } } /* touch screens have no hover: keep them findable */
+
+/* Hover magnifier on product photos: mouse/trackpad only; touch keeps tap-to-open the full viewer */
+.gallery-main img { transition: transform 0.25s var(--ease); transform-origin: var(--zx, 50%) var(--zy, 50%); }
+@media (hover: hover) and (pointer: fine) {
+  .gallery-main:hover img { transform: scale(2); }
+  .gallery-main:hover .gallery-zoom { opacity: 0; } /* the badge would sit on top of the magnified detail */
+}
+@media (prefers-reduced-motion: reduce) { .gallery-main img { transition: none; } }
