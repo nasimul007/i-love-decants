@@ -4447,16 +4447,19 @@ html.touch-mode .cursor-layer{display:none!important}
   .modal-trust { order: 19; }
 }
 
-/* Checkout progress: Bag > Details > Done (50% at checkout, 100% on confirmation) */
-.checkout-progress { max-width: 640px; margin: 0 0 1.5rem; }
-.checkout-progress-head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin-bottom: .5rem; }
-.checkout-progress-head strong { color: var(--rose-deep); font-size: .78rem; }
-.checkout-progress-steps { display: flex; gap: 1.1rem; margin: 0; padding: 0; list-style: none; font-size: .78rem; color: var(--faint); }
+/* Checkout progress: Bag > Details > Done (50% at checkout, 100% on confirmation).
+   Step names sit at their point on the bar (start / middle / end); the % label sits under the end of the fill. */
+.checkout-progress { max-width: 640px; margin: 0 0 1.75rem; }
+.checkout-progress-steps { display: grid; grid-template-columns: repeat(3, 1fr); margin: 0 0 .5rem; padding: 0; list-style: none; font-size: .78rem; color: var(--faint); }
+.checkout-progress-steps li:nth-child(2) { justify-self: center; }
+.checkout-progress-steps li:nth-child(3) { justify-self: end; }
 .checkout-progress-steps li.is-done { color: var(--ink); }
 .checkout-progress-steps li.is-done::before { content: "✓ "; color: var(--rose-deep); }
 .checkout-progress-steps li.is-current { color: var(--rose-deep); font-weight: 700; }
 .checkout-progress-track { height: 6px; border-radius: 999px; background: var(--sand); overflow: hidden; }
-.checkout-progress-track span { display: block; height: 100%; border-radius: inherit; background: var(--rose-deep); transition: width .6s var(--ease); }
+.checkout-progress-track span { display: block; width: var(--pct); height: 100%; border-radius: inherit; background: var(--rose-deep); transition: width .6s var(--ease); }
+.checkout-progress-pct { display: block; width: max-content; margin: .45rem 0 0 var(--pct); transform: translateX(-50%); color: var(--rose-deep); font-size: .76rem; white-space: nowrap; }
+.checkout-progress-pct.is-end { transform: translateX(-100%); }
 
 /* Required-field star */
 .req { margin-left: .2rem; color: var(--rose-deep); font-weight: 700; }
