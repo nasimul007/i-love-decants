@@ -207,6 +207,7 @@ New flow: **Inventory → Add product → (perfume / gift set) Next → full for
 **Notice bar speed.** Before, it crossed a full screen in 18 s whatever the text, about 160 px/s on a laptop, which is too fast to read.
 - It now moves at a fixed **45 px/s**, about 6–7 letters a second. The speed is measured from the real text width and re-measured on resize, so it's the same on every screen.
 - **Tap or click pauses** it (WCAG 2.2.2), as well as hover. Reduced-motion users still see static text.
+- **Star framing:** each notice is framed by a star on both sides (✦ text ✦) instead of a single trailing star, so it reads as balanced. Shown in the static reduced-motion view too (`.notice-item::before/::after` in `app/globals.css`).
 - File: `components/layout/NoticeBar.tsx`.
 - There is no industry-standard ticker speed. The guidance is a moderate fixed px/s speed, a way to pause, and respecting reduced motion: [W3C WCAG technique SCR36](https://www.w3.org/WAI/WCAG22/Techniques/client-side-script/SCR36), [Framer marquee (px/s, pause on hover)](https://www.framer.com/marketplace/components/steadymarquee/).
 
