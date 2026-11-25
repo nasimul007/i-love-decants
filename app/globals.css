@@ -4490,10 +4490,10 @@ html.touch-mode .cursor-layer{display:none!important}
 /* Error messages use the error colour, never the success green */
 .form-status.is-error { border-color: rgba(168, 77, 88, 0.3); color: #8f3b47; background: #fbeef0; }
 
-/* Oil and gift-set photos (uploaded in Admin → Inventory → Edit) */
-.item-photo { display: block; width: 100%; aspect-ratio: 4 / 3; margin-bottom: 1rem; border-radius: var(--radius-sm); object-fit: cover; }
-.gift-card-art.has-photo { padding: 0; overflow: hidden; }
-.gift-card-art.has-photo img { width: 100%; height: 100%; object-fit: cover; }
+/* Oil and gift-set photos (uploaded in Admin → Inventory → Edit): same gallery as perfumes, wider photo for cards */
+.item-gallery { margin-bottom: 1rem; }
+.item-gallery .gallery { max-width: none; }
+.item-gallery .gallery-main img { aspect-ratio: 4 / 3; }
 
 /* Sale prices stay on one line ("From ৳270 ৳216" used to wrap in narrow cards) */
 .product-price { white-space: nowrap; }

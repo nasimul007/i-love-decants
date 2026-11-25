@@ -2,10 +2,9 @@
 
 import { useState } from "react";
 import { Lightbox } from "@/components/ui/Lightbox";
-import type { Product } from "@/types";
 
-/** Main photo + thumbnails for the product pop-up. Clicking the main photo opens the zoomable viewer. */
-export function ProductGallery({ product }: { product: Product }) {
+/** Main photo + thumbnails (product pop-up, oil and gift cards). Clicking the main photo opens the zoomable viewer. */
+export function ProductGallery({ product }: { product: { name: string; images?: number[] } }) {
   const ids = product.images ?? [];
   const [index, setIndex] = useState(0);
   const [viewer, setViewer] = useState(false);

@@ -21,12 +21,13 @@ function PhotoManager({ p }: { p: { id: number | string; name: string; images: n
   const { showToast } = useUI();
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
+  const [dragging, setDragging] = useState(false);
 
   const upload = async (files: FileList | null) => {
     if (!files?.length) return;
     setBusy(true); setMsg("");
     let added = 0;
-    for (const f of Array.from(files)) {
+    for (const f of Array.from(files).slice(0, Math.max(0, 8 - p.images.length))) {
       try {
         const res = await adminApi.uploadProductImage(p.id, await shrinkImage(f));
         if (!res.ok) { setMsg(res.error ?? "Upload failed."); break; }
@@ -40,7 +41,7 @@ function PhotoManager({ p }: { p: { id: number | string; name: string; images: n
 
   return (
     <div className="admin-field">
-      <label>Photos <small style={{ color: "var(--muted)", fontWeight: 500 }}>— the first one is the main photo (up to 8). Without photos, customers see the drawn artwork.</small></label>
+      <label>Photos <small style={{ color: "var(--muted)", fontWeight: 500 }}>— choose several at once or drag them in (up to 8). The first is the main photo; use ← → to reorder. Without photos, customers see the drawn artwork.</small></label>
       <div style={{ display: "flex", flexWrap: "wrap", gap: ".7rem", marginTop: ".4rem" }}>
         {p.images.map((id, i) => (
           <figure key={id} style={{ margin: 0, width: 112, display: "grid", gap: ".3rem", justifyItems: "center" }}>
@@ -55,8 +56,10 @@ function PhotoManager({ p }: { p: { id: number | string; name: string; images: n
           </figure>
         ))}
         {p.images.length < 8 && (
-          <label style={{ width: 112, height: 112, display: "grid", placeItems: "center", textAlign: "center", border: "2px dashed var(--line)", borderRadius: ".7rem", cursor: busy ? "progress" : "pointer", color: "var(--rose-deep)", fontSize: ".78rem", fontWeight: 700 }}>
-            {busy ? "Uploading…" : "+ Add photos"}
+          <label style={{ width: 112, height: 112, display: "grid", placeItems: "center", textAlign: "center", border: `2px dashed ${dragging ? "var(--rose-deep)" : "var(--line)"}`, borderRadius: ".7rem", cursor: busy ? "progress" : "pointer", color: "var(--rose-deep)", background: dragging ? "#fbf1f3" : undefined, fontSize: ".78rem", fontWeight: 700, padding: ".4rem" }}
+            onDragOver={(e) => { e.preventDefault(); setDragging(true); }} onDragLeave={() => setDragging(false)}
+            onDrop={(e) => { e.preventDefault(); setDragging(false); if (!busy) void upload(e.dataTransfer.files); }}>
+            {busy ? "Uploading…" : dragging ? "Drop photos here" : <span>+ Add photos<br /><small style={{ fontWeight: 500, color: "var(--muted)" }}>several at once</small></span>}
             <input type="file" accept="image/jpeg,image/png,image/webp" multiple hidden disabled={busy} onChange={(e) => { void upload(e.target.files); e.target.value = ""; }} />
           </label>
         )}

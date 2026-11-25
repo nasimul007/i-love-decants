@@ -130,7 +130,7 @@ export function InventoryPanel() {
     setForm({ name: "", type: "Perfume decant", sizes: "", price: "", stock: "" });
     setMsg("");
     setOpen(false);
-    if (shopId && (perfume || form.type === "Gift set") && canEdit) setEditing({ id: shopId, isNew: true });
+    if (shopId && form.type !== "Custom bottle" && canEdit) setEditing({ id: shopId, isNew: true }); // custom bottles have no shop page
   };
 
   const btn = { fontSize: ".75rem" } as const;
@@ -187,7 +187,7 @@ export function InventoryPanel() {
           <p className="admin-form-msg" aria-live="polite">{msg}</p>
           <div className="mgr-modal-actions">
             <button className="admin-btn" type="button" onClick={() => { setOpen(false); setMsg(""); }}>Cancel</button>
-            <button className="admin-btn primary" type="submit">{perfume || form.type === "Gift set" ? "Next" : "Add"}</button>
+            <button className="admin-btn primary" type="submit">{form.type === "Custom bottle" ? "Add" : "Next"}</button>
           </div>
         </form>
       </Modal>
