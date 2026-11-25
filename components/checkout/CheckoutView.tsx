@@ -9,8 +9,9 @@ import { couponService } from "@/lib/services/coupons";
 import { ordersApi } from "@/lib/api/orders";
 import { BULK_DISCOUNT, DELIVERY_CHARGE, bulkDiscountFor, deliveryChargeFor } from "@/lib/config";
 import { BD_CITIES } from "@/lib/data/cities";
+import { CheckoutProgress } from "./CheckoutProgress";
 import { CitySelect } from "./CitySelect";
-import { isBdPhone, isPersonName, NAME_ERROR } from "@/lib/validators";
+import { toLocalPhone, isBdPhone, isPersonName, NAME_ERROR } from "@/lib/validators";
 import { money } from "@/lib/format";
 import type { Coupon } from "@/types";
 
@@ -108,14 +109,17 @@ export function CheckoutView() {
   }
 
   return (
+    <>
+    <div className="container"><CheckoutProgress /></div>
     <div className="container checkout-layout">
       <form className="checkout-form-card" onSubmit={submit} noValidate>
+        <p className="required-note"><span className="req" aria-hidden="true">*</span> Required</p>
         <div className="checkout-block">
           <span className="eyebrow">Step 1</span>
           <h2>Customer information</h2>
           <div className="form-grid">
-            <div className="field"><label htmlFor="checkoutName">Full name</label><input id="checkoutName" autoComplete="name" type="text" placeholder="Your full name" {...text("fullName")} />{err("fullName")}</div>
-            <div className="field"><label htmlFor="checkoutPhone">Phone number</label><input id="checkoutPhone" autoComplete="tel" type="tel" inputMode="tel" placeholder="01XXXXXXXXX" {...text("phone")} />{err("phone")}</div>
+            <div className="field"><label htmlFor="checkoutName">Full name<Req /></label><input id="checkoutName" aria-required="true" autoComplete="name" type="text" placeholder="Your full name" {...text("fullName")} />{err("fullName")}</div>
+            <div className="field"><label htmlFor="checkoutPhone">Phone number<Req /></label><input id="checkoutPhone" aria-required="true" autoComplete="tel" type="tel" inputMode="numeric" maxLength={11} pattern="01[0-9]{9}" placeholder="01XXXXXXXXX" value={form.phone} onChange={(e) => setForm({ ...form, phone: toLocalPhone(e.target.value) })} />{err("phone")}</div>
           </div>
         </div>
 
@@ -123,9 +127,9 @@ export function CheckoutView() {
           <span className="eyebrow">Step 2</span>
           <h2>Delivery details</h2>
           <div className="form-grid">
-            <div className="field full"><label htmlFor="checkoutAddress">Full delivery address</label><textarea id="checkoutAddress" autoComplete="street-address" placeholder="House, road, area, landmark…" {...text("address")} />{err("address")}</div>
+            <div className="field full"><label htmlFor="checkoutAddress">Full delivery address<Req /></label><textarea id="checkoutAddress" aria-required="true" autoComplete="street-address" placeholder="House, road, area, landmark…" {...text("address")} />{err("address")}</div>
             <div className="field">
-              <label htmlFor="checkoutCity">City</label>
+              <label htmlFor="checkoutCity">City<Req /></label>
               <CitySelect id="checkoutCity" value={form.city} options={BD_CITIES} onChange={(city) => setForm({ ...form, city })} />
               {err("city")}
             </div>
@@ -197,5 +201,9 @@ export function CheckoutView() {
         <p className="cart-note">Prices include everything currently in your bag. Adjust quantities from the bag icon before placing your order.</p>
       </aside>
     </div>
+    </>
   );
 }
+
+/** Required-field star (the label text stays the accessible name; aria-required carries the meaning). */
+const Req = () => <span className="req" aria-hidden="true">*</span>;

@@ -1,5 +1,6 @@
 "use client";
 
+import { CheckoutProgress } from "./CheckoutProgress";
 import Link from "next/link";
 import { useCurrentCustomer, useLastOrder } from "@/hooks/useServices";
 import { money } from "@/lib/format";
@@ -14,6 +15,8 @@ export function ConfirmationView() {
   const provider = order?.transaction.provider || "Provider to be confirmed";
 
   return (
+    <>
+    {order && <div className="container"><CheckoutProgress done /></div>}
     <div className="container confirmation-layout">
       <article className="confirmation-page-card">
         <span className="confirmation-check" aria-hidden="true">✓</span>
@@ -65,5 +68,6 @@ export function ConfirmationView() {
         <div className="summary-row summary-total"><span>Grand total</span><strong>{money(grand)}</strong></div>
       </aside>
     </div>
+    </>
   );
 }

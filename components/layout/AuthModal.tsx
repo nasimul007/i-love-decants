@@ -6,7 +6,7 @@ import { useUI } from "@/components/providers/UIProvider";
 import { customerService } from "@/lib/services/customers";
 import { customerApi } from "@/lib/api/customer";
 import type { FieldErrors } from "@/lib/services/customers";
-import { passwordStrength } from "@/lib/validators";
+import { passwordStrength, toLocalPhone } from "@/lib/validators";
 import { DoodleCanvas } from "./DoodleCanvas";
 
 export function AuthModal() {
@@ -77,7 +77,7 @@ export function AuthModal() {
               <form className="auth-form" onSubmit={submitRegister} noValidate>
                 <div className="auth-row">
                   <div className="auth-field"><label>Full name<input type="text" autoComplete="name" placeholder="Your name" value={reg.name} onChange={(e) => setReg({ ...reg, name: e.target.value })} /></label><span className="field-err">{regErr.name}</span></div>
-                  <div className="auth-field"><label>Phone<input type="tel" inputMode="tel" placeholder="01XXXXXXXXX" value={reg.phone} onChange={(e) => setReg({ ...reg, phone: e.target.value })} /></label><span className="field-err">{regErr.phone}</span></div>
+                  <div className="auth-field"><label>Phone<input type="tel" inputMode="numeric" maxLength={11} pattern="01[0-9]{9}" autoComplete="tel" placeholder="01XXXXXXXXX" value={reg.phone} onChange={(e) => setReg({ ...reg, phone: toLocalPhone(e.target.value) })} /></label><span className="field-err">{regErr.phone}</span></div>
                 </div>
                 <div className="auth-field"><label>Email<input type="email" autoComplete="email" placeholder="you@example.com" value={reg.email} onChange={(e) => setReg({ ...reg, email: e.target.value })} /></label><span className="field-err">{regErr.email}</span></div>
                 <div className="auth-field">

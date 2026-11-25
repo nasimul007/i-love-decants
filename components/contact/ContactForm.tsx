@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { isBdPhone, isPersonName, NAME_ERROR } from "@/lib/validators";
+import { isBdPhone, isPersonName, NAME_ERROR, toLocalPhone } from "@/lib/validators";
 import { CONFIG } from "@/lib/config";
 
 const TOPICS = ["Scent recommendation", "Order or delivery", "Custom engraving", "Gift help", "Something else"];
@@ -46,9 +46,9 @@ export function ContactForm() {
         </div>
         <div className="field">
           <label htmlFor="contactPhone">Phone number <small>(optional)</small></label>
-          <input id="contactPhone" type="tel" inputMode="tel" autoComplete="tel" placeholder="01XXXXXXXXX" maxLength={18} aria-describedby="contactPhoneHint" {...bind("phone")} />
+          <input id="contactPhone" type="tel" inputMode="numeric" maxLength={11} pattern="01[0-9]{9}" autoComplete="tel" placeholder="01XXXXXXXXX" aria-describedby="contactPhoneHint" value={values.phone} onChange={(e) => { setValues({ ...values, phone: toLocalPhone(e.target.value) }); setSent(false); }} />
           <span className="field-error">{errors.phone}</span>
-          <span className="field-hint" id="contactPhoneHint">Use 01XXXXXXXXX or +8801XXXXXXXXX. We can reply by SMS, call, or WhatsApp.</span>
+          <span className="field-hint" id="contactPhoneHint">11 digits, for example 01712345678.</span>
         </div>
         <div className="field full">
           <label htmlFor="contactTopic">What is this about?</label>

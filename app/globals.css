@@ -4439,3 +4439,18 @@ html.touch-mode .cursor-layer{display:none!important}
   }
   .modal-trust { order: 19; }
 }
+
+/* Checkout progress: Bag > Details > Done (50% at checkout, 100% on confirmation) */
+.checkout-progress { max-width: 640px; margin: 0 0 1.5rem; }
+.checkout-progress-head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin-bottom: .5rem; }
+.checkout-progress-head strong { color: var(--rose-deep); font-size: .78rem; }
+.checkout-progress-steps { display: flex; gap: 1.1rem; margin: 0; padding: 0; list-style: none; font-size: .78rem; color: var(--faint); }
+.checkout-progress-steps li.is-done { color: var(--ink); }
+.checkout-progress-steps li.is-done::before { content: "✓ "; color: var(--rose-deep); }
+.checkout-progress-steps li.is-current { color: var(--rose-deep); font-weight: 700; }
+.checkout-progress-track { height: 6px; border-radius: 999px; background: var(--sand); overflow: hidden; }
+.checkout-progress-track span { display: block; height: 100%; border-radius: inherit; background: var(--rose-deep); transition: width .6s var(--ease); }
+
+/* Required-field star */
+.req { margin-left: .2rem; color: var(--rose-deep); font-weight: 700; }
+.required-note { margin: 0 0 .6rem; color: var(--muted); font-size: .76rem; }
