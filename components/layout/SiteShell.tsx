@@ -9,6 +9,7 @@ import { CartDrawer } from "./CartDrawer";
 import { ProductModal } from "./ProductModal";
 import { AuthModal } from "./AuthModal";
 import { ChatWidget } from "./ChatWidget";
+import { FloatingBag } from "./FloatingBag";
 import { Toast } from "./Toast";
 
 /** Everything that persists across routes: header, footer, drawers, modals, toast. */
@@ -21,6 +22,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
       <Footer />
       <CartDrawer />
       <ProductModal />
+      <FloatingBag />
       <ChatWidget />
       <AuthModal />
       <Toast />
