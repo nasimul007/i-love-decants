@@ -9,7 +9,7 @@ export default function OrderConfirmationPage() {
     <RouteView>
       <PageHero
         eyebrow="Order received"
-        title="Thank you — we are confirming it."
+        title="Thank you. We are confirming it."
         lead="Your order is saved. We will use the contact and delivery details you supplied to confirm it. Signed-in customers can follow its status from My account."
         noteTitle="One calm final check."
         note="Review the delivery details below. You pay in cash when the order arrives."

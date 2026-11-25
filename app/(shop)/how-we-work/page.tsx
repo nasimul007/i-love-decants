@@ -10,15 +10,15 @@ const STEPS = [
   ["You receive it", "Delivered across Bangladesh, with support open on WhatsApp or Messenger."],
 ];
 const WHY = [
-  ["Authenticity first", "Every decant is drawn from a genuine, verified bottle — never a copy or a blend."],
+  ["Authenticity first", "Every decant is drawn from a genuine, verified bottle. Never a copy or a blend."],
   ["Only what you need", "Six sizes mean you are never paying for more perfume than you will use."],
-  ["Real answers", "Message us before you buy — we would rather you ask than guess."],
+  ["Real answers", "Message us before you buy. We would rather you ask than guess."],
 ];
 
 export default function HowWeWorkPage() {
   return (
     <RouteView>
-      <PageHero eyebrow="How we work" title="From decant to doorstep." lead="A small, careful process behind every bottle we prepare — nothing rushed, nothing oversized." noteTitle="Small batches, checked by hand." note="Every decant is filled, labelled, and inspected before it leaves us." orb="rgba(226,233,225,.75)" />
+      <PageHero eyebrow="How we work" title="From decant to doorstep." lead="A small, careful process behind every bottle we prepare: nothing rushed, nothing oversized." noteTitle="Small batches, checked by hand." note="Every decant is filled, labelled, and inspected before it leaves us." orb="rgba(226,233,225,.75)" />
       <section className="section welcome-band" aria-labelledby="howWeWorkTitle">
         <div className="container">
           <SectionHeading eyebrow="Simple, start to finish" title="Four steps, quietly done." id="howWeWorkTitle">

@@ -14,7 +14,7 @@ import { volumesOf } from "@/lib/volumes";
 import type { Product } from "@/types";
 
 export function ProductModal() {
-  const { productId, closeProduct, openCart, showToast } = useUI();
+  const { productId, closeProduct, openCart } = useUI();
   const { products } = useCatalog();
   const { service } = useCart();
   const sprays = useSprays();
@@ -47,7 +47,7 @@ export function ProductModal() {
     const line = selected === "full" ? service.lineForFullBottle(found) : service.lineForProduct(found, selected);
     if (!line) return;
     service.add(line);
-    showToast(`${found.name}, ${selectedLabel} added to your bag.`);
+    // No toast: the bag opens right away and shows the item (the toast used to cover it).
     closeProduct();
     setTimeout(openCart, 140);
   };
@@ -80,8 +80,9 @@ export function ProductModal() {
               </div>
               <div className="modal-purchase">
                 <span className="modal-price">{selected !== "full" && product.wasPrices?.[selected] !== undefined && <s className="was-price">{money(product.wasPrices[selected])}</s>}{money(selectedPrice)}</span>
-                <button className="btn btn-primary" type="button" aria-label={`Add ${product.name} to cart`} onClick={add}><span>Add<span className="modal-add-name"> {product.name}</span> to cart</span></button>
+                <button className="btn btn-primary" type="button" aria-label={`Add ${product.name} to cart`} onClick={add}>Add to cart</button>
               </div>
+              <p className="modal-trust">Cash on delivery · 1–2 day delivery inside Dhaka · Poured from original bottles</p>
               {product.description && <p className="modal-description">{product.description}</p>}
               {factsOf(product).length > 0 && (
                 <dl className="notes-pyramid" aria-label="Perfume details">

@@ -1,5 +1,6 @@
 "use client";
 
+import { toLocalPhone } from "@/lib/validators";
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import Link from "next/link";
@@ -77,7 +78,7 @@ function OrderCard({ order, open, onToggle }: { order: Order; open: boolean; onT
               <p>{order.customer.name}<br />{order.customer.phone}<br />{[order.delivery.address, order.delivery.city].filter(Boolean).join(", ")}</p>
               {order.delivery.notes && <p className="acct-note">Note: {order.delivery.notes}</p>}
               <h4>Payment</h4>
-              <p>{order.transaction.method === "cod" ? "Cash on delivery — pay the rider when it arrives." : `${order.transaction.type} · ${order.transaction.provider}`}</p>
+              <p>{order.transaction.method === "cod" ? "Cash on delivery: pay the rider when it arrives." : `${order.transaction.type} · ${order.transaction.provider}`}</p>
             </div>
           </div>
         </div>
@@ -181,7 +182,7 @@ export function AccountView() {
           <h3>Personal details</h3>
           <div className="profile-field"><label htmlFor="acct-email">Email</label><input id="acct-email" type="email" value={customer.email} disabled /></div>
           <div className="profile-field"><label htmlFor="acct-name">Full name</label><input id="acct-name" type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
-          <div className="profile-field"><label htmlFor="acct-phone">Phone</label><input id="acct-phone" type="tel" value={form.phone} placeholder="01XXXXXXXXX" onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
+          <div className="profile-field"><label htmlFor="acct-phone">Phone</label><input id="acct-phone" type="tel" inputMode="numeric" maxLength={11} pattern="01[0-9]{9}" autoComplete="tel" value={form.phone} placeholder="01XXXXXXXXX" onChange={(e) => setForm({ ...form, phone: toLocalPhone(e.target.value) })} /></div>
           <div className="profile-field"><label htmlFor="acct-addr">Delivery address</label><textarea id="acct-addr" value={form.address} placeholder="House, road, area, landmark…" onChange={(e) => setForm({ ...form, address: e.target.value })} /></div>
           {error && <p className="auth-msg">{error}</p>}
           <button className="profile-save-btn" type="submit" disabled={saving}>{saving ? "Saving…" : "Save changes"}</button>

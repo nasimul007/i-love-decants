@@ -29,7 +29,7 @@ export function ChatWidget() {
       <div className={`chat-panel${chatOpen ? " is-open" : ""}`} id="chatPanel" aria-hidden={!chatOpen}>
         <div className="chat-panel-header">
           <strong>Have a doubt?</strong>
-          <span>We are here to help—choose what feels easiest.</span>
+          <span>We are here to help. Choose what feels easiest.</span>
         </div>
         <div className="chat-options">
           {OPTIONS.map((o) => (

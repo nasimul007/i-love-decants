@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { isBdPhone, isPersonName, NAME_ERROR } from "@/lib/validators";
+import { isBdPhone, isPersonName, NAME_ERROR, toLocalPhone } from "@/lib/validators";
+import { CONFIG } from "@/lib/config";
 
 const TOPICS = ["Scent recommendation", "Order or delivery", "Custom engraving", "Gift help", "Something else"];
 
@@ -16,12 +17,14 @@ export function ContactForm() {
     const next: Record<string, string> = {};
     if (!values.name.trim()) next.name = "Please fill in this field.";
     else if (!isPersonName(values.name)) next.name = NAME_ERROR;
-    if (!values.phone.trim()) next.phone = "Please fill in this field.";
-    else if (!isBdPhone(values.phone)) next.phone = "Please enter a valid Bangladeshi mobile number.";
+    // Optional: WhatsApp already shows us the sender's number.
+    if (values.phone.trim() && !isBdPhone(values.phone)) next.phone = "Please enter a valid Bangladeshi mobile number.";
     if (!values.message.trim()) next.message = "Please fill in this field.";
     setErrors(next);
     if (Object.keys(next).length) return;
-    setValues({ name: "", phone: "", topic: TOPICS[0], message: "" });
+    // The form used to stop here and show "we will reach out", so every message was lost. Now it goes out on WhatsApp.
+    const text = [`Hi! I'm ${values.name.trim()}.`, `Topic: ${values.topic}`, ...(values.phone.trim() ? [`Phone: ${values.phone.trim()}`] : []), "", values.message.trim()].join("\n");
+    window.open(`${CONFIG.whatsapp.split("?")[0]}?text=${encodeURIComponent(text)}`, "_blank", "noopener");
     setSent(true);
   };
 
@@ -38,14 +41,14 @@ export function ContactForm() {
       <div className="form-grid">
         <div className="field">
           <label htmlFor="contactName">Name</label>
-          <input id="contactName" type="text" placeholder="Your name" {...bind("name")} />
+          <input id="contactName" type="text" autoComplete="name" placeholder="Your name" {...bind("name")} />
           <span className="field-error">{errors.name}</span>
         </div>
         <div className="field">
-          <label htmlFor="contactPhone">Phone number</label>
-          <input id="contactPhone" type="tel" inputMode="tel" autoComplete="tel" placeholder="01XXXXXXXXX" maxLength={18} aria-describedby="contactPhoneHint" {...bind("phone")} />
+          <label htmlFor="contactPhone">Phone number <small>(optional)</small></label>
+          <input id="contactPhone" type="tel" inputMode="numeric" maxLength={11} pattern="01[0-9]{9}" autoComplete="tel" placeholder="01XXXXXXXXX" aria-describedby="contactPhoneHint" value={values.phone} onChange={(e) => { setValues({ ...values, phone: toLocalPhone(e.target.value) }); setSent(false); }} />
           <span className="field-error">{errors.phone}</span>
-          <span className="field-hint" id="contactPhoneHint">Use 01XXXXXXXXX or +8801XXXXXXXXX. We can reply by SMS, call, or WhatsApp.</span>
+          <span className="field-hint" id="contactPhoneHint">11 digits, for example 01712345678.</span>
         </div>
         <div className="field full">
           <label htmlFor="contactTopic">What is this about?</label>
@@ -59,9 +62,9 @@ export function ContactForm() {
           <span className="field-error">{errors.message}</span>
         </div>
       </div>
-      <button className="btn btn-primary" type="submit">Send message</button>
+      <button className="btn btn-primary" type="submit">Send on WhatsApp</button>
       <div className={`form-status${sent ? " is-visible" : ""}`} role="status">
-        {sent && "Thank you—your message is ready. We will reach out on the number you shared."}
+        {sent && "WhatsApp is open with your message. Press send there and we will reply soon."}
       </div>
     </form>
   );

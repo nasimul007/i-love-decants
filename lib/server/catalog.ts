@@ -18,6 +18,14 @@ function fullBottleOffered(_fb: unknown): boolean {
   return false;
 }
 
+/** Photo ids of every oil / gift set, main photo first. */
+export async function itemImages(tx: Tx = db): Promise<Record<string, number[]>> {
+  const rows = await tx.productImage.findMany({ where: { itemId: { not: null } }, select: { id: true, itemId: true }, orderBy: [{ sort: "asc" }, { id: "asc" }] });
+  const out: Record<string, number[]> = {};
+  for (const r of rows) (out[r.itemId!] ??= []).push(r.id);
+  return out;
+}
+
 export async function loadCatalog(tx: Tx = db, opts: { all?: boolean } = {}) {
   const [products, oils, gifts, volumes, fb, categories, liveSales] = await Promise.all([
     tx.product.findMany({ include: { variants: true, inventory: true, images: { select: { id: true }, orderBy: [{ sort: "asc" }, { id: "asc" }] } }, orderBy: { id: "asc" } }),
@@ -28,6 +36,7 @@ export async function loadCatalog(tx: Tx = db, opts: { all?: boolean } = {}) {
     tx.category.findMany({ orderBy: [{ sort: "asc" }, { name: "asc" }] }),
     tx.sale.findMany({ where: { active: true, OR: [{ endsAt: null }, { endsAt: { gt: new Date() } }] } }),
   ]);
+  const itemPhotos = await itemImages(tx);
   // Sales change what customers pay (shop, bag, checkout, orders all price from here). Admin views (all) show regular prices.
   const sales = opts.all ? [] : liveSales;
   /** Applies the best matching sale; `was` keeps the regular price only when it changed. */
@@ -64,8 +73,8 @@ export async function loadCatalog(tx: Tx = db, opts: { all?: boolean } = {}) {
   return {
     products: outProducts,
     categories: categories.filter((c) => !c.hidden).map((c) => c.name),
-    oils: oils.filter((o) => live(o.inventory) && (opts.all || !o.inventory || o.inventory.stock >= OIL_ML)).map(({ inventory: _i, ...o }) => { const { price, was } = priced(o.price, saleKeys.oil(o.id)); return { ...o, price, wasPrice: was }; }),
-    gifts: gifts.filter((g) => live(g.inventory) && (opts.all || !g.inventory || g.inventory.stock >= 1)).map(({ inventory: _i, ...g }) => { const { price, was } = priced(g.price, saleKeys.gift(g.id)); return { ...g, price, wasPrice: was }; }),
+    oils: oils.filter((o) => live(o.inventory) && (opts.all || !o.inventory || o.inventory.stock >= OIL_ML)).map(({ inventory: _i, ...o }) => { const { price, was } = priced(o.price, saleKeys.oil(o.id)); return { ...o, price, wasPrice: was, images: itemPhotos[o.id] ?? [] }; }),
+    gifts: gifts.filter((g) => live(g.inventory) && (opts.all || !g.inventory || g.inventory.stock >= 1)).map(({ inventory: _i, ...g }) => { const { price, was } = priced(g.price, saleKeys.gift(g.id)); return { ...g, price, wasPrice: was, images: itemPhotos[g.id] ?? [] }; }),
     volumes: volumes.map((v) => v.volumeMl).filter((v) => v !== replaced),
     fullBottle: fullLive ? { ml: fb!.ml, sprays: fb!.sprays } : null,
     sprays: Object.fromEntries(volumes.filter((v) => v.volumeMl !== replaced).map((v) => [v.volumeMl, v.sprays])),

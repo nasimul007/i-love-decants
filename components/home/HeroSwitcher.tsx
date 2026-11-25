@@ -8,8 +8,6 @@ import { useCatalog } from "@/hooks/useServices";
 import { money } from "@/lib/format";
 import { priceFrom } from "@/lib/volumes";
 
-const HERO_IDS = [1, 3, 5, 7];
-
 /** Hero bottle swapper: auto-cycles, dot navigation, pointer-tilt parallax. */
 export function HeroSwitcher() {
   const { products } = useCatalog();
@@ -21,10 +19,12 @@ export function HeroSwitcher() {
   const [pressed, setPressed] = useState(false);
   const [tilt, setTilt] = useState<CSSProperties | null>(null);
 
+  // The admin picks these (Home page & content → Home page perfumes); with none picked, show every perfume.
   const heroProducts = useMemo(() => {
-    const preferred = products.filter((p) => HERO_IDS.includes(p.id));
+    const preferred = products.filter((p) => p.featured);
     return preferred.length ? preferred : products;
   }, [products]);
+  const go = (step: number) => setCurrent((c) => (c + step + heroProducts.length) % heroProducts.length);
 
   // Swap the artwork half-way through the fade (matches the 520 ms CSS transition).
   useEffect(() => {
@@ -80,6 +80,12 @@ export function HeroSwitcher() {
               <span>{product.notes} · From {money(priceFrom(product))}</span>
               <small>Select the bottle to choose a volume</small>
             </div>
+            {heroProducts.length > 1 && (
+              <>
+                <button className="icon-btn hero-arrow hero-arrow--prev" type="button" aria-label="Previous perfume" onClick={() => go(-1)}>‹</button>
+                <button className="icon-btn hero-arrow hero-arrow--next" type="button" aria-label="Next perfume" onClick={() => go(1)}>›</button>
+              </>
+            )}
             <div className="hero-dots" aria-label="Hero perfumes">
               {heroProducts.map((p, i) => (
                 <button key={p.id} className={`hero-dot${i === current ? " is-active" : ""}`} type="button" aria-label={`Show ${p.name}`} onClick={() => setCurrent(i)} />

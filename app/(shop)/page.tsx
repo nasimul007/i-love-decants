@@ -5,6 +5,9 @@ import { FaqSection } from "@/components/home/FaqSection";
 import { FeaturedRail } from "@/components/home/FeaturedRail";
 import { RouteView } from "@/components/ui/PageHero";
 import { VolumeList } from "@/components/ui/VolumeText";
+import { FromPrice } from "@/components/home/FromPrice";
+import { money } from "@/lib/format";
+import { DELIVERY_CHARGE } from "@/lib/config";
 
 export default function HomePage() {
   return (
@@ -13,16 +16,17 @@ export default function HomePage() {
         <HeroMist />
         <div className="container hero-grid">
           <div className="hero-copy">
+            <span className="eyebrow">Authentic perfume decants · Delivered across Bangladesh</span>
             <h1 className="hero-title" id="homeTitle">A little scent.<br /><em>A lot of feeling.</em></h1>
-            <p className="hero-description">Meet perfume without the pressure. Choose only the volume you need, anywhere from <VolumeList separator="range" />, and enjoy quiet elegance at an approachable price.</p>
+            <p className="hero-description">Try authentic perfumes in small sizes, <VolumeList separator="range" />. Pay only for what you will actually wear.</p>
             <div className="hero-actions">
-              <Link className="btn btn-primary" href="/products">Explore the collection <span aria-hidden="true">→</span></Link>
+              <Link className="btn btn-primary" href="/products">Shop decants<FromPrice /> <span aria-hidden="true">→</span></Link>
               <Link className="btn btn-secondary" href="/custom">Personalise a bottle</Link>
             </div>
             <div className="hero-promise" aria-label="Store promises">
-              <span>Authentic scents</span>
-              <span>Small sizes, less commitment</span>
-              <span>Calm help, never pressure</span>
+              <span>Cash on delivery, no advance payment</span>
+              <span>{money(DELIVERY_CHARGE.insideDhaka)} delivery inside Dhaka</span>
+              <span>Poured from original bottles</span>
             </div>
           </div>
           <HeroSwitcher />
@@ -36,7 +40,7 @@ export default function HomePage() {
             <h2>Luxury made available.</h2>
           </div>
           <div className="welcome-copy">
-            <p>Beautiful perfume should feel welcoming. Start tiny, wear it slowly, and return only when it feels right. No intimidating counters, no oversized commitment—just carefully prepared decants from authentic bottles.</p>
+            <p>Beautiful perfume should feel welcoming. Start tiny, wear it slowly, and return only when it feels right. No intimidating counters, no oversized commitment. Just carefully prepared decants from authentic bottles.</p>
             <div className="value-pills" aria-label="Our qualities">
               <span className="value-pill">Lightweight</span>
               <span className="value-pill">Accessible</span>
@@ -66,7 +70,7 @@ export default function HomePage() {
           <article className="teaser-card custom">
             <span className="eyebrow">Made personal</span>
             <h3>Your words, softly engraved.</h3>
-            <p>Add a name, date, or private message to selected 50 ml and 100 ml bottles.</p>
+            <p>Add a name, date, or private message to selected 50 ml bottles.</p>
             <Link className="btn btn-soft" href="/custom">Design yours</Link>
             <div className="teaser-object" aria-hidden="true">
               <div className="bottle-visual" data-shape="arch" style={{ "--liquid": "#a9b9a8", "--bottle-ink": "#435644" } as CSSProperties}>
@@ -79,7 +83,7 @@ export default function HomePage() {
           <article className="teaser-card gift">
             <span className="eyebrow">Thoughtfully ready</span>
             <h3>A gift that feels like them.</h3>
-            <p>Curated sets, soft cartons, gift wrapping, and handwritten messages—without the pressure.</p>
+            <p>Curated sets, soft cartons, gift wrapping, and handwritten messages, without the pressure.</p>
             <Link className="btn btn-secondary" href="/products?tab=gifts">Visit gift corner</Link>
             <div className="gift-box-art" aria-hidden="true" />
           </article>

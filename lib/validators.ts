@@ -8,6 +8,11 @@ export const normalizePhone = (value: string): string => {
   return d.startsWith("880") ? "0" + d.slice(3) : d;
 };
 
+/** Phone fields keep only the 11-digit local number (01XXXXXXXXX). "+880 17…" pasted in becomes "017…". */
+export const toLocalPhone = (value: string): string => {
+  const d = value.replace(/\D/g, "");
+  return (d.startsWith("880") ? d.slice(2) : d).slice(0, 11);
+};
 export const isBdPhone = (value: string): boolean => BD_PHONE.test(value.replace(/[\s-]/g, ""));
 export const isEmail = (value: string): boolean => EMAIL.test(value.trim());
 

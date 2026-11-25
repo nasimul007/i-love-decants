@@ -57,6 +57,9 @@ body {
   line-height: 1.65;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
+  /* clip (not hidden) still stops sideways scrolling but keeps position: sticky working
+     (filters, checkout summary, admin header); browsers without clip keep "hidden". */
+  overflow-x: clip;
 }
 
 body.drawer-open,
@@ -668,7 +671,8 @@ main > section > .container {
 
 .hero-title {
   margin-bottom: 1.3rem;
-  font-size: clamp(3.2rem, 6.2vw, 6.8rem);
+  /* capped at the 1440px size: wider screens grew it past its column and broke it onto 4 lines */
+  font-size: clamp(3.2rem, 6.2vw, 5.6rem);
   line-height: 0.92;
   letter-spacing: -0.06em;
 }
@@ -3148,7 +3152,9 @@ main > section > .container {
 
 .route-view.route-active {
   display: block;
-  animation: page-enter 0.6s var(--ease) both;
+  /* "backwards", not "both": a transform kept after the fade-in turns this wrapper into the frame for every
+     position: fixed child, so the phone filter drawer opened at the top of the page instead of the screen. */
+  animation: page-enter 0.6s var(--ease) backwards;
 }
 
 /* ==========================================================================
@@ -4362,11 +4368,12 @@ html.touch-mode .cursor-layer{display:none!important}
 
   /* Home: engraving teaser text no longer runs under the bottle art */
   .teaser-card.custom p { max-width: 58%; }
-  /* Store: pop-up button says "Add to cart" (long names wrapped it to two lines); the name stays in its aria-label */
-  .modal-add-name { display: none; }
   /* Store: icon buttons keep their look but get a 44px touch area */
   .icon-btn { position: relative; }
   .icon-btn::before { position: absolute; content: ""; inset: -3px; }
+  /* ...but the pop-up's close button must stay absolutely placed (the rule above dropped it into the layout,
+     adding an empty band above the photo and pushing the × half outside the pop-up). */
+  .modal-close { position: absolute; }
   /* Footer links were 19px tall: give them a comfortable tap height */
   .footer-links { gap: 0; }
   .footer-links a { display: block; padding: .55rem 0; font-size: .82rem; }
@@ -4420,3 +4427,112 @@ html.touch-mode .cursor-layer{display:none!important}
   font-size: .66rem; font-weight: 800; letter-spacing: .04em;
 }
 .product-price:has(.was-price), .modal-price:has(.was-price), .gift-price:has(.was-price) { color: var(--deal); }
+
+/* Usability pass: the 5 button states (default/hover already existed) */
+.btn:active:not(:disabled) { transform: scale(0.98); }
+.btn:disabled, .admin-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn-loading:disabled { opacity: 0.85; cursor: progress; } /* loading keeps its look (wins over plain disabled) */
+
+/* Proof next to the Add button in the product pop-up */
+.modal-trust { margin: 0.7rem 0 0; color: var(--muted); font-size: 0.74rem; }
+
+@media (max-width: 680px) {
+  /* Phones: the price + Add button stay pinned at the bottom of the pop-up while reading notes */
+  .modal-copy { display: flex; flex-direction: column; }
+  .modal-purchase {
+    order: 20; position: sticky; bottom: 0; z-index: 3;
+    margin: 1rem -1rem 0; padding: 0.75rem 1rem; /* matches the pop-up's 1rem side padding on phones */
+    background: var(--paper); box-shadow: 0 -10px 24px rgba(91, 60, 68, 0.08);
+  }
+  .modal-trust { order: 19; }
+}
+
+/* Checkout progress: Bag > Details > Done (50% at checkout, 100% on confirmation).
+   Step names sit at their point on the bar (start / middle / end); the % label sits under the end of the fill. */
+.checkout-progress { max-width: 640px; margin: 0 0 1.75rem; }
+.checkout-progress-steps { display: grid; grid-template-columns: repeat(3, 1fr); margin: 0 0 .5rem; padding: 0; list-style: none; font-size: .78rem; color: var(--faint); }
+.checkout-progress-steps li:nth-child(2) { justify-self: center; }
+.checkout-progress-steps li:nth-child(3) { justify-self: end; }
+.checkout-progress-steps li.is-done { color: var(--ink); }
+.checkout-progress-steps li.is-done::before { content: "✓ "; color: var(--rose-deep); }
+.checkout-progress-steps li.is-current { color: var(--rose-deep); font-weight: 700; }
+.checkout-progress-track { height: 6px; border-radius: 999px; background: var(--sand); overflow: hidden; }
+.checkout-progress-track span { display: block; width: var(--pct); height: 100%; border-radius: inherit; background: var(--rose-deep); transition: width .6s var(--ease); }
+.checkout-progress-pct { display: block; width: max-content; margin: .45rem 0 0 var(--pct); transform: translateX(-50%); color: var(--rose-deep); font-size: .76rem; white-space: nowrap; }
+.checkout-progress-pct.is-end { transform: translateX(-100%); }
+
+/* Required-field star */
+.req { margin-left: .2rem; color: var(--rose-deep); font-weight: 700; }
+.required-note { margin: 0 0 .6rem; color: var(--muted); font-size: .76rem; }
+
+/* Shop filters (desktop/laptop, wider than the phone drawer): the panel stays beside the products while
+   scrolling and never grows past the window; long filter lists scroll inside it, "Clear all" stays on top. */
+@media (min-width: 901px) {
+  .filters {
+    top: 1.5rem;
+    max-height: calc(100vh - 3rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+  }
+  .filter-top {
+    position: sticky; top: -1.25rem; z-index: 1;
+    margin: -1.25rem -1.25rem 1rem; padding: 1.25rem 1.25rem .6rem;
+    background: #fffdf9; border-bottom: 1px solid var(--line);
+  }
+}
+
+@media (max-width: 900px) {
+  /* Filter drawer close (×): the toggle-button rule made it inline-flex, which pushed the × to the circle's edge */
+  .filters .icon-btn.mobile-filter-button { display: inline-grid; place-items: center; }
+}
+
+/* Error messages use the error colour, never the success green */
+.form-status.is-error { border-color: rgba(168, 77, 88, 0.3); color: #8f3b47; background: #fbeef0; }
+
+/* Oil and gift-set photos (uploaded in Admin → Inventory → Edit) */
+.item-photo { display: block; width: 100%; aspect-ratio: 4 / 3; margin-bottom: 1rem; border-radius: var(--radius-sm); object-fit: cover; }
+.gift-card-art.has-photo { padding: 0; overflow: hidden; }
+.gift-card-art.has-photo img { width: 100%; height: 100%; object-fit: cover; }
+
+/* Sale prices stay on one line ("From ৳270 ৳216" used to wrap in narrow cards) */
+.product-price { white-space: nowrap; }
+/* Slim, tinted scrollbars inside the filter panel and product pop-up (Windows drew thick grey ones with arrows) */
+.filters, .product-modal { scrollbar-width: thin; scrollbar-color: var(--sand-deep) transparent; }
+
+/* Hero slideshow arrows: symmetric either side of the bottle */
+.hero-arrow {
+  /* centred with calc, not transform: the shared icon-button hover lift sets transform and used to drop the hovered arrow 24px */
+  position: absolute; z-index: 3; top: calc(50% - 24px);
+  width: 48px; height: 48px; font-size: 1.6rem; line-height: 1; color: var(--rose-deep);
+  background: rgba(255, 253, 249, 0.86); box-shadow: var(--shadow-sm);
+}
+.hero-arrow--prev { left: 0.5rem; }
+.hero-arrow--next { right: 0.5rem; }
+.hero-arrow:hover { background: var(--paper); }
+
+/* Floating bag: sits centred above the chat button while the bag has items (hidden on checkout) */
+.floating-bag {
+  --chat: 62px; --size: 52px;
+  position: fixed; z-index: 2500;
+  right: calc(max(1rem, env(safe-area-inset-right)) + (var(--chat) - var(--size)) / 2);
+  bottom: calc(max(1rem, env(safe-area-inset-bottom)) + var(--chat) + 0.75rem);
+  display: grid; width: var(--size); height: var(--size); place-items: center;
+  border: 1px solid var(--line); border-radius: 50%;
+  color: var(--rose-deep); background: var(--paper); box-shadow: var(--shadow-md);
+  cursor: pointer;
+  animation: bag-bump 0.6s var(--ease);
+}
+.floating-bag svg { width: 23px; height: 23px; }
+.floating-bag .cart-count { top: -4px; right: -4px; }
+.floating-bag:hover { color: #fff; background: var(--rose-deep); }
+/* a soft ring every few seconds: "you still have something in your bag" */
+.floating-bag::after {
+  position: absolute; inset: -1px; border-radius: 50%; content: "";
+  box-shadow: 0 0 0 0 rgba(159, 95, 115, 0.45);
+  animation: bag-ring 3.2s ease-out 1s infinite;
+}
+@keyframes bag-bump { 0% { transform: scale(0.6); opacity: 0; } 60% { transform: scale(1.12); opacity: 1; } 100% { transform: scale(1); } }
+@keyframes bag-ring { 0% { box-shadow: 0 0 0 0 rgba(159, 95, 115, 0.45); } 45%, 100% { box-shadow: 0 0 0 14px rgba(159, 95, 115, 0); } }
+@media (max-width: 680px) { .floating-bag { --chat: 56px; --size: 48px; } }
+@media (prefers-reduced-motion: reduce) { .floating-bag, .floating-bag::after { animation: none; } }

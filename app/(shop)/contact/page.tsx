@@ -11,7 +11,7 @@ const FAQ = [
   ["How long does engraving take?", "Custom engraving generally adds one business day after spelling and placement are confirmed."],
   ["How do I pay?", "Cash on Delivery: no advance payment, just pay the rider when your order arrives."],
   ["Do you sell full bottles?", "Our shop sells decants, perfume oils and gift sets. Message us if you are looking for a full bottle and we will tell you what we can offer."],
-  ["Can you recommend a scent?", "Absolutely. Tell us two scents you enjoy—or the mood you want—and we will help you shortlist gently."],
+  ["Can you recommend a scent?", "Absolutely. Tell us two scents you enjoy, or the mood you want, and we will help you shortlist gently."],
 ];
 
 export default function ContactPage() {

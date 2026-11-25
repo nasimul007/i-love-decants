@@ -8,7 +8,7 @@ import { useUI } from "@/components/providers/UIProvider";
 import { useCart, useCatalog, useCurrentCustomer } from "@/hooks/useServices";
 import { useApi } from "@/lib/api/client";
 import { initials, money } from "@/lib/format";
-import { priceFrom } from "@/lib/volumes";
+import { priceFrom, searchText } from "@/lib/volumes";
 import { NoticeBar } from "./NoticeBar";
 
 const NAV = [
@@ -38,7 +38,7 @@ function SearchBox() {
     const q = query.trim().toLowerCase();
     if (!q) return [];
     return products
-      .filter((p) => [p.name, p.family, p.notes, p.description, p.top, p.heart, p.base].join(" ").toLowerCase().includes(q))
+      .filter((p) => searchText(p).includes(q))
       .slice(0, 5);
   }, [products, query]);
 
@@ -78,7 +78,7 @@ function SearchBox() {
           <Link key={p.id} className="search-result" role="option" aria-selected={false} href={`/products?product=${p.id}`} onClick={() => { setOpen(false); setQuery(""); }}>
             <span className="search-swatch" style={{ ["--swatch" as string]: p.pale }} />
             <span><strong>{p.name}</strong><small>{p.family} · {p.notes}</small></span>
-            <span className="search-result-price">from {money(priceFrom(p))}</span>
+            <span className="search-result-price">From {money(priceFrom(p))}</span>
           </Link>
         ))}
       </div>

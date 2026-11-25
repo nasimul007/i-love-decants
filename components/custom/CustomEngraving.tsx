@@ -17,7 +17,7 @@ export function CustomEngraving() {
         <BottleVisual
           id="customBottleVisual" shape={LOOK.shape} liquid={LOOK.liquid} ink={LOOK.ink} className="size-50"
           title="Your words here"
-          subtitle="50 ml or 100 ml"
+          subtitle="50 ml bottle"
         />
       </div>
 

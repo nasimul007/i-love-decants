@@ -5,8 +5,8 @@ import { CustomEngraving } from "@/components/custom/CustomEngraving";
 export const metadata: Metadata = { title: "Custom Design — I Love Decants", description: "Personalise a perfume bottle with a name, date or message. Custom engraving from I Love Decants, Dhaka." };
 
 const STEPS = [
-  ["Choose", "Select a 50 ml or 100 ml bottle and the fragrance you love."],
-  ["Personalise", "Share up to 24 characters—a name, date, initials, or a short message."],
+  ["Choose", "Select a 50 ml bottle and the fragrance you love."],
+  ["Personalise", "Share up to 24 characters: a name, date, initials, or a short message."],
   ["Review", "We confirm spelling and placement before the final engraving begins."],
   ["Receive", "Your finished bottle arrives in calm, protective presentation packaging."],
 ];
@@ -17,7 +17,7 @@ export default function CustomPage() {
       <PageHero
         eyebrow="Custom design"
         title="Make the bottle quietly yours."
-        lead="A name, a date, a private phrase—engraved with care on selected 50 ml and 100 ml bottles. Simple to request, easy to review, made without fuss."
+        lead="A name, a date, a private phrase, engraved with care on selected 50 ml bottles. Simple to request, easy to review, made without fuss."
         noteTitle="One extra day."
         note="Custom engraving usually adds only one business day before your order is prepared."
         orb="rgba(215,228,215,.85)"

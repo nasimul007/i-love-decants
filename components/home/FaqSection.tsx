@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useApi } from "@/lib/api/client";
 import type { PublicFaq } from "@/lib/api/admin";
 
-/** Collapsible FAQ at the bottom of the homepage. Questions are managed in Admin → Notice, categories & FAQ. Hidden when empty. */
+/** Collapsible FAQ at the bottom of the homepage. Questions are managed in Admin → Home page & content. Hidden when empty. */
 export function FaqSection() {
   const { data } = useApi<PublicFaq[]>("/api/faq");
   const [open, setOpen] = useState<number | null>(null);

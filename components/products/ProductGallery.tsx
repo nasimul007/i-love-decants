@@ -9,7 +9,7 @@ export function ProductGallery({ product }: { product: Product }) {
   const ids = product.images ?? [];
   const [index, setIndex] = useState(0);
   const [viewer, setViewer] = useState(false);
-  const shots = ids.map((id, i) => ({ src: `/api/images/${id}`, alt: `${product.name} — photo ${i + 1} of ${ids.length}` }));
+  const shots = ids.map((id, i) => ({ src: `/api/images/${id}`, alt: `${product.name}, photo ${i + 1} of ${ids.length}` }));
   const current = shots[Math.min(index, shots.length - 1)];
   if (!current) return null;
 

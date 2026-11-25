@@ -18,7 +18,7 @@ export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL
   ?? (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "http://localhost:3000");
 
 /** Default volumes on sale (ml). The admin can add or remove volumes in Admin → Perfumes & prices. */
-export const DEFAULT_VOLUMES: readonly number[] = [3, 6, 9, 15, 50, 100];
+export const DEFAULT_VOLUMES: readonly number[] = [3, 6, 9, 15, 50]; // the shop sells up to 50 ml
 
 /** Default spray counts per volume (shown as "45+ sprays"). The admin can override these in Admin → Perfumes & prices. */
 export const DEFAULT_SPRAYS: Readonly<Record<number, number>> = {
@@ -27,7 +27,6 @@ export const DEFAULT_SPRAYS: Readonly<Record<number, number>> = {
   9: 135,
   15: 225,
   50: 550,
-  100: 1100,
 };
 
 /** Full bottle section defaults (OFF until the admin switches it on and sets a price). */

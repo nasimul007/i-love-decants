@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { DEFAULT_SPRAYS, DEFAULT_VOLUMES } from "@/lib/config";
 import { GIFTS, OILS, PRODUCTS } from "@/lib/data/catalog";
 import { HttpError } from "./http";
-import { loadCatalog } from "./catalog";
+import { itemImages, loadCatalog } from "./catalog";
 import type { Prisma } from "@/lib/generated/prisma/client";
 import type { CatalogOverrides } from "@/types";
 
@@ -26,6 +26,7 @@ const rangeText = (vs: number[]) => (vs.length ? (vs.length === 1 ? `${vs[0]} ml
 const sameAsDefault = (vs: number[]) => vs.length === DEFAULT_VOLUMES.length && vs.every((v, i) => v === DEFAULT_VOLUMES[i]);
 
 export async function getOverrides(tx: Tx | typeof db = db): Promise<CatalogOverrides> {
+  const photos = await itemImages(tx);
   const [vols, fbRow, products, oils, gifts] = await Promise.all([
     tx.volumeSetting.findMany({ where: { onSale: true }, orderBy: { volumeMl: "asc" } }),
     tx.fullBottleSetting.findUnique({ where: { id: 1 } }),
@@ -59,8 +60,8 @@ export async function getOverrides(tx: Tx | typeof db = db): Promise<CatalogOver
     fullBottle: undefined, // the Full bottle option is retired: never reported to the admin
     items: {
       products: products.map(({ id, name, family }) => ({ id, name, family })),
-      oils: oils.map(({ id, name, price }) => ({ id, name, price })).sort((a, b) => a.name.localeCompare(b.name)),
-      gifts: gifts.map(({ id, name, price, description, accent }) => ({ id, name, price, description, accent })),
+      oils: oils.map(({ id, name, price }) => ({ id, name, price, images: photos[id] ?? [] })).sort((a, b) => a.name.localeCompare(b.name)),
+      gifts: gifts.map(({ id, name, price, description, accent }) => ({ id, name, price, description, accent, images: photos[id] ?? [] })),
     },
   };
 }

@@ -16,7 +16,8 @@ type Draft = Omit<ProductDetails, "id" | "images" | "keyNotes"> & { keyNotes: st
 const draftOf = ({ id: _i, images: _img, keyNotes, ...rest }: ProductDetails): Draft => ({ ...rest, keyNotes: keyNotes.join(", ") });
 
 /** Photos of one perfume: upload several, choose the main one, re-order, delete. Stored in the database. */
-function PhotoManager({ p }: { p: ProductDetails }) {
+/** Photos of a perfume (`owner` = its number id) or an oil / gift set (`owner` = "oil-…" / "gift-…"). */
+function PhotoManager({ p }: { p: { id: number | string; name: string; images: number[] } }) {
   const { showToast } = useUI();
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
@@ -39,7 +40,7 @@ function PhotoManager({ p }: { p: ProductDetails }) {
 
   return (
     <div className="admin-field">
-      <label>Photos <small style={{ color: "var(--muted)", fontWeight: 500 }}>— the first one is the main photo (up to 8). Without photos, customers see the drawn bottle.</small></label>
+      <label>Photos <small style={{ color: "var(--muted)", fontWeight: 500 }}>— the first one is the main photo (up to 8). Without photos, customers see the drawn artwork.</small></label>
       <div style={{ display: "flex", flexWrap: "wrap", gap: ".7rem", marginTop: ".4rem" }}>
         {p.images.map((id, i) => (
           <figure key={id} style={{ margin: 0, width: 112, display: "grid", gap: ".3rem", justifyItems: "center" }}>
@@ -188,7 +189,7 @@ export function PerfumeEditor({ p, onClose }: { p: ProductDetails; onClose: () =
 }
 
 /** Oils and gift sets: name, price, and (gift sets) the description customers read. */
-export function ItemEditor({ item, onClose }: { item: { id: string; name: string; price: number; description?: string; accent?: string }; onClose: () => void }) {
+export function ItemEditor({ item, onClose }: { item: { id: string; name: string; price: number; description?: string; accent?: string; images?: number[] }; onClose: () => void }) {
   const { showToast } = useUI();
   const gift = item.description !== undefined;
   const [d, setD] = useState({ name: item.name, price: String(item.price), description: item.description ?? "", accent: item.accent ?? "" });
@@ -201,6 +202,7 @@ export function ItemEditor({ item, onClose }: { item: { id: string; name: string
   };
   return (
     <div style={{ display: "grid", gap: ".7rem" }}>
+      <PhotoManager p={{ id: item.id, name: item.name, images: item.images ?? [] }} />
       <div style={grid}>
         <div className="admin-field"><label htmlFor={`ie-${item.id}-name`}>Name</label><input id={`ie-${item.id}-name`} type="text" maxLength={62} style={inputStyle} value={d.name} onChange={(e) => { setD({ ...d, name: e.target.value }); setMsg(""); }} /></div>
         <div className="admin-field"><label htmlFor={`ie-${item.id}-price`}>Price (৳)</label><input id={`ie-${item.id}-price`} type="number" inputMode="numeric" min={0} step={1} style={inputStyle} value={d.price} onChange={(e) => { setD({ ...d, price: e.target.value }); setMsg(""); }} /></div>

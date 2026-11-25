@@ -33,7 +33,7 @@ The brief came from *Perfume Parameters for I Love Decants (Level 1 Website)*; l
 
 **Things the client still has to do in the admin** (after deploy)
 - Fill in Brand, Strength, Audience and Lasting for each perfume (*Inventory → Edit*).
-- Move perfumes from the old categories (Woody, Warm, Gourmand, Aromatic, Citrus, Musky) into the five families, then delete the old ones (*Notice, categories & FAQ*).
+- Move perfumes from the old categories (Woody, Warm, Gourmand, Aromatic, Citrus, Musky) into the five families, then delete the old ones (*Home page & content*, formerly "Notice, categories & FAQ").
 - Set the sizes on sale. The brief lists 3/6/9/15/30/50 ml; the live site uses 3–100 ml (*Inventory → Sizes on sale*).
 
 **Known follow-ups (not done; they need a decision or more work)** — details in section 9 and 7b
@@ -302,7 +302,7 @@ Everything that tab did is now in **Inventory**:
 
 ## 9. For the client / still open
 - **Fill in the parameters:** fill in Brand, Strength, Audience and Lasting for each perfume (*Admin → Inventory → Edit*).
-- **Merge old categories:** move perfumes from the old categories (Woody, Warm, Gourmand, Aromatic, Citrus, Musky) into the five families, then delete the old ones (*Notice, categories & FAQ*).
+- **Merge old categories:** move perfumes from the old categories (Woody, Warm, Gourmand, Aromatic, Citrus, Musky) into the five families, then delete the old ones (*Home page & content*, formerly "Notice, categories & FAQ").
 - **Sizes:** the brief lists 3/6/9/15/30/50 ml. The live site uses 3–100 ml, so change it in *Admin → Inventory → Sizes on sale*.
 - **Engraving copy:** it still says 50 and 100 ml bottles. Keep a 100 ml size or update the copy.
 - **Full-bottle returns policy:** *Delivery & Returns* still has a "Full bottles" returns row. Keep it or remove it, depending on the business.

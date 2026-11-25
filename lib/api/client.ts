@@ -24,8 +24,13 @@ export async function refresh(url: string): Promise<void> {
   if (inflight.has(url)) return;
   inflight.add(url);
   try {
-    const res = await fetch(url, { credentials: "same-origin", cache: "no-store" });
-    if (res.ok) mutate(url, await res.json());
+    // A brief database hiccup (5xx) used to leave the shop showing "0 scents" until a reload: retry twice first.
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const res = await fetch(url, { credentials: "same-origin", cache: "no-store" });
+      if (res.ok) { mutate(url, await res.json()); return; }
+      if (res.status < 500) return; // 4xx (e.g. signed out) won't change on a retry
+      await new Promise((r) => setTimeout(r, 500 * (attempt + 1)));
+    }
   } catch {
     /* offline: keep whatever is cached */
   } finally {

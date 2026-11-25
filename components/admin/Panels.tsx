@@ -48,7 +48,7 @@ export function OverviewPanel() {
                 <strong style={{ display: "block", fontSize: ".88rem" }}>{o.id}</strong>
                 <small style={{ color: "var(--muted)", fontSize: ".75rem" }}>{o.customer.name || "—"} · {o.transaction.type || "—"} · {formatDateTime(o.placedAt)}</small>
               </div>
-              <button className="admin-btn" type="button" style={{ fontSize: ".75rem" }} onClick={() => setViewingId(o.id)}>Details</button>
+              <button className="admin-btn" type="button" style={{ fontSize: ".75rem" }} onClick={() => setViewingId(o.id)}>View details</button>
               <select aria-label={`Status of ${o.id}`} value={o.status} onChange={(e) => void adminApi.setOrderStatus(o.id, e.target.value as Order["status"])} style={{ ...inputStyle, width: "auto", minHeight: 36, padding: ".3rem .6rem", fontSize: ".78rem", textTransform: "capitalize" }}>
                 {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>

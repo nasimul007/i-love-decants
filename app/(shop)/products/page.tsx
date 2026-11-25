@@ -38,7 +38,7 @@ export default function ProductsPage() {
       <PageHero
         eyebrow="The scent shelf"
         title="Everything in one place."
-        lead="Perfume decants, perfume oils, and curated gift sets — browse them all, filter by scent or size, and pick exactly what fits you."
+        lead="Perfume decants, perfume oils, and curated gift sets. Browse them all, filter by scent or size, and pick exactly what fits you."
         noteTitle="Start with 3 ml."
         note="Wear it across several days, in your own space, before deciding whether you want more."
         orb="rgba(226,233,225,.72)"

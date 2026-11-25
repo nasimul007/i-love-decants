@@ -14,17 +14,17 @@ const BASICS: [string, ReactNode][] = [
 const CARE = [
   ["Keep it cool", "Store away from direct sunlight, heat, and steamy bathrooms."],
   ["Keep it upright", "Standing bottles reduce air contact and help the scent stay true."],
-  ["Test on skin", "Fragrance shifts slightly with your skin's chemistry — always worth a proper wear."],
+  ["Test on skin", "Fragrance shifts slightly with your skin's chemistry, so it is always worth a proper wear."],
   ["Ask us anything", "Unsure between two scents? Tell us what you enjoy and we will help you choose."],
 ];
 
 export default function HowDecantsWorkPage() {
   return (
     <RouteView>
-      <PageHero eyebrow="How decants work" title="Try more, commit less." lead="A decant is simply a small, genuine portion of a perfume — poured from an authentic bottle into a smaller one." noteTitle="Not a sample spray." note="Decants are the same perfume, just measured into an amount you will actually use." orb="rgba(238,234,243,.8)" />
+      <PageHero eyebrow="How decants work" title="Try more, commit less." lead="A decant is simply a small, genuine portion of a perfume, poured from an authentic bottle into a smaller one." noteTitle="Not a sample spray." note="Decants are the same perfume, just measured into an amount you will actually use." orb="rgba(238,234,243,.8)" />
       <section className="section welcome-band" aria-labelledby="decantWhatTitle">
         <div className="container">
-          <SectionHeading eyebrow="The basics" title="Same perfume, smaller bottle." id="decantWhatTitle"><p>Nothing is diluted or reformulated — only the amount changes.</p></SectionHeading>
+          <SectionHeading eyebrow="The basics" title="Same perfume, smaller bottle." id="decantWhatTitle"><p>Nothing is diluted or reformulated. Only the amount changes.</p></SectionHeading>
           <div className="faq-grid">{BASICS.map(([h, p]) => <article className="faq-card" key={h}><h3>{h}</h3><p>{p}</p></article>)}</div>
         </div>
       </section>
