@@ -239,9 +239,41 @@ function FaqEditor() {
   );
 }
 
+/** Which perfumes the home page shows (hero slideshow + "Find your easy reach"). */
+function HomePerfumes() {
+  const products = useAdminProducts();
+  const { showToast } = useUI();
+  const on = products.filter((p) => p.featured).length;
+  return (
+    <Panel title="Home page perfumes" subtitle={`Switch on the perfumes shown in the home page slideshow and the "Find your easy reach" row. ${on} on now${on ? "" : " (with none on, the home page shows all perfumes)"}. Hidden or sold-out perfumes are left out automatically.`}>
+      <table className="admin-table">
+        <thead><tr><th>Perfume</th><th>Family</th><th>On the home page</th></tr></thead>
+        <tbody>
+          {!products.length && emptyRow(3, "No perfumes yet.")}
+          {products.map((p) => (
+            <tr key={p.id}>
+              <td><strong style={{ fontSize: ".9rem" }}>{p.name}</strong></td>
+              <td style={{ color: "var(--muted)", fontSize: ".82rem" }}>{p.family}</td>
+              <td>
+                <label style={{ display: "inline-flex", alignItems: "center", gap: ".5rem", cursor: "pointer", minHeight: 44 }}>
+                  <input type="checkbox" checked={p.featured} style={{ width: 20, height: 20, accentColor: "var(--rose-deep)" }}
+                    onChange={async (e) => { const res = await adminApi.setFeatured(p.id, e.target.checked); showToast(res.ok ? `${p.name} ${e.target.checked ? "added to" : "removed from"} the home page.` : res.error ?? "Could not save."); }} />
+                  <span className={`pill ${p.featured ? "live" : "off"}`}>{p.featured ? "Shown" : "Not shown"}</span>
+                </label>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </Panel>
+  );
+}
+
 export function ContentPanel() {
   return (
     <>
+      <HomePerfumes />
+      <div style={{ height: "1.25rem" }} />
       <NoticeEditor />
       <div style={{ height: "1.25rem" }} />
       <CategoryEditor />

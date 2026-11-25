@@ -149,7 +149,7 @@ export const useCoupons = () => useList<Coupon>(ADMIN.coupons);
 export const useSales = () => useList<AdminSale>(ADMIN.sales);
 export const useAdminNotices = () => useList<AdminNotice>(ADMIN.notice);
 export const useAdminCategories = () => useList<PublicCategory>(ADMIN.categories);
-export const useAdminProducts = () => useList<{ id: number; name: string; family: string }>(ADMIN.products);
+export const useAdminProducts = () => useList<{ id: number; name: string; family: string; featured: boolean }>(ADMIN.products);
 export const useProductDetails = () => useList<ProductDetails>(ADMIN.productDetails);
 export const useAdminFaqs = () => useList<AdminFaq>(ADMIN.faq);
 export const useManagers = () => useList<PublicManager>(ADMIN.managers);

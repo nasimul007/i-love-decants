@@ -4499,3 +4499,14 @@ html.touch-mode .cursor-layer{display:none!important}
 .product-price { white-space: nowrap; }
 /* Slim, tinted scrollbars inside the filter panel and product pop-up (Windows drew thick grey ones with arrows) */
 .filters, .product-modal { scrollbar-width: thin; scrollbar-color: var(--sand-deep) transparent; }
+
+/* Hero slideshow arrows: symmetric either side of the bottle */
+.hero-arrow {
+  /* centred with calc, not transform: the shared icon-button hover lift sets transform and used to drop the hovered arrow 24px */
+  position: absolute; z-index: 3; top: calc(50% - 24px);
+  width: 48px; height: 48px; font-size: 1.6rem; line-height: 1; color: var(--rose-deep);
+  background: rgba(255, 253, 249, 0.86); box-shadow: var(--shadow-sm);
+}
+.hero-arrow--prev { left: 0.5rem; }
+.hero-arrow--next { right: 0.5rem; }
+.hero-arrow:hover { background: var(--paper); }

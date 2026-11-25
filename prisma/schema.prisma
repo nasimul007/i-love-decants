@@ -32,6 +32,8 @@ model Product {
   strength    String           @default("")
   lasting     String           @default("")
   keyNotes    String[]         @default([])
+  /// Shown in the home page hero slideshow and the "Find your easy reach" row (Admin → Home page & content).
+  featured    Boolean          @default(false)
   variants    ProductVariant[]
   inventory   InventoryItem?
   images      ProductImage[]

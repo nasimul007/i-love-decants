@@ -28,6 +28,8 @@ export interface Product {
   /** Wear-time range in hours, e.g. "8–10". */
   lasting?: string;
   keyNotes?: string[];
+  /** Shown in the home page hero slideshow and "Find your easy reach" row. */
+  featured?: boolean;
   liquid: string;
   pale: string;
   ink: string;
