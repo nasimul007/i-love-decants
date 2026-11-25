@@ -4420,3 +4420,22 @@ html.touch-mode .cursor-layer{display:none!important}
   font-size: .66rem; font-weight: 800; letter-spacing: .04em;
 }
 .product-price:has(.was-price), .modal-price:has(.was-price), .gift-price:has(.was-price) { color: var(--deal); }
+
+/* Usability pass: the 5 button states (default/hover already existed) */
+.btn:active:not(:disabled) { transform: scale(0.98); }
+.btn:disabled, .admin-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn-loading:disabled { opacity: 0.85; cursor: progress; } /* loading keeps its look (wins over plain disabled) */
+
+/* Proof next to the Add button in the product pop-up */
+.modal-trust { margin: 0.7rem 0 0; color: var(--muted); font-size: 0.74rem; }
+
+@media (max-width: 680px) {
+  /* Phones: the price + Add button stay pinned at the bottom of the pop-up while reading notes */
+  .modal-copy { display: flex; flex-direction: column; }
+  .modal-purchase {
+    order: 20; position: sticky; bottom: 0; z-index: 3;
+    margin: 1rem -1.25rem 0; padding: 0.75rem 1.25rem;
+    background: var(--paper); box-shadow: 0 -10px 24px rgba(91, 60, 68, 0.08);
+  }
+  .modal-trust { order: 19; }
+}

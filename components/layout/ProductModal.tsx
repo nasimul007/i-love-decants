@@ -82,6 +82,7 @@ export function ProductModal() {
                 <span className="modal-price">{selected !== "full" && product.wasPrices?.[selected] !== undefined && <s className="was-price">{money(product.wasPrices[selected])}</s>}{money(selectedPrice)}</span>
                 <button className="btn btn-primary" type="button" aria-label={`Add ${product.name} to cart`} onClick={add}><span>Add<span className="modal-add-name"> {product.name}</span> to cart</span></button>
               </div>
+              <p className="modal-trust">Cash on delivery · 1–2 day delivery inside Dhaka · Poured from original bottles</p>
               {product.description && <p className="modal-description">{product.description}</p>}
               {factsOf(product).length > 0 && (
                 <dl className="notes-pyramid" aria-label="Perfume details">

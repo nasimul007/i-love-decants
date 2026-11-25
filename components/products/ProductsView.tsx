@@ -200,7 +200,7 @@ export function ProductsView() {
         <div style={{ marginBottom: "1.5rem" }}>
           <span className="eyebrow">Roll-on and ready</span>
           <h2 style={{ fontFamily: "var(--serif)", fontSize: "clamp(1.8rem,4vw,2.6rem)", fontWeight: 600, letterSpacing: "-.04em", margin: ".35rem 0 .6rem" }}>Perfume Oils.</h2>
-          <p style={{ color: "var(--muted)", maxWidth: "48ch" }}>Alcohol-free, pocket-ready roll-ons — smooth to apply, easy to layer, made for a close and lasting scent ritual.</p>
+          <p style={{ color: "var(--muted)", maxWidth: "48ch" }}>Alcohol-free, pocket-ready roll-ons: smooth to apply, easy to layer, made for a close and lasting scent ritual.</p>
         </div>
         <div className="oil-grid">
           {oils.map((oil) => (

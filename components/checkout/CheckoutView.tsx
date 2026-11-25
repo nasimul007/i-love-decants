@@ -7,7 +7,7 @@ import type { FormEvent } from "react";
 import { useCart, useCurrentCustomer } from "@/hooks/useServices";
 import { couponService } from "@/lib/services/coupons";
 import { ordersApi } from "@/lib/api/orders";
-import { BULK_DISCOUNT, bulkDiscountFor, deliveryChargeFor } from "@/lib/config";
+import { BULK_DISCOUNT, DELIVERY_CHARGE, bulkDiscountFor, deliveryChargeFor } from "@/lib/config";
 import { BD_CITIES } from "@/lib/data/cities";
 import { CitySelect } from "./CitySelect";
 import { isBdPhone, isPersonName, NAME_ERROR } from "@/lib/validators";
@@ -60,7 +60,7 @@ export function CheckoutView() {
     const found: Coupon = { code: res.data.code, type: res.data.type, value: res.data.value, active: true };
     setCoupon(found);
     const label = found.type === "percent" ? `${found.value}% off` : `৳${found.value} off`;
-    setCouponMsg({ text: `✓ ${code} applied — ${label} (−${money(res.data.discount)}). One use per phone number.`, ok: true });
+    setCouponMsg({ text: `✓ ${code} applied: ${label} (−${money(res.data.discount)}). One use per phone number.`, ok: true });
   };
 
   const submit = async (e: FormEvent) => {
@@ -114,8 +114,8 @@ export function CheckoutView() {
           <span className="eyebrow">Step 1</span>
           <h2>Customer information</h2>
           <div className="form-grid">
-            <div className="field"><label htmlFor="checkoutName">Full name</label><input id="checkoutName" type="text" placeholder="Your full name" {...text("fullName")} />{err("fullName")}</div>
-            <div className="field"><label htmlFor="checkoutPhone">Phone number</label><input id="checkoutPhone" type="tel" inputMode="tel" placeholder="01XXXXXXXXX" {...text("phone")} />{err("phone")}</div>
+            <div className="field"><label htmlFor="checkoutName">Full name</label><input id="checkoutName" autoComplete="name" type="text" placeholder="Your full name" {...text("fullName")} />{err("fullName")}</div>
+            <div className="field"><label htmlFor="checkoutPhone">Phone number</label><input id="checkoutPhone" autoComplete="tel" type="tel" inputMode="tel" placeholder="01XXXXXXXXX" {...text("phone")} />{err("phone")}</div>
           </div>
         </div>
 
@@ -123,15 +123,15 @@ export function CheckoutView() {
           <span className="eyebrow">Step 2</span>
           <h2>Delivery details</h2>
           <div className="form-grid">
-            <div className="field full"><label htmlFor="checkoutAddress">Full delivery address</label><textarea id="checkoutAddress" placeholder="House, road, area, landmark…" {...text("address")} />{err("address")}</div>
+            <div className="field full"><label htmlFor="checkoutAddress">Full delivery address</label><textarea id="checkoutAddress" autoComplete="street-address" placeholder="House, road, area, landmark…" {...text("address")} />{err("address")}</div>
             <div className="field">
               <label htmlFor="checkoutCity">City</label>
               <CitySelect id="checkoutCity" value={form.city} options={BD_CITIES} onChange={(city) => setForm({ ...form, city })} />
               {err("city")}
             </div>
             <div className="field">
-              <label>Delivery charge</label>
-              <input type="text" readOnly value={form.city ? `${money(deliveryChargeFor(form.city))} · ${deliveryChargeFor(form.city) === 80 ? "Inside Dhaka city" : "Outside Dhaka"}` : "Choose a city to see the charge"} />
+              <label htmlFor="deliveryCharge">Delivery charge</label>
+              <input id="deliveryCharge" type="text" readOnly value={form.city ? `${money(deliveryChargeFor(form.city))} · ${deliveryChargeFor(form.city) === DELIVERY_CHARGE.insideDhaka ? "Inside Dhaka city" : "Outside Dhaka"}` : "Choose a city to see the charge"} />
             </div>
             <div className="field full"><label htmlFor="deliveryNote">Delivery notes <small>(optional)</small></label><textarea id="deliveryNote" placeholder="Preferred time, landmark, gift note, or anything helpful…" {...text("notes")} /></div>
           </div>
@@ -169,7 +169,7 @@ export function CheckoutView() {
         </div>
 
         <button className="btn btn-primary btn-loading" type="submit" disabled={submitted} aria-busy={submitted}>
-          {submitted ? <><span className="btn-spinner" aria-hidden="true" />Placing your order…</> : "Confirm Order"}
+          {submitted ? <><span className="btn-spinner" aria-hidden="true" />Placing your order…</> : "Place order, pay on delivery"}
         </button>
         {submitted && <p className="placing-note" role="status">Please wait and don’t close this page. This can take a few seconds.</p>}
         <div className={`form-status${formError ? " is-visible" : ""}`} role="status">{formError}</div>

@@ -77,7 +77,7 @@ function OrderCard({ order, open, onToggle }: { order: Order; open: boolean; onT
               <p>{order.customer.name}<br />{order.customer.phone}<br />{[order.delivery.address, order.delivery.city].filter(Boolean).join(", ")}</p>
               {order.delivery.notes && <p className="acct-note">Note: {order.delivery.notes}</p>}
               <h4>Payment</h4>
-              <p>{order.transaction.method === "cod" ? "Cash on delivery — pay the rider when it arrives." : `${order.transaction.type} · ${order.transaction.provider}`}</p>
+              <p>{order.transaction.method === "cod" ? "Cash on delivery: pay the rider when it arrives." : `${order.transaction.type} · ${order.transaction.provider}`}</p>
             </div>
           </div>
         </div>

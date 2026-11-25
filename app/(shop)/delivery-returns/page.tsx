@@ -12,7 +12,7 @@ const DELIVERY = [
   ["Order confirmation", "Payment is Cash on Delivery: no advance payment, just pay the rider when your order arrives."],
 ];
 const RETURNS = [
-  ["Decants", "Because they are opened and filled to order, decants cannot be returned once delivered — please ask us anything before you buy."],
+  ["Decants", "Because they are opened and filled to order, decants cannot be returned once delivered. Please ask us anything before you buy."],
   ["Full bottles", "Unopened 50 ml and 100 ml bottles can be exchanged within 3 days if the seal is intact."],
   ["Custom engraving", "Personalised bottles are made to order and are not eligible for return unless a mistake was ours."],
   ["Damaged on arrival", "Message us with a photo within 24 hours of delivery and we will make it right."],
