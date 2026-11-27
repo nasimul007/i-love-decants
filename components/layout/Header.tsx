@@ -123,7 +123,7 @@ export function Header() {
             {NAV.map((n, i) => (
               <Link key={n.href} className="nav-link" style={{ "--i": i } as CSSProperties} href={n.href} aria-current={pathname === n.href ? "page" : undefined}><NavItem {...n} /></Link>
             ))}
-            {hasFaq && <Link className="nav-link" style={{ "--i": NAV.length } as CSSProperties} href="/#faq" onClick={() => setMenuOpen(false)}><NavItem label="FAQ" note="Quick answers" Icon={HelpIcon} /></Link>}
+            {hasFaq && <Link className="nav-link" style={{ "--i": NAV.length } as CSSProperties} href="/faq" aria-current={pathname === "/faq" ? "page" : undefined}><NavItem label="FAQ" note="Quick answers" Icon={HelpIcon} /></Link>}
             <div className="nav-extra" style={{ "--i": NAV.length + 1 } as CSSProperties}>
               <a className="nav-quick is-wa" href={CONFIG.whatsapp} target="_blank" rel="noreferrer"><WhatsAppIcon width={18} height={18} />WhatsApp us</a>
               <button className="nav-quick" type="button" onClick={() => { setMenuOpen(false); if (customer) router.push("/account"); else openAuth("login"); }}><UserIcon width={18} height={18} />{customer ? "My account" : "Sign in"}</button>

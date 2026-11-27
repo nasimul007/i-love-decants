@@ -141,3 +141,12 @@ Second migration: `prisma/migrations/20261128120000_coupon_modes_reviews`. It ad
 - **Visual fixes after review:** a masonry layout for review cards (no holes), and shorter coupon option names (they no longer get cut off).
 - **Crawl:** 26 page views (13 pages, desktop and phone): no errors, no sideways scrolling.
 - **Splash measured:** it clears about 1.8 s after the page starts loading (it was about 4.7 s).
+
+## FAQ page (27 Nov 2026)
+
+- **New page `/faq`** with the same questions as the home page FAQ (managed in Admin → Home page & content → FAQ). It has its own title (“FAQ — I Love Decants”) and description. The first answer is open when the page loads, and below the list are **Ask on WhatsApp**, **Other ways to reach us** and **How decants work**.
+- **The home page FAQ stays** as it was, plus an **Open the FAQ page** button.
+- **Links:** the header **FAQ** link now opens `/faq` (highlighted in the phone menu when you're on it). FAQ is in the footer's Help column, and `/faq` is in the sitemap.
+- **SEO:** the answers are built on the server, so search engines read them. There is no FAQ schema, because Google retired FAQ rich results.
+- **Tested:** 5 questions on desktop and phone, the accordion opens one at a time, no sideways scrolling, no errors, every link works.
+- **Files:** `app/(shop)/faq/page.tsx`, `components/home/FaqSection.tsx`, `components/layout/Header.tsx`, `components/layout/Footer.tsx`, `app/sitemap.ts`, `app/globals.css`

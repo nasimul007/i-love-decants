@@ -4668,3 +4668,8 @@ html.touch-mode .cursor-layer{display:none!important}
   .reviews-side { position: static; }
   .reviews-main { order: -1; }
 }
+
+/* FAQ: "Open the FAQ page" under the home heading, and the help links on /faq */
+.faq-all { margin-top: 1rem; }
+.faq-more { padding-top: 0; }
+.faq-more-row { display: flex; gap: .75rem; flex-wrap: wrap; justify-content: center; }

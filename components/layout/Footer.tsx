@@ -23,6 +23,7 @@ export function Footer() {
         <div className="footer-column">
           <h3>Help</h3>
           <div className="footer-links">
+            <Link href="/faq">FAQ</Link>
             <Link href="/reviews">Customer reviews</Link>
             <Link href="/contact">Contact us</Link>
             <Link href="/how-we-work">How we work</Link>
