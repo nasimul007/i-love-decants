@@ -86,3 +86,58 @@ Files: `components/ui/PasswordInput.tsx` (new), `components/ui/Icons.tsx`, `app/
 - **Design:** no existing style was changed or removed. New parts use the site's own colours, buttons, fonts and page components.
 - **Product pages, prices, the WhatsApp/Messenger-only custom design page, the ✦ notice framing, 11-digit phone fields and required-field stars:** unchanged.
 - **Note:** some fixes had to touch server code as well as the frontend (security headers, coupon and stock rules, permissions, deleting data, the migration). Each one is listed above.
+
+---
+
+# Round 2 (27 Nov 2026): your test feedback + new features
+
+Second migration: `prisma/migrations/20261128120000_coupon_modes_reviews`. It adds `Coupon.oncePerCustomer` (default **on**, today's rule) and the `Review` table. It runs by itself on deploy.
+
+| # | Your request | What changed | Main files |
+|---|---|---|---|
+| 1 | “Perfume Decants” touched the tab border on phones | Phone tabs wrap long names onto two centred lines inside a taller, rounder tab. All three tabs stay equal width. | `app/globals.css` |
+| 2 | “19 scents” stuck to the Filters button | Added a proper gap between the Filters button and the count. | `app/globals.css` |
+| 3 | The intro splash took too long | The splash is now about **1.5 s** in total (it was 4.7 s): the brand fades in over 0.7 s, holds briefly, then fades out over 0.45 s. A tap skips it, and it still shows once per visit. Platform guidance keeps the splash exit animation under ~1 s and says never to pad it with timers. | `components/layout/Intro.tsx`, `app/globals.css` |
+| 4 | The phone menu looked plain | App-style menu. Each row has an icon tile, the page name, a one-line note and a chevron. The current page is highlighted, rows slide in one after another, and quick **WhatsApp us** and **Sign in / My account** buttons sit at the bottom. The animation is off for reduced-motion users, and desktop is unchanged. | `components/layout/Header.tsx`, `components/ui/Icons.tsx`, `app/globals.css` |
+| 5 | Custom design: photos of past work | **Admin → Home page & content → Custom design photos**: upload several at once, reorder, delete (up to 8). The Custom design page shows them in the same gallery as products, with faded side arrows, thumbnails, the zoom viewer and the hover magnifier. With no photos it shows the drawn bottle as before. | `components/custom/CustomEngraving.tsx`, `components/admin/ContentPanel.tsx`, `app/api/custom-design`, `lib/server/images.ts` |
+| 6 | Sales form: “Applies to” spilled into “Type” | The Sales and Discount-code forms now use an even grid, so no box can overlap another at any width. | `components/admin/Panels.tsx`, `app/globals.css` |
+| 7 | Discount codes: overlap, max uses, once-per-customer modes | Overlap fixed (as in 6). **Max uses tested**: with a limit of 2, the 3rd order is refused (“That discount code has been fully used.”) and checkout then rejects the code. New **“Who can use it”** setting per code, chosen when adding the code and switchable in the table: **Once per customer** (guests: one use per phone number; signed-in customers: also one per account) or **Signed-in, every time** (signed-in customers can reuse it; guests see “Sign in to use this code” with a **Sign in** link). | `lib/server/coupons.ts`, `app/api/orders/*`, `app/api/coupons/validate`, `app/api/admin/coupons/*`, `components/checkout/CheckoutView.tsx`, `Panels.tsx` |
+| 8 | Facebook / Messenger link | Both already open your page (ID 61559923042243). `&sk=followers` was left off because it opens the followers list instead of the page. | — |
+| 9 | Reviews | See below. | |
+| 11 | CSV export | **Download CSV** buttons on **Customers** (name, email, phone, address, city, orders, joined, last login) and **Login history** (the full history, not only the latest 200). The files open correctly in Excel, Bangla text included. Cells that would run as formulas are neutralised. Each download needs the matching permission. | `lib/server/csv.ts` (+ `csv.check.ts`), `app/api/admin/customers`, `app/api/admin/history` |
+| — | Found while re-checking | The How we work page still said “3 ml to 100 ml”; it now says 50 ml. | `app/(shop)/how-we-work/page.tsx` |
+
+## Reviews (new)
+
+- **Reviews page `/reviews`:**
+  - average rating, star breakdown and number of reviews
+  - filter by where the review came from (Website / WhatsApp / Facebook / Instagram), and sort by Newest or Highest rated
+  - review cards in a masonry grid
+  - **Write a review** form: stars, name, what they bought, text
+- **Home page:** a “Loved, then re-ordered.” strip shows three reviews (starred ones first) with **Read all reviews**. It appears once there is at least one published review. The home page stays a fast static page and is rebuilt the moment staff publish, edit, hide or delete a review (measured: about 0.1 s).
+- **Links:** **Reviews** is in the header (with its own icon in the phone menu) and the footer, and `/reviews` is in the sitemap.
+- **Facebook / Instagram / WhatsApp reviews:** staff add them with the customer's words, rating, date, product and a **link to the post**. Clicking anywhere on that card opens the post in a new tab. Screenshots or photos can be attached and show as a small gallery inside the card.
+- **Moderation:** reviews written on the website arrive as **Pending** and appear only after **Publish**. Links in the text are refused, a hidden trap catches bots, and each visitor can send at most 5 reviews per hour.
+- **Admin → Reviews:**
+  - filter by All / Pending / Published / Hidden
+  - Publish, Hide, ☆ Home, Edit (with photos) and Delete
+  - managers need the new **Reviews** permission
+- **SEO:** the page is built on the server, so search engines read every review, and it has its own title and description. There is deliberately **no review-star markup**: Google doesn't show stars for a shop's reviews of itself on its own site, and a 2026 rule targets fake or incentivised reviews.
+
+## Round 2 tests (local copy)
+
+- **End-to-end:** 22 checks, 20 passed first time. The other 2 were mistakes in my test script, re-checked by hand and both pass (the review date field saves; clicking a Facebook card opens the post). Covered:
+  - coupon modes and max uses
+  - the guest Sign in link
+  - CSV downloads and permissions
+  - the website review → Pending → Publish flow
+  - spam guards
+  - adding a Facebook review with photos, and Hide / Publish
+  - filters, the Facebook card link and the photo arrows
+  - phone layout
+  - header, footer and sitemap links
+  - managers without the permission refused (403)
+  - Custom design photos with arrows and the hover zoom
+- **Visual fixes after review:** a masonry layout for review cards (no holes), and shorter coupon option names (they no longer get cut off).
+- **Crawl:** 26 page views (13 pages, desktop and phone): no errors, no sideways scrolling.
+- **Splash measured:** it clears about 1.8 s after the page starts loading (it was about 4.7 s).

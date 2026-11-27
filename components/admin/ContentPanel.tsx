@@ -5,6 +5,8 @@ import { useUI } from "@/components/providers/UIProvider";
 import { useAdminCategories, useAdminFaqs, useAdminNotices, useAdminProducts } from "@/hooks/useServices";
 import { adminApi } from "@/lib/api/admin";
 import { Panel, emptyRow, inputStyle } from "./shared";
+import { PhotoManager } from "./ProductEditor";
+import { useApi } from "@/lib/api/client";
 
 /** Messages of the moving notice bar under the navbar (all enabled ones scroll one after another). */
 function NoticeEditor() {
@@ -269,10 +271,22 @@ function HomePerfumes() {
   );
 }
 
+/** Photos of past custom designs, shown as a gallery on the Custom design page (drawn sample bottle until the first photo). */
+function CustomDesignPhotos() {
+  const images = useApi<{ images: number[] }>("/api/custom-design").data?.images ?? [];
+  return (
+    <Panel title="Custom design photos" subtitle="Photos of engraved bottles and designs you have made. They appear as a gallery on the Custom design page; without photos, the page shows the drawn sample bottle.">
+      <PhotoManager p={{ id: "custom-design", name: "Custom design", images }} hint="choose several at once or drag them in (up to 8). The first one shows first; use ← → to reorder." />
+    </Panel>
+  );
+}
+
 export function ContentPanel() {
   return (
     <>
       <HomePerfumes />
+      <div style={{ height: "1.25rem" }} />
+      <CustomDesignPhotos />
       <div style={{ height: "1.25rem" }} />
       <NoticeEditor />
       <div style={{ height: "1.25rem" }} />

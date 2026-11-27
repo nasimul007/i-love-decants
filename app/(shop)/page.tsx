@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { CSSProperties } from "react";
 import { HeroSwitcher } from "@/components/home/HeroSwitcher";
 import { FaqSection } from "@/components/home/FaqSection";
+import { ReviewsStrip } from "@/components/home/ReviewsStrip";
 import { FeaturedRail } from "@/components/home/FeaturedRail";
 import { RouteView } from "@/components/ui/PageHero";
 import { VolumeList } from "@/components/ui/VolumeText";
@@ -99,6 +100,7 @@ export default function HomePage() {
         </div>
       </section>
 
+      <ReviewsStrip />
       <FaqSection />
     </RouteView>
   );

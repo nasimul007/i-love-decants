@@ -9,7 +9,7 @@ import { useApi } from "@/lib/api/client";
 import { ADMIN, ordersUrl, type AdminMe, type AdminSale, type AdminFaq, type AdminNotice, type Page, type ProductDetails, type PublicCategory } from "@/lib/api/admin";
 import { ME, MY_ORDERS } from "@/lib/api/customer";
 import type {
-  CartItem, CatalogOverrides, Coupon, GiftSet, InventoryRecord, LoginEvent, OilProduct, Order, Product, PublicCustomer, PublicManager,
+  CartItem, CatalogOverrides, Coupon, GiftSet, InventoryRecord, LoginEvent, OilProduct, Order, Product, PublicCustomer, PublicManager, Review,
 } from "@/types";
 
 /** Reactive reads over the service layer. Swap internals for SWR/React Query when an API exists. */
@@ -139,6 +139,7 @@ export interface AdminOverview {
 export const useAdminOverview = () => useApi<AdminOverview>(ADMIN.overview).data;
 export const useInventoryRecords = () => useList<InventoryRecord>(ADMIN.inventory);
 export const useCustomers = () => useList<PublicCustomer>(ADMIN.customers);
+export const useAdminReviews = () => useList<Review>(ADMIN.reviews);
 /** One page of orders for staff (newest first). */
 export function useOrders(page = 1, pageSize = 20, status?: string) {
   const { data, loaded } = useApi<Page<Order>>(ordersUrl(page, pageSize, status));

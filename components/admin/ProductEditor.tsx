@@ -17,7 +17,7 @@ const draftOf = ({ id: _i, images: _img, keyNotes, ...rest }: ProductDetails): D
 
 /** Photos of one perfume: upload several, choose the main one, re-order, delete. Stored in the database. */
 /** Photos of a perfume (`owner` = its number id) or an oil / gift set (`owner` = "oil-…" / "gift-…"). */
-function PhotoManager({ p }: { p: { id: number | string; name: string; images: number[] } }) {
+export function PhotoManager({ p, hint }: { p: { id: number | string; name: string; images: number[] }; hint?: string }) {
   const { showToast } = useUI();
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
@@ -41,7 +41,7 @@ function PhotoManager({ p }: { p: { id: number | string; name: string; images: n
 
   return (
     <div className="admin-field">
-      <label>Photos <small style={{ color: "var(--muted)", fontWeight: 500 }}>— choose several at once or drag them in (up to 8). The first is the main photo; use ← → to reorder. Without photos, customers see the drawn artwork.</small></label>
+      <label>Photos <small style={{ color: "var(--muted)", fontWeight: 500 }}>— {hint ?? "choose several at once or drag them in (up to 8). The first is the main photo; use ← → to reorder. Without photos, customers see the drawn artwork."}</small></label>
       <div style={{ display: "flex", flexWrap: "wrap", gap: ".7rem", marginTop: ".4rem" }}>
         {p.images.map((id, i) => (
           <figure key={id} style={{ margin: 0, width: 112, display: "grid", gap: ".3rem", justifyItems: "center" }}>

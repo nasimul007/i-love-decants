@@ -56,8 +56,9 @@ export const PATCH = route(async (req, { params }: { params: Promise<{ id: strin
         await tx.couponRedemption.deleteMany({ where: { orderId: id } });
         await tx.coupon.updateMany({ where: { code, uses: { gt: 0 } }, data: { uses: { decrement: 1 } } });
       } else {
-        await tx.coupon.updateMany({ where: { code }, data: { uses: { increment: 1 } } });
-        if (!await tx.couponRedemption.findUnique({ where: { code_phone: { code, phone: normalizePhone(cur.customerPhone) } } }))
+        const c = await tx.coupon.updateMany({ where: { code }, data: { uses: { increment: 1 } } });
+        const once = c.count > 0 && (await tx.coupon.findUnique({ where: { code } }))?.oncePerCustomer;
+        if (once && !await tx.couponRedemption.findUnique({ where: { code_phone: { code, phone: normalizePhone(cur.customerPhone) } } }))
           await tx.couponRedemption.create({ data: { code, phone: normalizePhone(cur.customerPhone), orderId: id } });
       }
     }

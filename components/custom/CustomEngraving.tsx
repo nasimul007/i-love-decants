@@ -1,18 +1,25 @@
 import { BottleVisual } from "@/components/ui/BottleVisual";
 import { MessengerIcon, WhatsAppIcon } from "@/components/ui/Icons";
 import { CONFIG } from "@/lib/config";
+import { db } from "@/lib/db";
+import { CUSTOM_DESIGN } from "@/lib/server/images";
+import { ProductGallery } from "@/components/products/ProductGallery";
 
 const LOOK = { liquid: "#a6b9a6", ink: "#405744", shape: "arch" as const };
 
 /** Opening message for the WhatsApp chat (the customer gives the details in the chat). */
 const WA_MESSAGE = "Hi! I would like a custom engraved bottle.\nScent:\nBottle size:\nEngraving text:";
 
-/** Custom engraving request: an example bottle and a direct link to WhatsApp. */
-export function CustomEngraving() {
+/** Custom engraving request: photos of past designs (admin → Home page & content), or a drawn example bottle, and links to WhatsApp / Messenger. */
+export async function CustomEngraving() {
+  const images = (await db.productImage.findMany({ where: { itemId: CUSTOM_DESIGN }, select: { id: true }, orderBy: [{ sort: "asc" }, { id: "asc" }] }).catch(() => [])).map((r) => r.id);
   const waHref = `${CONFIG.whatsapp.split("?")[0]}?text=${encodeURIComponent(WA_MESSAGE)}`;
 
   return (
     <div className="container custom-showcase">
+      {images.length ? (
+        <div className="custom-visual has-gallery" aria-label="Photos of our custom designs"><ProductGallery product={{ name: "Custom design", images }} /></div>
+      ) : (
       <div className="custom-visual" aria-label="Example of an engraved perfume bottle">
         <BottleVisual
           id="customBottleVisual" shape={LOOK.shape} liquid={LOOK.liquid} ink={LOOK.ink} className="size-50"
@@ -20,6 +27,7 @@ export function CustomEngraving() {
           subtitle="50 ml bottle"
         />
       </div>
+      )}
 
       <div className="contact-cta-card">
         <span className="eyebrow">Start a custom request</span>

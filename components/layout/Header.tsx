@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CartIcon, CloseIcon, MenuIcon, SearchIcon, UserIcon } from "@/components/ui/Icons";
+import type { CSSProperties, ReactNode, SVGProps } from "react";
+import { BottleIcon, CartIcon, ChatIcon, CloseIcon, HelpIcon, HomeIcon, MenuIcon, PenIcon, SearchIcon, StarIcon, UserIcon, WhatsAppIcon } from "@/components/ui/Icons";
+import { CONFIG } from "@/lib/config";
 import { useUI } from "@/components/providers/UIProvider";
 import { useCart, useCatalog, useCurrentCustomer } from "@/hooks/useServices";
 import { useApi } from "@/lib/api/client";
@@ -11,12 +13,18 @@ import { initials, money } from "@/lib/format";
 import { priceFrom, searchText } from "@/lib/volumes";
 import { NoticeBar } from "./NoticeBar";
 
+/** Main navigation. On phones each item also shows its icon and a one-line note (hidden on desktop). */
 const NAV = [
-  { href: "/", label: "Home" },
-  { href: "/products", label: "Products" },
-  { href: "/custom", label: "Custom Design" },
-  { href: "/contact", label: "Contact" },
+  { href: "/", label: "Home", note: "Start here", Icon: HomeIcon },
+  { href: "/products", label: "Products", note: "Decants, oils & gift sets", Icon: BottleIcon },
+  { href: "/custom", label: "Custom Design", note: "Engrave a bottle", Icon: PenIcon },
+  { href: "/reviews", label: "Reviews", note: "What customers say", Icon: StarIcon },
+  { href: "/contact", label: "Contact", note: "WhatsApp, Messenger, phone", Icon: ChatIcon },
 ];
+
+const NavItem = ({ label, note, Icon }: { label: string; note: string; Icon: (p: SVGProps<SVGSVGElement>) => ReactNode }) => (
+  <><span className="nav-ico" aria-hidden="true"><Icon width={20} height={20} /></span><span className="nav-text">{label}<small className="nav-note">{note}</small></span><span className="nav-chev" aria-hidden="true">›</span></>
+);
 
 export function Brand() {
   return (
@@ -112,10 +120,14 @@ export function Header() {
           </button>
           <Link className="brand" href="/" aria-label="I Love Decants home"><Brand /></Link>
           <nav className={`nav-links${menuOpen ? " is-open" : ""}`} id="navLinks" aria-label="Main navigation">
-            {NAV.map((n) => (
-              <Link key={n.href} className="nav-link" href={n.href} aria-current={pathname === n.href ? "page" : undefined}>{n.label}</Link>
+            {NAV.map((n, i) => (
+              <Link key={n.href} className="nav-link" style={{ "--i": i } as CSSProperties} href={n.href} aria-current={pathname === n.href ? "page" : undefined}><NavItem {...n} /></Link>
             ))}
-            {hasFaq && <Link className="nav-link" href="/#faq" onClick={() => setMenuOpen(false)}>FAQ</Link>}
+            {hasFaq && <Link className="nav-link" style={{ "--i": NAV.length } as CSSProperties} href="/#faq" onClick={() => setMenuOpen(false)}><NavItem label="FAQ" note="Quick answers" Icon={HelpIcon} /></Link>}
+            <div className="nav-extra" style={{ "--i": NAV.length + 1 } as CSSProperties}>
+              <a className="nav-quick is-wa" href={CONFIG.whatsapp} target="_blank" rel="noreferrer"><WhatsAppIcon width={18} height={18} />WhatsApp us</a>
+              <button className="nav-quick" type="button" onClick={() => { setMenuOpen(false); if (customer) router.push("/account"); else openAuth("login"); }}><UserIcon width={18} height={18} />{customer ? "My account" : "Sign in"}</button>
+            </div>
           </nav>
           <div className="header-actions">
             <SearchBox />

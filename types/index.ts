@@ -93,6 +93,8 @@ export interface Coupon {
   /** Total uses allowed across all customers; null = unlimited. */
   maxUses?: number | null;
   uses?: number;
+  /** true: once per customer; false: signed-in customers only, every time. */
+  oncePerCustomer?: boolean;
 }
 
 /* ───────────── Customers ───────────── */
@@ -140,7 +142,7 @@ export interface Order {
 }
 
 /* ───────────── Admin ───────────── */
-export type AdminSection = "orders" | "inventory" | "products" | "customers" | "history" | "coupons" | "content";
+export type AdminSection = "orders" | "inventory" | "products" | "customers" | "history" | "coupons" | "content" | "reviews";
 export type ManagerPermissions = Record<AdminSection, boolean>;
 
 export interface Manager {
@@ -242,4 +244,19 @@ export interface ServiceResult<T = undefined> {
   ok: boolean;
   error?: string;
   data?: T;
+}
+
+/** A customer review (website, WhatsApp, Facebook…). `link` opens the original post; `images` are screenshots/photos. */
+export interface Review {
+  id: number;
+  name: string;
+  rating: number;
+  text: string;
+  source: "website" | "whatsapp" | "facebook" | "instagram" | "other";
+  link: string;
+  product: string;
+  status: "pending" | "published" | "hidden";
+  featured: boolean;
+  date: string;
+  images: number[];
 }

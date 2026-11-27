@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { PageHero, RouteView, SectionHeading } from "@/components/ui/PageHero";
 import { CustomEngraving } from "@/components/custom/CustomEngraving";
 
+export const dynamic = "force-dynamic"; // the design photos are managed in the admin
+
 export const metadata: Metadata = { title: "Custom Design — I Love Decants", description: "Personalise a perfume bottle with a name, date or message. Custom engraving from I Love Decants, Dhaka." };
 
 const STEPS = [

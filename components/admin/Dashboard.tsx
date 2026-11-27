@@ -9,6 +9,7 @@ import {
 } from "./Panels";
 import { OrdersPanel } from "./OrdersPanel";
 import { ContentPanel } from "./ContentPanel";
+import { ReviewsPanel } from "./ReviewsPanel";
 
 type TabId = "overview" | "orders" | AdminSection | "managers";
 
@@ -61,6 +62,7 @@ export function Dashboard({ session, canSee }: Props) {
         {tab === "customers" && canSee("customers") && <CustomersPanel />}
         {tab === "history" && canSee("history") && <HistoryPanel />}
         {tab === "coupons" && canSee("coupons") && <><SalesPanel /><div style={{ height: "1.25rem" }} /><CouponsPanel /></>}
+        {tab === "reviews" && canSee("reviews") && <ReviewsPanel />}
         {tab === "managers" && session.role === "owner" && <ManagersPanel />}
       </div>
     </div>

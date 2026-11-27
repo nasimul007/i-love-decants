@@ -5,6 +5,7 @@ import { currentCustomer, requireStaff } from "@/lib/server/auth";
 import { couponDiscount, loadCatalog, priceLine, type PricedLine } from "@/lib/server/catalog";
 import { body, HttpError, ok, route } from "@/lib/server/http";
 import { serializeOrder } from "@/lib/server/orders";
+import { assertCouponAllowed } from "@/lib/server/coupons";
 import { lineSchema } from "@/lib/server/schemas";
 import { bulkDiscountFor, deliveryChargeFor } from "@/lib/config";
 import { isBdCity } from "@/lib/data/cities";
@@ -71,15 +72,14 @@ export const POST = route(async (req) => {
           }
         }
 
-        // 3. Coupon, validated now: active, not expired, within max uses, and once per phone number.
+        // 3. Coupon, validated now: active, not expired, within max uses, and allowed for this customer (see assertCouponAllowed).
         let discount = 0;
         let couponCode: string | null = null;
+        let oncePerCustomer = true;
         if (input.couponCode) {
           const c = await tx.coupon.findUnique({ where: { code: input.couponCode } });
           if (!c || !c.active || (c.expiresAt && c.expiresAt < new Date())) throw new HttpError(400, "That discount code is no longer valid.");
-          if (await tx.couponRedemption.findUnique({ where: { code_phone: { code: c.code, phone: phoneKey } } })) {
-            throw new HttpError(400, "This discount code has already been used with this phone number.");
-          }
+          await assertCouponAllowed(tx, c, { phone: phoneKey, customerId: customer?.id });
           if (c.maxUses !== null) {
             const used = await tx.coupon.updateMany({ where: { code: c.code, uses: { lt: c.maxUses } }, data: { uses: { increment: 1 } } });
             if (used.count === 0) throw new HttpError(400, "That discount code has been fully used.");
@@ -88,6 +88,7 @@ export const POST = route(async (req) => {
           }
           discount = couponDiscount(c, subtotal - bulkDiscount); // the coupon applies to what is left after the large-order discount
           couponCode = c.code;
+          oncePerCustomer = c.oncePerCustomer;
         }
 
         // 4. Create the order (Cash on Delivery is the only payment option) with a unique id.
@@ -104,7 +105,7 @@ export const POST = route(async (req) => {
           },
           include: { items: true },
         });
-        if (couponCode) await tx.couponRedemption.create({ data: { code: couponCode, phone: phoneKey, orderId: created.id } });
+        if (couponCode && oncePerCustomer) await tx.couponRedemption.create({ data: { code: couponCode, phone: phoneKey, orderId: created.id } });
         return created;
       });
       return ok(serializeOrder(order), 201);

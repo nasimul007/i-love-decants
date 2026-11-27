@@ -11,6 +11,7 @@ import { BULK_DISCOUNT, DELIVERY_CHARGE, bulkDiscountFor, deliveryChargeFor } fr
 import { BD_CITIES } from "@/lib/data/cities";
 import { CheckoutProgress } from "./CheckoutProgress";
 import { CitySelect } from "./CitySelect";
+import { useUI } from "@/components/providers/UIProvider";
 import { toLocalPhone, isBdPhone, isPersonName, NAME_ERROR } from "@/lib/validators";
 import { money } from "@/lib/format";
 import type { Coupon } from "@/types";
@@ -21,6 +22,7 @@ export function CheckoutView() {
   const router = useRouter();
   const { items, subtotal } = useCart();
   const customer = useCurrentCustomer();
+  const { openAuth } = useUI();
 
   const [form, setForm] = useState({ fullName: "", phone: "", address: "", city: "", notes: "" });
   const [couponInput, setCouponInput] = useState("");
@@ -52,7 +54,7 @@ export function CheckoutView() {
   const applyCoupon = async () => {
     const code = couponInput.trim().toUpperCase();
     if (!code) { setCouponMsg({ text: "Please enter a discount code.", ok: false }); return; }
-    const phone = isBdPhone(form.phone) ? form.phone : undefined; // each code can be used once per phone number
+    const phone = isBdPhone(form.phone) ? form.phone : undefined; // "once per customer" codes: one use per phone number
     const res = await ordersApi.validateCoupon(code, items, phone);
     if (!res.ok || !res.data) {
       setCoupon(null);
@@ -62,7 +64,7 @@ export function CheckoutView() {
     const found: Coupon = { code: res.data.code, type: res.data.type, value: res.data.value, active: true };
     setCoupon(found);
     const label = found.type === "percent" ? `${found.value}% off` : `৳${found.value} off`;
-    setCouponMsg({ text: `✓ ${code} applied: ${label} (−${money(res.data.discount)}). One use per phone number.`, ok: true });
+    setCouponMsg({ text: `✓ ${code} applied: ${label} (−${money(res.data.discount)}).${res.data.oncePerCustomer ? " One use per customer." : ""}`, ok: true });
   };
 
   const submit = async (e: FormEvent) => {
@@ -178,7 +180,7 @@ export function CheckoutView() {
             </div>
             <button className="coupon-apply-btn" type="button" onClick={applyCoupon}>Apply</button>
           </div>
-          <p className={`coupon-status${couponMsg ? (couponMsg.ok ? " ok" : " err") : ""}`}>{couponMsg?.text}</p>
+          <p className={`coupon-status${couponMsg ? (couponMsg.ok ? " ok" : " err") : ""}`}>{couponMsg?.text}{!customer && couponMsg && !couponMsg.ok && /Sign in/.test(couponMsg.text) && <>{" "}<button type="button" className="coupon-signin" onClick={() => openAuth("login")}>Sign in</button></>}</p>
         </div>
 
         <button className="btn btn-primary btn-loading" type="submit" disabled={submitted} aria-busy={submitted}>

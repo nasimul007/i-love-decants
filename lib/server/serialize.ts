@@ -1,7 +1,7 @@
 import "server-only";
 
-export const serializeCoupon = (c: { code: string; type: "PERCENT" | "FLAT"; value: number; active: boolean; expiresAt: Date | null; maxUses: number | null; uses: number }) => ({
-  code: c.code, type: c.type.toLowerCase(), value: c.value, active: c.active,
+export const serializeCoupon = (c: { code: string; type: "PERCENT" | "FLAT"; value: number; active: boolean; expiresAt: Date | null; maxUses: number | null; uses: number; oncePerCustomer: boolean }) => ({
+  code: c.code, type: c.type.toLowerCase(), value: c.value, active: c.active, oncePerCustomer: c.oncePerCustomer,
   expiresAt: c.expiresAt?.toISOString() ?? null, maxUses: c.maxUses, uses: c.uses,
 });
 

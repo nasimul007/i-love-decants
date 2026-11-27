@@ -28,5 +28,5 @@ export const ordersApi = {
     return res;
   },
   validateCoupon: (code: string, items: CartItem[], phone?: string) =>
-    call<{ code: string; type: Coupon["type"]; value: number; discount: number }>("POST", "/api/coupons/validate", { code, items: lines(items), phone }),
+    call<{ code: string; type: Coupon["type"]; value: number; discount: number; oncePerCustomer: boolean }>("POST", "/api/coupons/validate", { code, items: lines(items), phone }),
 };

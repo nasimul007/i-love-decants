@@ -10,6 +10,7 @@ export const ADMIN_SECTIONS: { id: AdminSection; label: string; tab?: false }[] 
   { id: "history", label: "Login history" },
   { id: "coupons", label: "Discounts" },
   { id: "content", label: "Home page & content" },
+  { id: "reviews", label: "Reviews" },
 ];
 
 export function can(session: AdminSession | null, section: AdminSection): boolean {

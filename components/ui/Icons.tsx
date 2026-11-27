@@ -54,3 +54,18 @@ export const EyeIcon = (p: SVGProps<SVGSVGElement>) => (
 export const EyeOffIcon = (p: SVGProps<SVGSVGElement>) => (
   <svg {...base(p)} strokeWidth="1.7"><path d="M10.6 5.6A9.6 9.6 0 0 1 12 5.5c6 0 9.5 6.5 9.5 6.5a17 17 0 0 1-2.6 3.4M6.4 6.9C3.9 8.6 2.5 12 2.5 12S6 18.5 12 18.5c1.6 0 3-.4 4.2-1.1" /><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2M3 3l18 18" strokeLinecap="round" /></svg>
 );
+export const HomeIcon = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base(p)} strokeWidth="1.7"><path d="M4 11.5 12 5l8 6.5" /><path d="M6.5 10v9h11v-9" /><path d="M10.5 19v-4.5h3V19" /></svg>
+);
+export const BottleIcon = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base(p)} strokeWidth="1.7"><path d="M10 3h4v3h-4z" /><path d="M9.5 6h5l1.5 3v10a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2V9l1.5-3Z" /><path d="M8 13h8" /></svg>
+);
+export const PenIcon = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base(p)} strokeWidth="1.7"><path d="m14.5 5.5 4 4L9 19H5v-4l9.5-9.5Z" /><path d="m12.5 7.5 4 4" /></svg>
+);
+export const StarIcon = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base(p)} strokeWidth="1.7" strokeLinejoin="round"><path d="m12 4 2.4 5 5.4.6-4 3.7 1.1 5.4L12 16l-4.9 2.7 1.1-5.4-4-3.7 5.4-.6L12 4Z" /></svg>
+);
+export const HelpIcon = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base(p)} strokeWidth="1.7"><circle cx="12" cy="12" r="8.5" /><path d="M9.7 9.5a2.4 2.4 0 1 1 3.4 2.2c-.7.3-1.1.9-1.1 1.6v.4" strokeLinecap="round" /><path d="M12 16.8h.01" strokeLinecap="round" strokeWidth="2.4" /></svg>
+);

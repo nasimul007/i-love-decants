@@ -6,6 +6,7 @@ import type {
 } from "@/types";
 
 export const ADMIN = {
+  reviews: "/api/admin/reviews",
   me: "/api/admin/me",
   overview: "/api/admin/overview",
   catalog: "/api/admin/catalog",
@@ -81,6 +82,18 @@ export const adminApi = {
     return res;
   },
 
+  /* reviews: the storefront pages render on the server, so only admin lists need refreshing */
+  async saveReview(id: number | null, data: Record<string, unknown>): Promise<ServiceResult<{ id: number }>> {
+    const res = await call<{ id: number }>(id === null ? "POST" : "PATCH", id === null ? ADMIN.reviews : `${ADMIN.reviews}/${id}`, data);
+    await refresh(ADMIN.reviews);
+    return res;
+  },
+  async deleteReview(id: number): Promise<ServiceResult<unknown>> {
+    const res = await call("DELETE", `${ADMIN.reviews}/${id}`);
+    await refresh(ADMIN.reviews);
+    return res;
+  },
+
   /* inventory */
   async deleteInventory(id: string): Promise<ServiceResult<unknown>> {
     const res = await call("DELETE", `${ADMIN.inventory}/${id}`);
@@ -100,8 +113,13 @@ export const adminApi = {
   },
 
   /* coupons */
-  async addCoupon(input: { code: string; type: Coupon["type"]; value: number; expiresAt?: string | null; maxUses?: number | null }): Promise<ServiceResult<unknown>> {
+  async addCoupon(input: { code: string; type: Coupon["type"]; value: number; expiresAt?: string | null; maxUses?: number | null; oncePerCustomer?: boolean }): Promise<ServiceResult<unknown>> {
     const res = await call("POST", ADMIN.coupons, input);
+    await refresh(ADMIN.coupons);
+    return res;
+  },
+  async setCouponOnce(code: string, oncePerCustomer: boolean): Promise<ServiceResult<unknown>> {
+    const res = await call("PATCH", `${ADMIN.coupons}/${encodeURIComponent(code)}`, { oncePerCustomer });
     await refresh(ADMIN.coupons);
     return res;
   },
@@ -186,7 +204,7 @@ export const adminApi = {
     await this.photosChanged();
     return res;
   },
-  async photosChanged() { await Promise.all([refresh(ADMIN.productDetails), refresh(ADMIN.catalog), refresh("/api/products")]); },
+  async photosChanged() { await Promise.all([refresh(ADMIN.productDetails), refresh(ADMIN.catalog), refresh("/api/products"), refresh("/api/custom-design"), refresh(ADMIN.reviews)]); },
 
   /* FAQ */
   async faqOp(op: () => Promise<ServiceResult<AdminFaq[]>>): Promise<ServiceResult<unknown>> {
