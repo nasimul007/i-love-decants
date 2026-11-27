@@ -69,3 +69,9 @@ export const StarIcon = (p: SVGProps<SVGSVGElement>) => (
 export const HelpIcon = (p: SVGProps<SVGSVGElement>) => (
   <svg {...base(p)} strokeWidth="1.7"><circle cx="12" cy="12" r="8.5" /><path d="M9.7 9.5a2.4 2.4 0 1 1 3.4 2.2c-.7.3-1.1.9-1.1 1.6v.4" strokeLinecap="round" /><path d="M12 16.8h.01" strokeLinecap="round" strokeWidth="2.4" /></svg>
 );
+export const MoonIcon = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base(p)} strokeWidth="1.7" strokeLinejoin="round"><path d="M19.5 14.2A7.8 7.8 0 0 1 9.8 4.5a7.8 7.8 0 1 0 9.7 9.7Z" /></svg>
+);
+export const SunIcon = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base(p)} strokeWidth="1.7" strokeLinecap="round"><circle cx="12" cy="12" r="4" /><path d="M12 2.8v2.1M12 19.1v2.1M2.8 12h2.1M19.1 12h2.1M5.5 5.5 7 7M17 17l1.5 1.5M5.5 18.5 7 17M17 7l1.5-1.5" /></svg>
+);

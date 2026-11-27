@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/components/providers/PrefsProvider";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -23,11 +24,12 @@ export function CheckoutView() {
   const { items, subtotal } = useCart();
   const customer = useCurrentCustomer();
   const { openAuth } = useUI();
+  const t = useT();
 
   const [form, setForm] = useState({ fullName: "", phone: "", address: "", city: "", notes: "" });
   const [couponInput, setCouponInput] = useState("");
   const [coupon, setCoupon] = useState<Coupon | null>(null);
-  const [couponMsg, setCouponMsg] = useState<{ text: string; ok: boolean } | null>(null);
+  const [couponMsg, setCouponMsg] = useState<{ text: string; ok: boolean; signIn?: boolean } | null>(null);
   const [errors, setErrors] = useState<Partial<Record<Field, string>>>({});
   const [formError, setFormError] = useState("");
   const [submitted, setSubmitted] = useState(false);
@@ -53,18 +55,18 @@ export function CheckoutView() {
 
   const applyCoupon = async () => {
     const code = couponInput.trim().toUpperCase();
-    if (!code) { setCouponMsg({ text: "Please enter a discount code.", ok: false }); return; }
+    if (!code) { setCouponMsg({ text: t("Please enter a discount code."), ok: false }); return; }
     const phone = isBdPhone(form.phone) ? form.phone : undefined; // "once per customer" codes: one use per phone number
     const res = await ordersApi.validateCoupon(code, items, phone);
     if (!res.ok || !res.data) {
       setCoupon(null);
-      setCouponMsg({ text: res.error ?? "Code not recognised. Check the spelling and try again.", ok: false });
+      setCouponMsg({ text: t(res.error ?? "Code not recognised. Check the spelling and try again."), ok: false, signIn: /Sign in/.test(res.error ?? "") });
       return;
     }
     const found: Coupon = { code: res.data.code, type: res.data.type, value: res.data.value, active: true };
     setCoupon(found);
-    const label = found.type === "percent" ? `${found.value}% off` : `৳${found.value} off`;
-    setCouponMsg({ text: `✓ ${code} applied: ${label} (−${money(res.data.discount)}).${res.data.oncePerCustomer ? " One use per customer." : ""}`, ok: true });
+    const label = t("{v} off", { v: found.type === "percent" ? `${found.value}%` : `৳${found.value}` });
+    setCouponMsg({ text: `✓ ${t("{code} applied: {label} (−{amount}).", { code, label, amount: money(res.data.discount) })}${res.data.oncePerCustomer ? " " + t("One use per customer.") : ""}`, ok: true });
   };
 
   const submit = async (e: FormEvent) => {
@@ -80,7 +82,7 @@ export function CheckoutView() {
     if (!form.city) next.city = "Please choose your city.";
     setErrors(next);
     if (Object.keys(next).length) {
-      setFormError("Please complete the highlighted fields before confirming.");
+      setFormError(t("Please complete the highlighted fields before confirming."));
       // Take the shopper to the first field that needs fixing (it is usually scrolled out of view).
       const first = (["fullName", "phone", "address", "city"] as const).find((k) => next[k]);
       const el = first && document.getElementById({ fullName: "checkoutName", phone: "checkoutPhone", address: "checkoutAddress", city: "checkoutCity" }[first]);
@@ -97,7 +99,7 @@ export function CheckoutView() {
       items,
       couponCode: coupon?.code ?? null,
     });
-    if (!res.ok) { setSubmitted(false); setFormError(res.error ?? "Could not place your order."); return; }
+    if (!res.ok) { setSubmitted(false); setFormError(t(res.error ?? "Could not place your order.")); return; }
     router.push("/order-confirmation");
   };
 
@@ -105,15 +107,15 @@ export function CheckoutView() {
     value: form[key],
     onChange: (e: { target: { value: string } }) => setForm({ ...form, [key]: e.target.value }),
   });
-  const err = (k: Field) => <span className="field-error">{errors[k]}</span>;
+  const err = (k: Field) => <span className="field-error">{errors[k] && t(errors[k])}</span>;
 
   if (!items.length && !submitted) {
     return (
       <div className="container checkout-layout">
         <div className="checkout-empty">
-          <h2>Your bag is empty</h2>
-          <p>Add a scent, a gift set, or a custom bottle before checking out.</p>
-          <Link className="btn btn-primary" href="/products">Browse the collection</Link>
+          <h2>{t("Your bag is empty")}</h2>
+          <p>{t("Add a scent, a gift set, or a custom bottle before checking out.")}</p>
+          <Link className="btn btn-primary" href="/products">{t("Browse the collection")}</Link>
         </div>
       </div>
     );
@@ -124,92 +126,92 @@ export function CheckoutView() {
     <div className="container"><CheckoutProgress /></div>
     <div className="container checkout-layout">
       <form className="checkout-form-card" onSubmit={submit} noValidate>
-        <p className="required-note"><span className="req" aria-hidden="true">*</span> Required</p>
+        <p className="required-note"><span className="req" aria-hidden="true">*</span> {t("Required")}</p>
         <div className="checkout-block">
-          <span className="eyebrow">Step 1</span>
-          <h2>Customer information</h2>
+          <span className="eyebrow">{t("Step {n}", { n: 1 })}</span>
+          <h2>{t("Customer information")}</h2>
           <div className="form-grid">
-            <div className="field"><label htmlFor="checkoutName">Full name<Req /></label><input id="checkoutName" aria-required="true" autoComplete="name" type="text" placeholder="Your full name" {...text("fullName")} />{err("fullName")}</div>
-            <div className="field"><label htmlFor="checkoutPhone">Phone number<Req /></label><input id="checkoutPhone" aria-required="true" autoComplete="tel" type="tel" inputMode="numeric" maxLength={11} pattern="01[0-9]{9}" placeholder="01XXXXXXXXX" value={form.phone} onChange={(e) => setForm({ ...form, phone: toLocalPhone(e.target.value) })} />{err("phone")}</div>
+            <div className="field"><label htmlFor="checkoutName">{t("Full name")}<Req /></label><input id="checkoutName" aria-required="true" autoComplete="name" type="text" placeholder={t("Your full name")} {...text("fullName")} />{err("fullName")}</div>
+            <div className="field"><label htmlFor="checkoutPhone">{t("Phone number")}<Req /></label><input id="checkoutPhone" aria-required="true" autoComplete="tel" type="tel" inputMode="numeric" maxLength={11} pattern="01[0-9]{9}" placeholder="01XXXXXXXXX" value={form.phone} onChange={(e) => setForm({ ...form, phone: toLocalPhone(e.target.value) })} />{err("phone")}</div>
           </div>
         </div>
 
         <div className="checkout-block">
-          <span className="eyebrow">Step 2</span>
-          <h2>Delivery details</h2>
+          <span className="eyebrow">{t("Step {n}", { n: 2 })}</span>
+          <h2>{t("Delivery details")}</h2>
           <div className="form-grid">
-            <div className="field full"><label htmlFor="checkoutAddress">Full delivery address<Req /></label><textarea id="checkoutAddress" aria-required="true" autoComplete="street-address" placeholder="House, road, area, landmark…" {...text("address")} />{err("address")}</div>
+            <div className="field full"><label htmlFor="checkoutAddress">{t("Full delivery address")}<Req /></label><textarea id="checkoutAddress" aria-required="true" autoComplete="street-address" placeholder={t("House, road, area, landmark…")} {...text("address")} />{err("address")}</div>
             <div className="field">
-              <label htmlFor="checkoutCity">City<Req /></label>
+              <label htmlFor="checkoutCity">{t("City")}<Req /></label>
               <CitySelect id="checkoutCity" value={form.city} options={BD_CITIES} onChange={(city) => setForm({ ...form, city })} />
               {err("city")}
             </div>
             <div className="field">
-              <label htmlFor="deliveryCharge">Delivery charge</label>
-              <input id="deliveryCharge" type="text" readOnly value={form.city ? `${money(deliveryChargeFor(form.city))} · ${deliveryChargeFor(form.city) === DELIVERY_CHARGE.insideDhaka ? "Inside Dhaka city" : "Outside Dhaka"}` : "Choose a city to see the charge"} />
+              <label htmlFor="deliveryCharge">{t("Delivery charge")}</label>
+              <input id="deliveryCharge" type="text" readOnly value={form.city ? `${money(deliveryChargeFor(form.city))} · ${deliveryChargeFor(form.city) === DELIVERY_CHARGE.insideDhaka ? t("Inside Dhaka city") : t("Outside Dhaka")}` : t("Choose a city to see the charge")} />
             </div>
-            <div className="field full"><label htmlFor="deliveryNote">Delivery notes <small>(optional)</small></label><textarea id="deliveryNote" placeholder="Preferred time, landmark, gift note, or anything helpful…" {...text("notes")} /></div>
+            <div className="field full"><label htmlFor="deliveryNote">{t("Delivery notes")} <small>{t("(optional)")}</small></label><textarea id="deliveryNote" placeholder={t("Preferred time, landmark, gift note, or anything helpful…")} {...text("notes")} /></div>
           </div>
         </div>
 
         <div className="checkout-block">
-          <span className="eyebrow">Step 3</span>
-          <h2>Payment</h2>
-          <p className="wallet-hint">Cash on Delivery is our payment option: no advance payment needed. Pay the rider when your order arrives.</p>
-          <div className="payment-methods" role="radiogroup" aria-label="Payment type">
+          <span className="eyebrow">{t("Step {n}", { n: 3 })}</span>
+          <h2>{t("Payment")}</h2>
+          <p className="wallet-hint">{t("Cash on Delivery is our payment option: no advance payment needed. Pay the rider when your order arrives.")}</p>
+          <div className="payment-methods" role="radiogroup" aria-label={t("Payment type")}>
             <label className="payment-option payment-option--cash">
               <input type="radio" name="paymentMethod" value="cod" checked readOnly />
               <span className="payment-mark" style={{ ["--pay-tint" as string]: "#8ca390" }} />
-              <span className="payment-label"><strong>Cash on Delivery</strong><small>Pay in cash when your order arrives</small></span>
+              <span className="payment-label"><strong>{t("Cash on Delivery")}</strong><small>{t("Pay in cash when your order arrives")}</small></span>
             </label>
           </div>
         </div>
 
         <div className="checkout-block">
-          <span className="eyebrow">Step 4 (optional)</span>
-          <h2>Discount code</h2>
+          <span className="eyebrow">{t("Step 4 (optional)")}</span>
+          <h2>{t("Discount code")}</h2>
           <div className="coupon-row">
             <div className="field">
-              <label htmlFor="couponInput">Have a code?</label>
+              <label htmlFor="couponInput">{t("Have a code?")}</label>
               <input
-                id="couponInput" type="text" placeholder="Enter your code" autoComplete="off" style={{ textTransform: "uppercase" }}
+                id="couponInput" type="text" placeholder={t("Enter your code")} autoComplete="off" style={{ textTransform: "uppercase" }}
                 value={couponInput}
                 onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
                 onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyCoupon(); } }}
               />
             </div>
-            <button className="coupon-apply-btn" type="button" onClick={applyCoupon}>Apply</button>
+            <button className="coupon-apply-btn" type="button" onClick={applyCoupon}>{t("Apply")}</button>
           </div>
-          <p className={`coupon-status${couponMsg ? (couponMsg.ok ? " ok" : " err") : ""}`}>{couponMsg?.text}{!customer && couponMsg && !couponMsg.ok && /Sign in/.test(couponMsg.text) && <>{" "}<button type="button" className="coupon-signin" onClick={() => openAuth("login")}>Sign in</button></>}</p>
+          <p className={`coupon-status${couponMsg ? (couponMsg.ok ? " ok" : " err") : ""}`}>{couponMsg?.text}{!customer && couponMsg?.signIn && <>{" "}<button type="button" className="coupon-signin" onClick={() => openAuth("login")}>{t("Sign in")}</button></>}</p>
         </div>
 
         <button className="btn btn-primary btn-loading" type="submit" disabled={submitted} aria-busy={submitted}>
-          {submitted ? <><span className="btn-spinner" aria-hidden="true" />Placing your order…</> : "Place order, pay on delivery"}
+          {submitted ? <><span className="btn-spinner" aria-hidden="true" />{t("Placing your order…")}</> : t("Place order, pay on delivery")}
         </button>
-        {submitted && <p className="placing-note" role="status">Please wait and don’t close this page. This can take a few seconds.</p>}
+        {submitted && <p className="placing-note" role="status">{t("Please wait and don’t close this page. This can take a few seconds.")}</p>}
         <div className={`form-status${formError ? " is-visible is-error" : ""}`} role="alert">{formError}</div>
       </form>
 
       <aside className="order-summary-card">
-        <span className="eyebrow">Order summary</span>
-        <h2>Your bag</h2>
+        <span className="eyebrow">{t("Order summary")}</span>
+        <h2>{t("Your bag")}</h2>
         <div className="checkout-items">
           {items.map((item) => (
             <article className="checkout-item" key={item.key}>
               <span className="checkout-item-swatch" style={{ ["--swatch" as string]: item.swatch || "#ead2d4" }} />
-              <div><strong>{item.name}</strong><small>{item.detail} · Qty {item.qty}</small></div>
+              <div><strong>{item.name}</strong><small>{item.detail.split(" · ").map((d) => t(d).replace("Full bottle", t("Full bottle"))).join(" · ")} · {t("Qty")} {item.qty}</small></div>
               <span>{money(item.price * item.qty)}</span>
             </article>
           ))}
         </div>
-        <div className="summary-row"><span>Subtotal</span><strong>{money(subtotal)}</strong></div>
-        {bulk > 0 && <div className="summary-row is-deal"><span>Large-order discount ({BULK_DISCOUNT.percent}%)</span><strong>−{money(bulk)}</strong></div>}
-        {discount > 0 && <div className="summary-row is-deal"><span>Discount code{coupon ? ` (${coupon.code})` : ""}</span><strong>−{money(discount)}</strong></div>}
-        <div className="summary-row"><span>Delivery</span><strong>{form.city ? money(delivery) : "Choose city"}</strong></div>
-        <div className="summary-row summary-total"><span>Grand total</span><strong>{money(grandTotal)}</strong></div>
-        <div className="summary-row summary-payment"><span>Payment</span><strong>Cash on Delivery</strong></div>
-        {bulk === 0 && items.length > 0 && <p className="deal-note">Add {money(toBulk)} more to get {BULK_DISCOUNT.percent}% off your order.</p>}
-        <p className="cart-note">Prices include everything currently in your bag. Adjust quantities from the bag icon before placing your order.</p>
+        <div className="summary-row"><span>{t("Subtotal")}</span><strong>{money(subtotal)}</strong></div>
+        {bulk > 0 && <div className="summary-row is-deal"><span>{t("Large-order discount ({pct}%)", { pct: BULK_DISCOUNT.percent })}</span><strong>−{money(bulk)}</strong></div>}
+        {discount > 0 && <div className="summary-row is-deal"><span>{t("Discount code")}{coupon ? ` (${coupon.code})` : ""}</span><strong>−{money(discount)}</strong></div>}
+        <div className="summary-row"><span>{t("Delivery")}</span><strong>{form.city ? money(delivery) : t("Choose city")}</strong></div>
+        <div className="summary-row summary-total"><span>{t("Grand total")}</span><strong>{money(grandTotal)}</strong></div>
+        <div className="summary-row summary-payment"><span>{t("Payment")}</span><strong>{t("Cash on Delivery")}</strong></div>
+        {bulk === 0 && items.length > 0 && <p className="deal-note">{t("Add {amount} more to get {pct}% off your order.", { amount: money(toBulk), pct: BULK_DISCOUNT.percent })}</p>}
+        <p className="cart-note">{t("Prices include everything currently in your bag. Adjust quantities from the bag icon before placing your order.")}</p>
       </aside>
     </div>
     </>

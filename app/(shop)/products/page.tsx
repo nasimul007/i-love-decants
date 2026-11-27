@@ -5,11 +5,12 @@ import { ProductsView } from "@/components/products/ProductsView";
 import { loadCatalog } from "@/lib/server/catalog";
 import { productRatings } from "@/lib/server/reviews";
 import { SITE_URL } from "@/lib/config";
+import { getT } from "@/lib/i18n/server";
 
-export const metadata: Metadata = {
-  title: "Shop perfume decants, oils & gift sets — I Love Decants",
-  description: "Browse authentic perfume decants from 3 ml, alcohol-free perfume oils and gift sets. Filter by brand, scent family, strength and size. Cash on delivery in Bangladesh.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("Shop perfume decants, oils & gift sets — I Love Decants"), description: t("Browse authentic perfume decants from 3 ml, alcohol-free perfume oils and gift sets. Filter by brand, scent family, strength and size. Cash on delivery in Bangladesh.") };
+}
 export const dynamic = "force-dynamic";
 
 /** Products are drawn in the browser, so search engines get them here as structured data (no visual change). */
@@ -34,21 +35,22 @@ async function ProductsJsonLd() {
   return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld).replace(/</g, "\\u003c") }} />;
 }
 
-export default function ProductsPage() {
+export default async function ProductsPage() {
+  const t = await getT();
   return (
     <RouteView>
       <ProductsJsonLd />
       <PageHero
-        eyebrow="The scent shelf"
-        title="Everything in one place."
-        lead="Perfume decants, perfume oils, and curated gift sets. Browse them all, filter by scent or size, and pick exactly what fits you."
-        noteTitle="Start with 3 ml."
-        note="Wear it across several days, in your own space, before deciding whether you want more."
+        eyebrow={t("The scent shelf")}
+        title={t("Everything in one place.")}
+        lead={t("Perfume decants, perfume oils, and curated gift sets. Browse them all, filter by scent or size, and pick exactly what fits you.")}
+        noteTitle={t("Start with 3 ml.")}
+        note={t("Wear it across several days, in your own space, before deciding whether you want more.")}
         orb="rgba(226,233,225,.72)"
         compact
       />
       <section className="section">
-        <Suspense fallback={<div className="container"><p className="catalog-count">Loading the scent shelf…</p></div>}>
+        <Suspense fallback={<div className="container"><p className="catalog-count">{t("Loading the scent shelf…")}</p></div>}>
           <ProductsView />
         </Suspense>
       </section>

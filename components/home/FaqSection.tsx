@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/components/providers/PrefsProvider";
 import { useState } from "react";
 import Link from "next/link";
 import { useApi } from "@/lib/api/client";
@@ -9,6 +10,7 @@ import type { PublicFaq } from "@/lib/api/admin";
  *  server so search engines read every answer). Questions are managed in Admin → Home page & content. Hidden when empty. */
 export function FaqSection({ initial, onPage }: { initial?: PublicFaq[]; onPage?: boolean }) {
   const { data } = useApi<PublicFaq[]>("/api/faq");
+  const t = useT();
   const [open, setOpen] = useState<number | null>(onPage && initial?.length ? initial[0].id : null);
   const faqs = Array.isArray(data) ? data : initial ?? [];
   if (!faqs.length) return null;
@@ -16,9 +18,9 @@ export function FaqSection({ initial, onPage }: { initial?: PublicFaq[]; onPage?
     <section className="section faq-section" id={onPage ? undefined : "faq"} aria-labelledby="faqTitle">
       <div className="container faq-wrap">
         <div className="faq-head">
-          <span className="eyebrow">{onPage ? `${faqs.length} answer${faqs.length === 1 ? "" : "s"}` : "Good to know"}</span>
-          <h2 id="faqTitle">{onPage ? "Questions, answered." : "Frequently asked questions"}</h2>
-          {!onPage && <Link className="btn btn-secondary btn-small faq-all" href="/faq">Open the FAQ page <span aria-hidden="true">→</span></Link>}
+          <span className="eyebrow">{onPage ? t(faqs.length === 1 ? "{n} answer" : "{n} answers", { n: faqs.length }) : t("Good to know")}</span>
+          <h2 id="faqTitle">{onPage ? t("Questions, answered.") : t("Frequently asked questions")}</h2>
+          {!onPage && <Link className="btn btn-secondary btn-small faq-all" href="/faq">{t("Open the FAQ page")} <span aria-hidden="true">→</span></Link>}
         </div>
         <div className="faq-list">
           {faqs.map((f) => {

@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/components/providers/PrefsProvider";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, PointerEvent } from "react";
 import { ProductBottle } from "@/components/ui/BottleVisual";
@@ -13,6 +14,7 @@ import { useSwipe } from "@/hooks/useSwipe";
 export function HeroSwitcher() {
   const { products } = useCatalog();
   const { openProduct } = useUI();
+  const t = useT();
   const stage = useRef<HTMLDivElement>(null);
   const [current, setCurrent] = useState(0);
   const [shown, setShown] = useState(0);
@@ -74,31 +76,31 @@ export function HeroSwitcher() {
         {product ? (
           <>
             <div className={`hero-product${changing ? " is-changing" : ""}`}>
-              <button className="hero-product-button" type="button" data-open-product data-cursor-grab aria-label={`View ${product.name} and choose a volume`} onClick={() => openProduct(product.id)}>
+              <button className="hero-product-button" type="button" data-open-product data-cursor-grab aria-label={t("View {name} and choose a volume", { name: product.name })} onClick={() => openProduct(product.id)}>
                 <ProductBottle product={product} />
               </button>
             </div>
             <div className="hero-caption">
               <strong>{product.name}</strong>
-              <span>{product.notes} · From {money(priceFrom(product))}</span>
-              <small>Select the bottle to choose a volume</small>
+              <span>{product.notes} · {t("From")} {money(priceFrom(product))}</span>
+              <small>{t("Select the bottle to choose a volume")}</small>
             </div>
             {heroProducts.length > 1 && (
               <>
-                <button className="icon-btn hero-arrow hero-arrow--prev" type="button" aria-label="Previous perfume" onClick={() => go(-1)}>‹</button>
-                <button className="icon-btn hero-arrow hero-arrow--next" type="button" aria-label="Next perfume" onClick={() => go(1)}>›</button>
+                <button className="icon-btn hero-arrow hero-arrow--prev" type="button" aria-label={t("Previous perfume")} onClick={() => go(-1)}>‹</button>
+                <button className="icon-btn hero-arrow hero-arrow--next" type="button" aria-label={t("Next perfume")} onClick={() => go(1)}>›</button>
               </>
             )}
-            <div className="hero-dots" aria-label="Hero perfumes">
+            <div className="hero-dots" aria-label={t("Hero perfumes")}>
               {heroProducts.map((p, i) => (
-                <button key={p.id} className={`hero-dot${i === current ? " is-active" : ""}`} type="button" aria-label={`Show ${p.name}`} onClick={() => setCurrent(i)} />
+                <button key={p.id} className={`hero-dot${i === current ? " is-active" : ""}`} type="button" aria-label={t("Show {name}", { name: p.name })} onClick={() => setCurrent(i)} />
               ))}
             </div>
           </>
         ) : (
           <>
-            <div className="hero-product"><div className="hero-empty-state">Our scent shelf is being refreshed.</div></div>
-            <div className="hero-caption"><strong>Returning shortly</strong><span>Check back for the next quiet favourite.</span></div>
+            <div className="hero-product"><div className="hero-empty-state">{t("Our scent shelf is being refreshed.")}</div></div>
+            <div className="hero-caption"><strong>{t("Returning shortly")}</strong><span>{t("Check back for the next quiet favourite.")}</span></div>
           </>
         )}
     </div>

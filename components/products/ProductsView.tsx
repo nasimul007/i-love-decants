@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/components/providers/PrefsProvider";
 import { useEffect, useMemo, useState } from "react";
 import type { CSSProperties } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -35,6 +36,7 @@ export function ProductsView() {
   const volumes = useVolumes();
   const fullBottle = useFullBottle();
   const { service } = useCart();
+  const t = useT();
 
   const query = (params.get("q") ?? "").trim().toLowerCase();
   const tabParam = params.get("tab");
@@ -101,11 +103,11 @@ export function ProductsView() {
 
   const addGift = (id: string, name: string) => {
     const gift = gifts.find((g) => g.id === id);
-    if (gift) { service.add(service.lineForGift(gift)); showToast(`${name} added to your bag.`); }
+    if (gift) { service.add(service.lineForGift(gift)); showToast(t("{name} added to your bag.", { name })); }
   };
   const addOil = (id: string, name: string) => {
     const oil = oils.find((o) => o.id === id);
-    if (oil) { service.add(service.lineForOil(oil)); showToast(`${name} added to your bag.`); }
+    if (oil) { service.add(service.lineForOil(oil)); showToast(t("{name} added to your bag.", { name })); }
   };
 
   // The tab lives in the URL, so a footer link such as /products?tab=decants always switches to (and scrolls to) its section.
@@ -122,48 +124,48 @@ export function ProductsView() {
     <div className="container">
       <div className="product-section-tabs" id="product-tabs" role="tablist">
         {tabs.map(([id, label]) => (
-          <button key={id} className={`prod-tab-btn${tab === id ? " is-active" : ""}`} type="button" role="tab" aria-selected={tab === id} onClick={() => pickTab(id)}>{label}</button>
+          <button key={id} className={`prod-tab-btn${tab === id ? " is-active" : ""}`} type="button" role="tab" aria-selected={tab === id} onClick={() => pickTab(id)}>{t(label)}</button>
         ))}
       </div>
 
       {/* ───── Decants ───── */}
       <div className={`prod-section-panel${tab === "decants" ? " is-active" : ""}`}>
         <div className="catalog-layout">
-          <aside className={`filters${filtersOpen ? " is-open" : ""}`} id="filtersPanel" aria-label="Product filters">
+          <aside className={`filters${filtersOpen ? " is-open" : ""}`} id="filtersPanel" aria-label={t("Product filters")}>
             <div className="filter-top">
-              <h2>Filter softly</h2>
-              <button className="filter-reset" type="button" onClick={() => setFilters((f) => ({ ...DEFAULTS, sort: f.sort }))}>Clear all</button>
-              <button className="icon-btn mobile-filter-button" type="button" aria-label="Close filters" onClick={() => setFiltersOpen(false)}>×</button>
+              <h2>{t("Filter softly")}</h2>
+              <button className="filter-reset" type="button" onClick={() => setFilters((f) => ({ ...DEFAULTS, sort: f.sort }))}>{t("Clear all")}</button>
+              <button className="icon-btn mobile-filter-button" type="button" aria-label={t("Close filters")} onClick={() => setFiltersOpen(false)}>×</button>
             </div>
             <div className="filter-group">
-              <span className="filter-group-title">Scent family</span>
+              <span className="filter-group-title">{t("Scent family")}</span>
               <div className="filter-options">
-                <Chip name="family" value="all" label="All" current={filters.family} onPick={set("family")} />
-                {families.map((f) => <Chip key={f} name="family" value={f.toLowerCase()} label={f} current={filters.family} onPick={set("family")} />)}
+                <Chip name="family" value="all" label={t("All")} current={filters.family} onPick={set("family")} />
+                {families.map((f) => <Chip key={f} name="family" value={f.toLowerCase()} label={t(f)} current={filters.family} onPick={set("family")} />)}
               </div>
             </div>
             {facetGroups.filter(([, , vals]) => vals.length > 1).map(([key, title, vals]) => (
               <div className="filter-group" key={key}>
-                <span className="filter-group-title">{title}</span>
+                <span className="filter-group-title">{t(title)}</span>
                 <div className="filter-options">
-                  <Chip name={key} value="all" label="All" current={filters[key]} onPick={set(key)} />
-                  {vals.map((v) => <Chip key={v} name={key} value={v} label={v} current={filters[key]} onPick={set(key)} />)}
+                  <Chip name={key} value="all" label={t("All")} current={filters[key]} onPick={set(key)} />
+                  {vals.map((v) => <Chip key={v} name={key} value={v} label={t(v)} current={filters[key]} onPick={set(key)} />)}
                 </div>
               </div>
             ))}
             <div className="filter-group">
-              <span className="filter-group-title">Size</span>
+              <span className="filter-group-title">{t("Size")}</span>
               <div className="filter-options">
-                <Chip name="size" value="all" label="Any" current={filters.size} onPick={set("size")} />
+                <Chip name="size" value="all" label={t("Any")} current={filters.size} onPick={set("size")} />
                 {volumes.map((v) => <Chip key={v} name="size" value={String(v)} label={`${v} ml`} current={filters.size} onPick={set("size")} />)}
-                {fullBottle && <Chip name="size" value="full" label="Full bottle" current={filters.size} onPick={set("size")} />}
+                {fullBottle && <Chip name="size" value="full" label={t("Full bottle")} current={filters.size} onPick={set("size")} />}
               </div>
             </div>
             <div className="filter-group">
-              <span className="filter-group-title">Starting price</span>
+              <span className="filter-group-title">{t("Starting price")}</span>
               <div className="filter-options">
-                <Chip name="price" value="all" label="Any" current={filters.price} onPick={set("price")} />
-                <Chip name="price" value="under300" label="Under ৳300" current={filters.price} onPick={set("price")} />
+                <Chip name="price" value="all" label={t("Any")} current={filters.price} onPick={set("price")} />
+                <Chip name="price" value="under300" label={t("Under ৳300")} current={filters.price} onPick={set("price")} />
                 <Chip name="price" value="300plus" label="৳300+" current={filters.price} onPick={set("price")} />
               </div>
             </div>
@@ -172,25 +174,25 @@ export function ProductsView() {
           <div className="catalog-main">
             <div className="catalog-toolbar">
               <div>
-                <button className="btn btn-secondary btn-small mobile-filter-button" type="button" aria-controls="filtersPanel" aria-expanded={filtersOpen} onClick={() => setFiltersOpen(true)}>Filters</button>
+                <button className="btn btn-secondary btn-small mobile-filter-button" type="button" aria-controls="filtersPanel" aria-expanded={filtersOpen} onClick={() => setFiltersOpen(true)}>{t("Filters")}</button>
                 <span className="catalog-count">
-                  {items.length} scent{items.length === 1 ? "" : "s"}{query ? ` matching “${query}”` : ""}
+                  {t(items.length === 1 ? "{n} scent" : "{n} scents", { n: items.length })}{query ? ` ${t("matching “{q}”", { q: query })}` : ""}
                 </span>
               </div>
               <label>
-                <span className="sr-only">Sort products</span>
+                <span className="sr-only">{t("Sort products")}</span>
                 <select className="soft-select" value={filters.sort} onChange={(e) => set("sort")(e.target.value)}>
-                  <option value="featured">Featured</option>
-                  <option value="price-low">Price: low to high</option>
-                  <option value="price-high">Price: high to low</option>
-                  <option value="name">Name</option>
+                  <option value="featured">{t("Featured")}</option>
+                  <option value="price-low">{t("Price: low to high")}</option>
+                  <option value="price-high">{t("Price: high to low")}</option>
+                  <option value="name">{t("Name")}</option>
                 </select>
               </label>
             </div>
             <div className="product-grid">
               {items.length
                 ? items.map((p) => <ProductCard key={p.id} product={p} />)
-                : <div className="empty-catalog"><h3>No quiet match yet</h3><p>Try another family or clear the filters.</p></div>}
+                : <div className="empty-catalog"><h3>{t("No quiet match yet")}</h3><p>{t("Try another family or clear the filters.")}</p></div>}
             </div>
           </div>
         </div>
@@ -199,9 +201,9 @@ export function ProductsView() {
       {/* ───── Oils ───── */}
       <div className={`prod-section-panel${tab === "oils" ? " is-active" : ""}`}>
         <div style={{ marginBottom: "1.5rem" }}>
-          <span className="eyebrow">Roll-on and ready</span>
-          <h2 style={{ fontFamily: "var(--serif)", fontSize: "clamp(1.8rem,4vw,2.6rem)", fontWeight: 600, letterSpacing: "-.04em", margin: ".35rem 0 .6rem" }}>Perfume Oils.</h2>
-          <p style={{ color: "var(--muted)", maxWidth: "48ch" }}>Alcohol-free, pocket-ready roll-ons: smooth to apply, easy to layer, made for a close and lasting scent ritual.</p>
+          <span className="eyebrow">{t("Roll-on and ready")}</span>
+          <h2 style={{ fontFamily: "var(--serif)", fontSize: "clamp(1.8rem,4vw,2.6rem)", fontWeight: 600, letterSpacing: "-.04em", margin: ".35rem 0 .6rem" }}>{t("Perfume Oils.")}</h2>
+          <p style={{ color: "var(--muted)", maxWidth: "48ch" }}>{t("Alcohol-free, pocket-ready roll-ons: smooth to apply, easy to layer, made for a close and lasting scent ritual.")}</p>
         </div>
         <div className="oil-grid">
           {oils.map((oil) => (
@@ -209,10 +211,10 @@ export function ProductsView() {
               {!!oil.images?.length && <div className="item-gallery"><ProductGallery product={oil} /></div>}
               <h3>{oil.name}</h3>
               <RatingMini id={oil.id} />
-              <p>Alcohol-free 6 ml roll-on, easy to carry and reapply through the day.</p>
+              <p>{t("Alcohol-free 6 ml roll-on, easy to carry and reapply through the day.")}</p>
               <div className="oil-card-footer">
                 <span className="gift-price">{oil.wasPrice !== undefined && <s className="was-price">{money(oil.wasPrice)}</s>}{money(oil.price)}</span>
-                <button className="btn btn-primary btn-small" type="button" onClick={() => addOil(oil.id, oil.name)}>Add to cart</button>
+                <button className="btn btn-primary btn-small" type="button" onClick={() => addOil(oil.id, oil.name)}>{t("Add to cart")}</button>
               </div>
             </article>
           ))}
@@ -223,9 +225,9 @@ export function ProductsView() {
       <div className={`prod-section-panel${tab === "gifts" ? " is-active" : ""}`}>
         <div className="gift-feature" style={{ marginBottom: "3rem" }}>
           <div className="gift-feature-copy">
-            <span className="eyebrow">A calm place to begin</span>
-            <h2>Let them discover slowly.</h2>
-            <p>Our discovery gifts turn choosing perfume into a gentle experience. Several small volumes, a simple scent guide, and room to find the one that feels right.</p>
+            <span className="eyebrow">{t("A calm place to begin")}</span>
+            <h2>{t("Let them discover slowly.")}</h2>
+            <p>{t("Our discovery gifts turn choosing perfume into a gentle experience. Several small volumes, a simple scent guide, and room to find the one that feels right.")}</p>
           </div>
           <div className="gift-feature-art" aria-hidden="true">
             <div className="mini-bottles">
@@ -241,8 +243,8 @@ export function ProductsView() {
         </div>
 
         <div style={{ marginBottom: "1.5rem" }}>
-          <SectionHeading eyebrow="Curated and ready" title="Gifts with an easy yes.">
-            <p>Each set includes calm presentation packaging and space for a short personal message.</p>
+          <SectionHeading eyebrow={t("Curated and ready")} title={t("Gifts with an easy yes.")}>
+            <p>{t("Each set includes calm presentation packaging and space for a short personal message.")}</p>
           </SectionHeading>
         </div>
         <div className="gift-grid">
@@ -251,24 +253,24 @@ export function ProductsView() {
               {g.images?.length
                 ? <div className="item-gallery"><ProductGallery product={g} /></div>
                 : <div className="gift-card-art" style={{ "--gift-bg": `linear-gradient(145deg,${g.accent},#f8f1eb)` } as CSSProperties}><div className="gift-box-art" /></div>}
-              <span className="eyebrow">Ready to give</span>
+              <span className="eyebrow">{t("Ready to give")}</span>
               <h3>{g.name}</h3>
               <RatingMini id={g.id} />
               <p>{g.description}</p>
               <div className="gift-card-footer">
                 <span className="gift-price">{g.wasPrice !== undefined && <s className="was-price">{money(g.wasPrice)}</s>}{money(g.price)}</span>
-                <button className="btn btn-primary btn-small" type="button" onClick={() => addGift(g.id, g.name)}>Add to cart</button>
+                <button className="btn btn-primary btn-small" type="button" onClick={() => addGift(g.id, g.name)}>{t("Add to cart")}</button>
               </div>
             </article>
           ))}
         </div>
 
         <div style={{ marginTop: "3rem" }}>
-          <div style={{ marginBottom: "1.5rem" }}><SectionHeading eyebrow="Small finishing touches" title="Make it feel considered." /></div>
+          <div style={{ marginBottom: "1.5rem" }}><SectionHeading eyebrow={t("Small finishing touches")} title={t("Make it feel considered.")} /></div>
           <div className="gift-options-grid">
-            <article className="gift-option"><span className="gift-option-icon" aria-hidden="true">⌁</span><h3>Soft gift wrapping</h3><p>Muted paper, a fabric ribbon, and a clean carton without excessive decoration.</p></article>
-            <article className="gift-option"><span className="gift-option-icon" aria-hidden="true">Aa</span><h3>Personal message</h3><p>Add a short handwritten note at no extra charge to make the gift unmistakably yours.</p></article>
-            <article className="gift-option"><span className="gift-option-icon" aria-hidden="true">◇</span><h3>Special packaging</h3><p>Choose a linen-touch box or a compact protective carton based on your budget.</p></article>
+            <article className="gift-option"><span className="gift-option-icon" aria-hidden="true">⌁</span><h3>{t("Soft gift wrapping")}</h3><p>{t("Muted paper, a fabric ribbon, and a clean carton without excessive decoration.")}</p></article>
+            <article className="gift-option"><span className="gift-option-icon" aria-hidden="true">Aa</span><h3>{t("Personal message")}</h3><p>{t("Add a short handwritten note at no extra charge to make the gift unmistakably yours.")}</p></article>
+            <article className="gift-option"><span className="gift-option-icon" aria-hidden="true">◇</span><h3>{t("Special packaging")}</h3><p>{t("Choose a linen-touch box or a compact protective carton based on your budget.")}</p></article>
           </div>
         </div>
       </div>

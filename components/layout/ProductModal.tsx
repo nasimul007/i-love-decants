@@ -8,18 +8,19 @@ import { ProductGallery } from "@/components/products/ProductGallery";
 import { ScentFamily, factsOf } from "@/components/ui/ProductCard";
 import { useUI } from "@/components/providers/UIProvider";
 import { useCart, useCatalog, useSprays } from "@/hooks/useServices";
-import { formatSprays } from "@/lib/services/catalogOverrides";
 import { money } from "@/lib/format";
 import { volumesOf } from "@/lib/volumes";
 import type { Product } from "@/types";
 import { RatingMini } from "@/components/reviews/RatingMini";
 import { ProductReviews } from "@/components/reviews/ProductReviews";
+import { useT } from "@/components/providers/PrefsProvider";
 
 export function ProductModal() {
   const { productId, closeProduct, openCart } = useUI();
   const { products } = useCatalog();
   const { service } = useCart();
   const sprays = useSprays();
+  const tr = useT();
   /** A volume in ml, or "full" for the Full bottle option. */
   const [size, setSize] = useState<number | "full">(0);
   const lastProduct = useRef<Product | null>(null);
@@ -35,7 +36,7 @@ export function ProductModal() {
   const firstChoice = (p: Product | null): number | "full" => (p ? volumesOf(p)[0] ?? (p.fullBottle ? "full" : 0) : 0);
   const selected: number | "full" = size === "full" ? (full ? "full" : firstChoice(product)) : volumes.includes(size) ? size : firstChoice(product);
   const selectedPrice = selected === "full" ? full?.price ?? 0 : product?.prices[selected] ?? 0;
-  const selectedLabel = selected === "full" ? `Full bottle (${full?.ml} ml)` : `${selected} ml`;
+  const selectedLabel = selected === "full" ? `${tr("Full bottle")} (${full?.ml} ml)` : `${selected} ml`;
 
   useEffect(() => {
     if (!open) return;
@@ -59,7 +60,7 @@ export function ProductModal() {
       <section className="product-modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" style={{ ["--modal-pale" as string]: product?.pale } as CSSProperties}>
         {product && (
           <>
-            <button ref={closeBtn} className="icon-btn modal-close" type="button" aria-label="Close product details" onClick={closeProduct}><CloseIcon /></button>
+            <button ref={closeBtn} className="icon-btn modal-close" type="button" aria-label={tr("Close product details")} onClick={closeProduct}><CloseIcon /></button>
             <div className={`modal-visual${product.images?.length ? " has-photos" : ""}`}>{product.images?.length ? <ProductGallery key={product.id} product={product} /> : <ProductBottle product={product} />}</div>
             <div className="modal-copy">
               {product.brand && <span className="product-brand">{product.brand}</span>}
@@ -67,38 +68,38 @@ export function ProductModal() {
               <ScentFamily product={product} />
               <RatingMini id={product.id} onClick={() => document.getElementById("productReviews")?.scrollIntoView({ behavior: "smooth", block: "start" })} />
               <div className="modal-size-block">
-                <span className="size-label">Choose your volume <small aria-live="polite">{selectedLabel} selected</small></span>
-                <div className="size-options" aria-label="Available volumes">
+                <span className="size-label">{tr("Choose your volume")} <small aria-live="polite">{tr("{size} selected", { size: selectedLabel })}</small></span>
+                <div className="size-options" aria-label={tr("Available volumes")}>
                   {volumes.map((s) => (
                     <button key={s} className={`size-option${s === selected ? " is-active" : ""}`} type="button" aria-pressed={s === selected} onClick={() => setSize(s)}>
-                      <strong>{s} ml</strong><span>{product.wasPrices?.[s] !== undefined && <s className="was-price">{money(product.wasPrices[s])}</s>}{money(product.prices[s])}</span>{sprays[s] !== undefined && <small className="size-option-sprays">{formatSprays(sprays[s])}</small>}
+                      <strong>{s} ml</strong><span>{product.wasPrices?.[s] !== undefined && <s className="was-price">{money(product.wasPrices[s])}</s>}{money(product.prices[s])}</span>{sprays[s] !== undefined && <small className="size-option-sprays">{tr("{n}+ sprays", { n: sprays[s] })}</small>}
                     </button>
                   ))}
                   {full && (
                     <button className={`size-option size-option--full${selected === "full" ? " is-active" : ""}`} type="button" aria-pressed={selected === "full"} onClick={() => setSize("full")}>
-                      <strong>Full bottle</strong><span>{money(full.price)}</span><small className="size-option-sprays">{full.ml} ml · {formatSprays(full.sprays)}</small>
+                      <strong>{tr("Full bottle")}</strong><span>{money(full.price)}</span><small className="size-option-sprays">{full.ml} ml · {tr("{n}+ sprays", { n: full.sprays })}</small>
                     </button>
                   )}
                 </div>
               </div>
               <div className="modal-purchase">
                 <span className="modal-price">{selected !== "full" && product.wasPrices?.[selected] !== undefined && <s className="was-price">{money(product.wasPrices[selected])}</s>}{money(selectedPrice)}</span>
-                <button className="btn btn-primary" type="button" aria-label={`Add ${product.name} to cart`} onClick={add}>Add to cart</button>
+                <button className="btn btn-primary" type="button" aria-label={tr("Add {name} to cart", { name: product.name })} onClick={add}>{tr("Add to cart")}</button>
               </div>
-              <p className="modal-trust">Cash on delivery · 1–2 day delivery inside Dhaka · Poured from original bottles</p>
+              <p className="modal-trust">{tr("Cash on delivery · 1–2 day delivery inside Dhaka · Poured from original bottles")}</p>
               {product.description && <p className="modal-description">{product.description}</p>}
-              {factsOf(product).length > 0 && (
-                <dl className="notes-pyramid" aria-label="Perfume details">
-                  {factsOf(product).map(([k, v]) => <div key={k} className="note-level"><dt>{k}</dt><dd>{v}</dd></div>)}
+              {factsOf(product, tr).length > 0 && (
+                <dl className="notes-pyramid" aria-label={tr("Perfume details")}>
+                  {factsOf(product, tr).map(([k, v]) => <div key={k} className="note-level"><dt>{k}</dt><dd>{v}</dd></div>)}
                 </dl>
               )}
-              {product.lasting && <p className="modal-fineprint">Lasting is a general guide from wear tests; skin, weather and the number of sprays change it.</p>}
+              {product.lasting && <p className="modal-fineprint">{tr("Lasting is a general guide from wear tests; skin, weather and the number of sprays change it.")}</p>}
               {[product.top, product.heart, product.base].some(Boolean) && (
-                <dl className="notes-pyramid" aria-label="Fragrance notes">
-                  {([["Top", product.top], ["Heart", product.heart], ["Base", product.base]] as const).filter(([, v]) => v).map(([k, v]) => <div key={k} className="note-level"><dt>{k}</dt><dd>{v}</dd></div>)}
+                <dl className="notes-pyramid" aria-label={tr("Fragrance notes")}>
+                  {([["Top", product.top], ["Heart", product.heart], ["Base", product.base]] as const).filter(([, v]) => v).map(([k, v]) => <div key={k} className="note-level"><dt>{tr(k)}</dt><dd>{v}</dd></div>)}
                 </dl>
               )}
-              {!!product.keyNotes?.length && <p className="key-notes" aria-label="Key notes">{product.keyNotes.map((n) => <span key={n}>{n}</span>)}</p>}
+              {!!product.keyNotes?.length && <p className="key-notes" aria-label={tr("Key notes")}>{product.keyNotes.map((n) => <span key={n}>{n}</span>)}</p>}
               <ProductReviews key={product.id} id={product.id} name={product.name} />
             </div>
           </>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/components/providers/PrefsProvider";
 import { useEffect, useRef, useState } from "react";
 import { useApi } from "@/lib/api/client";
 
@@ -13,6 +14,7 @@ export function NoticeBar() {
   const track = useRef<HTMLDivElement>(null);
   const [dur, setDur] = useState(30);
   const [paused, setPaused] = useState(false);
+  const t = useT();
 
   // The track moves by half its width per loop, so duration = that distance / speed. Re-measured on resize.
   useEffect(() => {
@@ -28,12 +30,12 @@ export function NoticeBar() {
   if (!items.length) return null;
   // Four identical groups: the track moves by half its width, so the loop is seamless and wider than any screen.
   return (
-    <div className={`notice-bar${paused ? " is-paused" : ""}`} role="status" aria-label="Store notices" title={paused ? "Tap to resume" : "Tap to pause"}
+    <div className={`notice-bar${paused ? " is-paused" : ""}`} role="status" aria-label={t("Store notices")} title={paused ? t("Tap to resume") : t("Tap to pause")}
       style={{ ["--notice-duration" as string]: `${dur}s` }} onClick={() => setPaused((p) => !p)}>
       <div className="notice-track" ref={track}>
         {[0, 1, 2, 3].map((g) => (
           <span key={g} className="notice-group" aria-hidden={g > 0 ? true : undefined}>
-            {items.map((t, i) => <span key={i} className="notice-item">{t}</span>)}
+            {items.map((text, i) => <span key={i} className="notice-item">{text}</span>)}
           </span>
         ))}
       </div>

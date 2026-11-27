@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/components/providers/PrefsProvider";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useSwipe } from "@/hooks/useSwipe";
@@ -16,6 +17,7 @@ const MIN = 1, MAX = 4, STEP = 0.75;
 /** Full-screen photo viewer: click/double-tap or +/− to zoom, drag/scroll to look around, Esc / × / click outside to close. */
 export function Lightbox({ images, index, onIndex, onClose }: Props) {
   const [zoom, setZoom] = useState(1);
+  const t = useT();
   const scroller = useRef<HTMLDivElement>(null);
   const closeBtn = useRef<HTMLButtonElement>(null);
   const img = images[index];
@@ -44,13 +46,13 @@ export function Lightbox({ images, index, onIndex, onClose }: Props) {
   const zoomed = zoom > 1;
 
   return createPortal(
-    <div className="lb" role="dialog" aria-modal="true" aria-label="Photo viewer" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+    <div className="lb" role="dialog" aria-modal="true" aria-label={t("Photo viewer")} onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="lb-bar">
         <span className="lb-count" aria-live="polite">{many ? `${index + 1} / ${images.length}` : ""}</span>
         <div className="lb-tools">
-          <button type="button" aria-label="Zoom out" disabled={zoom <= MIN} onClick={() => setZoom((z) => Math.max(MIN, z - STEP))}>−</button>
-          <button type="button" aria-label="Zoom in" disabled={zoom >= MAX} onClick={() => setZoom((z) => Math.min(MAX, z + STEP))}>+</button>
-          <button ref={closeBtn} type="button" aria-label="Close photo viewer" onClick={onClose}>×</button>
+          <button type="button" aria-label={t("Zoom out")} disabled={zoom <= MIN} onClick={() => setZoom((z) => Math.max(MIN, z - STEP))}>−</button>
+          <button type="button" aria-label={t("Zoom in")} disabled={zoom >= MAX} onClick={() => setZoom((z) => Math.min(MAX, z + STEP))}>+</button>
+          <button ref={closeBtn} type="button" aria-label={t("Close photo viewer")} onClick={onClose}>×</button>
         </div>
       </div>
       <div className="lb-scroll" ref={scroller} onClick={(e) => { if (e.target === e.currentTarget) onClose(); }} {...swipe}>
@@ -61,11 +63,11 @@ export function Lightbox({ images, index, onIndex, onClose }: Props) {
       </div>
       {many && (
         <>
-          <button type="button" className="lb-nav lb-prev" aria-label="Previous photo" onClick={() => onIndex((index - 1 + images.length) % images.length)}>‹</button>
-          <button type="button" className="lb-nav lb-next" aria-label="Next photo" onClick={() => onIndex((index + 1) % images.length)}>›</button>
+          <button type="button" className="lb-nav lb-prev" aria-label={t("Previous photo")} onClick={() => onIndex((index - 1 + images.length) % images.length)}>‹</button>
+          <button type="button" className="lb-nav lb-next" aria-label={t("Next photo")} onClick={() => onIndex((index + 1) % images.length)}>›</button>
         </>
       )}
-      <p className="lb-hint">{zoomed ? "Click the photo to zoom out · scroll or drag to look around" : "Click the photo to zoom in"}</p>
+      <p className="lb-hint">{zoomed ? t("Click the photo to zoom out · scroll or drag to look around") : t("Click the photo to zoom in")}</p>
     </div>,
     document.body,
   );

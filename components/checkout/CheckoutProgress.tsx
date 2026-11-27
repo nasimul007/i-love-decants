@@ -1,3 +1,6 @@
+"use client";
+
+import { useT } from "@/components/providers/PrefsProvider";
 import type { CSSProperties } from "react";
 
 const STEPS = ["Bag", "Details", "Done"];
@@ -8,15 +11,16 @@ const STEPS = ["Bag", "Details", "Done"];
  */
 export function CheckoutProgress({ done = false }: { done?: boolean }) {
   const pct = done ? 100 : 50;
+  const t = useT();
   const reached = done ? STEPS.length : 1; // steps fully completed
   return (
-    <div className="checkout-progress" role="progressbar" aria-label="Order progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct}
-      aria-valuetext={done ? "Order placed" : "Step 2 of 3: your details"} style={{ "--pct": `${pct}%` } as CSSProperties}>
+    <div className="checkout-progress" role="progressbar" aria-label={t("Order progress")} aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct}
+      aria-valuetext={done ? t("Order placed") : t("Step 2 of 3: your details")} style={{ "--pct": `${pct}%` } as CSSProperties}>
       <ol className="checkout-progress-steps">
-        {STEPS.map((s, i) => <li key={s} className={i < reached ? "is-done" : i === reached ? "is-current" : undefined}>{s}</li>)}
+        {STEPS.map((s, i) => <li key={s} className={i < reached ? "is-done" : i === reached ? "is-current" : undefined}>{t(s)}</li>)}
       </ol>
       <div className="checkout-progress-track"><span /></div>
-      <strong className={`checkout-progress-pct${done ? " is-end" : ""}`}>{done ? "100% · Order placed" : "50% · Almost there"}</strong>
+      <strong className={`checkout-progress-pct${done ? " is-end" : ""}`}>{done ? `100% · ${t("Order placed")}` : `50% · ${t("Almost there")}`}</strong>
     </div>
   );
 }

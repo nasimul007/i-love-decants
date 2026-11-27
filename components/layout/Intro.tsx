@@ -1,11 +1,13 @@
 "use client";
 
+import { useT } from "@/components/providers/PrefsProvider";
 import { useEffect, useState } from "react";
 
 /** Brand splash, shown once per browser session (skipped for reduced-motion users). ~1.5 s in total, tap to skip:
  *  splash guidance keeps the exit animation under ~1 s and never pads with timers. */
 export function Intro() {
   const [phase, setPhase] = useState<"show" | "leaving" | "gone">("show");
+  const t = useT();
 
   useEffect(() => {
     let seen = false;
@@ -23,7 +25,7 @@ export function Intro() {
     <div className={`intro-screen${phase === "leaving" ? " is-leaving" : ""}`} aria-hidden="true" onClick={() => setPhase("gone")}>
       <div className="intro-copy">
         <strong>I Love Decants</strong>
-        <span>Pay less, have more!</span>
+        <span>{t("Pay less, have more!")}</span>
       </div>
     </div>
   );

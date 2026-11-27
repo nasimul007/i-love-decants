@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/components/providers/PrefsProvider";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 
 interface Props {
@@ -16,6 +17,7 @@ export function CitySelect({ id, value, options, onChange }: Props) {
   const [text, setText] = useState(value);
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
+  const t = useT();
 
   useEffect(() => { setText(value); }, [value]); // keep in step with the selected city (e.g. form reset)
 
@@ -41,7 +43,7 @@ export function CitySelect({ id, value, options, onChange }: Props) {
         id={id} type="text" role="combobox" autoComplete="off" spellCheck={false}
         aria-expanded={open} aria-controls={listId} aria-autocomplete="list"
         aria-activedescendant={open && matches[active] ? `${listId}-${active}` : undefined}
-        placeholder="Search or choose your city…" value={text}
+        placeholder={t("Search or choose your city…")} value={text}
         onFocus={(e) => { setOpen(true); e.currentTarget.select(); }}
         onClick={() => setOpen(true)}
         onChange={(e) => { setText(e.target.value); setOpen(true); }}
@@ -53,8 +55,8 @@ export function CitySelect({ id, value, options, onChange }: Props) {
         }}
       />
       {open && (
-        <ul className="city-select-list" id={listId} role="listbox" aria-label="Cities">
-          {matches.length === 0 && <li className="city-select-empty" role="presentation">No city found</li>}
+        <ul className="city-select-list" id={listId} role="listbox" aria-label={t("Cities")}>
+          {matches.length === 0 && <li className="city-select-empty" role="presentation">{t("No city found")}</li>}
           {matches.map((c, i) => (
             <li
               key={c} id={`${listId}-${i}`} data-idx={i} role="option" aria-selected={c === value}

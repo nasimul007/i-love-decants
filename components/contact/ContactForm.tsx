@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/components/providers/PrefsProvider";
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { isBdPhone, isPersonName, NAME_ERROR, toLocalPhone } from "@/lib/validators";
@@ -11,6 +12,7 @@ export function ContactForm() {
   const [values, setValues] = useState({ name: "", phone: "", topic: TOPICS[0], message: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [sent, setSent] = useState(false);
+  const t = useT();
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
@@ -35,36 +37,36 @@ export function ContactForm() {
 
   return (
     <form className="contact-form-card" onSubmit={submit} noValidate>
-      <span className="eyebrow">Send a message</span>
-      <h2>What can we make easier?</h2>
-      <p>We usually reply within one business day. For urgent order questions, WhatsApp may be faster.</p>
+      <span className="eyebrow">{t("Send a message")}</span>
+      <h2>{t("What can we make easier?")}</h2>
+      <p>{t("We usually reply within one business day. For urgent order questions, WhatsApp may be faster.")}</p>
       <div className="form-grid">
         <div className="field">
-          <label htmlFor="contactName">Name</label>
-          <input id="contactName" type="text" autoComplete="name" placeholder="Your name" {...bind("name")} />
-          <span className="field-error">{errors.name}</span>
+          <label htmlFor="contactName">{t("Name")}</label>
+          <input id="contactName" type="text" autoComplete="name" placeholder={t("Your name")} {...bind("name")} />
+          <span className="field-error">{errors.name && t(errors.name)}</span>
         </div>
         <div className="field">
-          <label htmlFor="contactPhone">Phone number <small>(optional)</small></label>
+          <label htmlFor="contactPhone">{t("Phone number")} <small>{t("(optional)")}</small></label>
           <input id="contactPhone" type="tel" inputMode="numeric" maxLength={11} pattern="01[0-9]{9}" autoComplete="tel" placeholder="01XXXXXXXXX" aria-describedby="contactPhoneHint" value={values.phone} onChange={(e) => { setValues({ ...values, phone: toLocalPhone(e.target.value) }); setSent(false); }} />
-          <span className="field-error">{errors.phone}</span>
-          <span className="field-hint" id="contactPhoneHint">11 digits, for example 01712345678.</span>
+          <span className="field-error">{errors.phone && t(errors.phone)}</span>
+          <span className="field-hint" id="contactPhoneHint">{t("11 digits, for example 01712345678.")}</span>
         </div>
         <div className="field full">
-          <label htmlFor="contactTopic">What is this about?</label>
+          <label htmlFor="contactTopic">{t("What is this about?")}</label>
           <select id="contactTopic" value={values.topic} onChange={(e) => setValues({ ...values, topic: e.target.value })}>
-            {TOPICS.map((t) => <option key={t}>{t}</option>)}
+            {TOPICS.map((x) => <option key={x} value={x}>{t(x)}</option>)}
           </select>
         </div>
         <div className="field full">
-          <label htmlFor="contactMessage">Message</label>
-          <textarea id="contactMessage" placeholder="Tell us what you are wondering…" {...bind("message")} />
-          <span className="field-error">{errors.message}</span>
+          <label htmlFor="contactMessage">{t("Message")}</label>
+          <textarea id="contactMessage" placeholder={t("Tell us what you are wondering…")} {...bind("message")} />
+          <span className="field-error">{errors.message && t(errors.message)}</span>
         </div>
       </div>
-      <button className="btn btn-primary" type="submit">Send on WhatsApp</button>
+      <button className="btn btn-primary" type="submit">{t("Send on WhatsApp")}</button>
       <div className={`form-status${sent ? " is-visible" : ""}`} role="status">
-        {sent && "WhatsApp is open with your message. Press send there and we will reply soon."}
+        {sent && t("WhatsApp is open with your message. Press send there and we will reply soon.")}
       </div>
     </form>
   );

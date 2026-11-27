@@ -358,3 +358,37 @@ Test data was removed afterwards.
   - a rightward flick on a photo stays on the page
   - desktop arrows unchanged
 - **Files:** `components/admin/shared.tsx`, `components/admin/Panels.tsx`, `hooks/useSwipe.ts` (new), `components/products/ProductGallery.tsx`, `components/ui/Lightbox.tsx`, `components/home/HeroSwitcher.tsx`, `app/globals.css`.
+
+## Bangla language and night mode (27 Nov 2026, branch `claude/changes`)
+- **Language switch:**
+  - English stays the main language. Visitors switch with **বাং / EN** in the header (desktop) or **বাংলা / English** in the phone menu.
+  - The choice is remembered per visitor (cookie `ild-lang`), and pages are rendered on the server in that language, so nothing flashes.
+- **What is translated:** the whole shop.
+  - Every page, the header, footer, bag, product pop-up, sign-in, chat, reviews, checkout, confirmation, account, form errors, server error messages and page titles (SEO).
+- **What stays as typed:**
+  - The admin is English only.
+  - Text the owner types (perfume names, notes, descriptions, notices, FAQ entries, reviews) shows exactly as typed.
+  - Prices, phone numbers and dates use western digits (৳260, 01712345678); dates use Bangla month names.
+- **Fonts:**
+  - **Tiro Bangla** for headings (an elegant serif that matches the Palatino headings) and **Hind Siliguri** for text (clear at small sizes).
+  - Both are loaded with the Bengali subset only, so English pages download nothing extra.
+  - Bangla gets looser line-height and no letter-spacing, so the marks above and below the letters never clip.
+- **How it works (for developers):**
+  - The English text is the key. `lib/i18n/bn.ts` holds the Bangla (about 690 entries), and a missing entry simply shows English.
+  - Server pages use `await getT()`; client components use `useT()`; `{name}` slots fill in values.
+- **Night mode:**
+  - The moon / sun button switches it, and the choice is remembered (cookie `ild-theme`). The site always starts in day mode.
+  - Dark colours keep the brand's rose, sage and amber hues.
+  - The light colours written directly in the CSS have matching dark versions, generated at the end of `globals.css` (regenerate them if those light colours change).
+  - Pale product tiles and glows are softened.
+  - The admin is never affected.
+- **Tested** on a local build, phone and desktop, all 15 shop pages plus 5 pop-ups:
+  - Default is English + day.
+  - Both switches work and survive a reload; the phone-menu buttons work.
+  - Admin stays light and English.
+  - No English is left in Bangla mode except owner-typed names.
+  - Night-mode text contrast is 4.5:1 or better, except the decorative empty stars and the WhatsApp-green buttons, which measure the same in day mode.
+- **Note:** shop pages now render per request (they read the language cookie) instead of being pre-built. That is fine for this size of shop.
+- **Files:**
+  - New: `lib/i18n/*`, `components/providers/PrefsProvider.tsx`.
+  - Changed: `app/layout.tsx`, `app/(shop)/*`, `app/not-found.tsx`, `app/globals.css`, the shop components, `lib/format.ts`.
