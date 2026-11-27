@@ -1,5 +1,7 @@
 # I Love Decants: change log and developer handoff
 
+> **Newer changes (27 Nov 2026):** see [QA-AUDIT-FIXES.md](QA-AUDIT-FIXES.md). It has a summary of everything done that day and the deploy checklist (four new migrations).
+
 For the developer and the frontend designer. This lists every change made from the start of this piece of work to now: what changed, why, and where.
 The brief came from *Perfume Parameters for I Love Decants (Level 1 Website)*; later sections follow the client's review rounds.
 

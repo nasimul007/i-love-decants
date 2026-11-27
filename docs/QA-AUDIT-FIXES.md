@@ -1,11 +1,73 @@
-# QA audit fixes: branch `claude/changes`
+# All changes of 27 Nov 2026 (QA audit fixes and new features)
 
-These are the fixes for the problems found in the live-site audit (*I-Love-Decants-QA-Audit-Report.docx*, 26 Nov 2026). The branch also adds a show/hide eye to every password box.
+This document lists **every change made on 27 Nov 2026**. The work was done on branch `claude/changes` and **merged into `main`** (from `main` 7728e82): 7 commits, 81 files.
+The first part is a one-page summary and the deploy checklist. Each round is then described in detail with its tests, in the order it was done.
 
-- **Branch:** `claude/changes`, cut from `main` at 7728e82. It is **not merged** into `main`.
-- **Status:** all developer findings are fixed and tested on a local copy. Three items are shop data that only the owner can fill in; see "Left for the owner".
+## Summary
+
+### Storefront (what customers see)
+
+| Area | Change |
+|---|---|
+| Passwords | Show/hide **eye** on every password box (sign in, create account, admin sign-in, owner setup, manager password, “set new password”). |
+| Sign in | **Forgot your password?** → WhatsApp with a ready-made message. An empty sign-in says “Enter your email and password.” |
+| My account | The profile saves a **City**, and checkout fills it in. No error request while signed out. |
+| Sizes | Decants are sold **up to 50 ml only**. Each perfume can switch single sizes **Off** (e.g. not enough left for 50 ml); Off sizes vanish from that perfume's pop-up, bag and checkout. |
+| Scent families | Exactly **five**: Fresh, Floral, Amber, Woods, Fruity (shop filters, product cards, editor). |
+| Discount codes | Per code: **Once per customer** (guests by phone number, signed-in also by account) or **Signed-in, every time** (guests are asked to sign in, with a Sign in link at checkout). Max uses works (tested). Cancelling an order gives the code use back. |
+| Reviews (new) | **/reviews** page:<br>• rating summary with clickable star bars<br>• source filters and sort<br>• masonry cards, “Show more” after 12<br>• **Write a review**: stars with hover, a product picker, up to 3 photos<br>• website reviews wait for approval |
+| Reviews on products | **★ rating** on product, oil and gift cards. The product pop-up shows the latest 3 reviews with **See all** / **Write a review**. **Verified buyer** badge; **Reply from I Love Decants** under reviews. Facebook/Instagram/WhatsApp reviews open the original post. |
+| Home page | “Loved, then re-ordered.” strip shows the reviews switched **On home page** (up to 6). The FAQ has an **Open the FAQ page** button. |
+| FAQ | Separate **/faq** page (same questions as the home FAQ). |
+| Custom design | Gallery of **photos of past designs** (faded side arrows, thumbnails, hover magnifier). The drawn bottle shows until photos are added. |
+| Phone | App-style **menu** (icons, notes, current page highlighted, rows slide in, WhatsApp and Sign in buttons). The shop tabs wrap to two lines instead of being cut. Proper gap between **Filters** and the scent count. The reviews filters sit on one swipeable row. |
+| Intro splash | About **1.5 s** instead of 4.7 s; a tap skips it. |
+| Other | Branded **404 page** with its own title. **Site icon** (and /favicon.ico). “3 ml to 50 ml” text fixed on the FAQ and How we work pages. |
+
+### Admin
+
+| Area | Change |
+|---|---|
+| Managers | New **Orders** and **Reviews** permissions. The Overview hides orders and sign-in history from managers without those permissions, and the server enforces every permission (tested, 403). |
+| Orders | **Delete** for cancelled orders. A status change keeps stock and coupon use correct both ways. |
+| Inventory | **Delete** for archived products (with their photos, sizes and sales). “**Stock only**” label for rows not sold in the shop. The Sizes column follows stock (“3–6 ml (stock limits it)”). A “**Details missing**” note on perfumes without brand, audience or strength. **On/Off switch per size** in the perfume editor. |
+| Customers | **Set new password** (for forgot-password requests; signs the customer out everywhere, logged in Login history), **Delete**, **Download CSV**. |
+| Login history | **Download CSV** (the full history). |
+| Discounts | Sales and code forms no longer overlap. **Who can use it** setting per code (in the form and switchable in the table). |
+| Home page & content | **Custom design photos** panel. **Scent families** fixed to five (Hide/Show only). Perfume families table. |
+| Reviews tab (new) | Pending / Published / Hidden filters, a **pending badge** on the tab, Publish / Hide / ☆ Home page / Edit / Delete. The editor has a product picker, rating, date, post link, **Verified buyer**, **Reply**, screenshots. |
+| Overview | “Live products” counts only items really in the shop. The Shipments card says “N open orders not yet delivered”. |
+
+### Security and SEO
+
+- **Security headers** on every page: no framing, no MIME sniffing, a private referrer and a permissions policy.
+- **Spam guards:** the review form refuses links, has a hidden bot trap and limits each visitor to 5 reviews an hour. Photos are checked by their real file type, and each permission is checked on the server.
+- **CSV safety:** exports are protected against spreadsheet formulas, and open correctly in Excel with Bangla text.
+- **SEO:**
+  - /reviews and /faq are built on the server and listed in the sitemap
+  - product star ratings are in Google's structured data on the shop page
+  - no shop-wide review stars or FAQ schema, which Google doesn't support
+  - 404 pages are marked not to be indexed
+
+## For the developer: deploy checklist
+
+1. Pull `main` and deploy as usual. `vercel-build` runs `prisma migrate deploy && next build`, which applies **four new migrations** in order:
+   - `20261127120000_qa_audit_fixes`: `Customer.city`; sizes above 50 ml set off sale (prices kept); FAQ text 100 → 50 ml.
+   - `20261128120000_coupon_modes_reviews`: `Coupon.oncePerCustomer` (default on, today's rule); `Review` table.
+   - `20261128180000_five_scent_families`: moves perfumes and family sales into the five families and deletes the extra categories (Woody → Woods, Gourmand/Warm → Amber, Aromatic/Citrus → Fresh, Musky → Floral).
+   - `20261128200000_review_upgrades`: review product link, verified, reply, writer account.
+2. **No new environment variables.**
+3. **Existing managers** (none on the live site today) start with Orders and Reviews switched **off**; the owner switches them on in Managers → Edit.
+
+## For the owner after the deploy
+
+- Fill in brand, audience, strength, lasting and key notes for each perfume. Inventory marks the ones still missing them with “Details missing”.
+- Archive and then delete the junk row “ssssssssssss”, and the audit's test data (the three QA TEST products, two cancelled QA orders, the QA customer).
+- Check each perfume's family (Admin → Home page & content → Perfume families). Upload Custom design photos, and add reviews from WhatsApp or Facebook.
 
 ---
+
+# Round 1: QA audit fixes (F-01 … F-19) and password eyes
 
 ## 1. Database migration (runs by itself on deploy)
 
@@ -89,7 +151,7 @@ Files: `components/ui/PasswordInput.tsx` (new), `components/ui/Icons.tsx`, `app/
 
 ---
 
-# Round 2 (27 Nov 2026): your test feedback + new features
+# Round 2: your test feedback + new features
 
 Second migration: `prisma/migrations/20261128120000_coupon_modes_reviews`. It adds `Coupon.oncePerCustomer` (default **on**, today's rule) and the `Review` table. It runs by itself on deploy.
 
@@ -151,7 +213,7 @@ Second migration: `prisma/migrations/20261128120000_coupon_modes_reviews`. It ad
 - **Tested:** 5 questions on desktop and phone, the accordion opens one at a time, no sideways scrolling, no errors, every link works.
 - **Files:** `app/(shop)/faq/page.tsx`, `components/home/FaqSection.tsx`, `components/layout/Header.tsx`, `components/layout/Footer.tsx`, `app/sitemap.ts`, `app/globals.css`
 
-## Five scent families only (28 Nov 2026)
+## Five scent families only (27 Nov 2026)
 
 The shop now has exactly **five scent families: Fresh, Floral, Amber, Woods, Fruity**.
 
@@ -181,7 +243,7 @@ The shop now has exactly **five scent families: Fresh, Floral, Amber, Woods, Fru
   - `lib/api/admin.ts`
   - the migration
 
-## On/Off per size for each perfume (28 Nov 2026)
+## On/Off per size for each perfume (27 Nov 2026)
 
 **Problem:** a perfume may not have enough left for a 50 ml decant (for example only 20 ml left), but its 50 ml price should not be lost.
 
@@ -205,7 +267,7 @@ The shop now has exactly **five scent families: Fresh, Floral, Amber, Woods, Fru
   - `types/index.ts`
   - `app/globals.css`
 
-## Reviews: all 10 audit improvements (28 Nov 2026)
+## Reviews: all 10 audit improvements (27 Nov 2026)
 
 Migration `prisma/migrations/20261128200000_review_upgrades` (runs on deploy) adds to each review: the product it is about, a verified flag, the shop's reply (with its date) and the writer's account.
 
