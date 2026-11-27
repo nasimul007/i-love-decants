@@ -32,7 +32,7 @@ export const DELETE = route(async (_req, { params }: Ctx) => {
   const cur = await db.category.findUnique({ where: { id } });
   if (!cur) throw new HttpError(404, "Category not found.");
   const used = await db.product.count({ where: { family: cur.name } });
-  if (used) throw new HttpError(409, `${used} perfume${used === 1 ? "" : "s"} still use “${cur.name}”. Move them to another category first, or hide the category instead.`);
+  if (used) throw new HttpError(409, `${used} perfume${used === 1 ? " still uses" : "s still use"} “${cur.name}”. Move them to another category first, or hide the category instead.`);
   await db.category.delete({ where: { id } });
   return ok(await listCategories());
 });

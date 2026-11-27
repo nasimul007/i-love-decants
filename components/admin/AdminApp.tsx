@@ -6,6 +6,7 @@ import { useAdminMe } from "@/hooks/useServices";
 import { adminApi } from "@/lib/api/admin";
 import { can } from "@/lib/services/admin";
 import { Dashboard } from "./Dashboard";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 
 function StoreLink() {
   return <p style={{ margin: "1rem 0 0", textAlign: "center", fontSize: ".84rem" }}><a href="/" style={{ color: "var(--rose-deep)" }}>← Back to the store</a></p>;
@@ -38,8 +39,8 @@ function SetupWizard() {
         <form className="admin-form" onSubmit={submit} noValidate>
           <div className="admin-field"><label htmlFor="setupOwnerName">Your name</label><input id="setupOwnerName" type="text" placeholder="Your full name" {...f("name")} /></div>
           <div className="admin-field"><label htmlFor="setupOwnerUser">Admin username</label><input id="setupOwnerUser" type="text" autoComplete="username" placeholder="Choose a username" {...f("username")} /></div>
-          <div className="admin-field"><label htmlFor="setupOwnerPass">Password</label><input id="setupOwnerPass" type="password" autoComplete="new-password" placeholder="Choose a strong password" {...f("password")} /></div>
-          <div className="admin-field"><label htmlFor="setupOwnerPass2">Confirm password</label><input id="setupOwnerPass2" type="password" autoComplete="new-password" placeholder="Repeat password" {...f("confirm")} /></div>
+          <div className="admin-field"><label htmlFor="setupOwnerPass">Password</label><PasswordInput id="setupOwnerPass" autoComplete="new-password" placeholder="Choose a strong password" {...f("password")} /></div>
+          <div className="admin-field"><label htmlFor="setupOwnerPass2">Confirm password</label><PasswordInput id="setupOwnerPass2" autoComplete="new-password" placeholder="Repeat password" {...f("confirm")} /></div>
           <p className="admin-form-msg" aria-live="polite">{msg}</p>
           <button className="btn btn-primary" type="submit" style={{ width: "100%", borderRadius: ".9rem" }}>Create owner account</button>
         </form>
@@ -66,7 +67,7 @@ function LoginPanel() {
         <p>Enter your credentials to access the admin dashboard.</p>
         <form className="admin-form" onSubmit={submit} noValidate>
           <div className="admin-field"><label htmlFor="adminLoginUser">Username</label><input id="adminLoginUser" type="text" autoComplete="username" placeholder="Username" value={user} onChange={(e) => setUser(e.target.value)} /></div>
-          <div className="admin-field"><label htmlFor="adminLoginPass">Password</label><input id="adminLoginPass" type="password" autoComplete="current-password" placeholder="Password" value={pass} onChange={(e) => setPass(e.target.value)} /></div>
+          <div className="admin-field"><label htmlFor="adminLoginPass">Password</label><PasswordInput id="adminLoginPass" autoComplete="current-password" placeholder="Password" value={pass} onChange={(e) => setPass(e.target.value)} /></div>
           <p className="admin-form-msg" aria-live="polite">{msg}</p>
           <button className="btn btn-primary" type="submit" style={{ width: "100%", borderRadius: ".9rem" }}>Open dashboard</button>
         </form>

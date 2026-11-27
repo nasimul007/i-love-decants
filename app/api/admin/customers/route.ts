@@ -7,5 +7,5 @@ export const dynamic = "force-dynamic";
 export const GET = route(async () => {
   await requireStaff("customers");
   const list = await db.customer.findMany({ orderBy: { joinedAt: "desc" }, take: 1000 });
-  return ok(list.map(publicCustomer));
+  return ok(list.map((c) => ({ id: c.id, ...publicCustomer(c) })));
 });

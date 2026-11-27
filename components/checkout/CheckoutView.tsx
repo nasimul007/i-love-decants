@@ -38,6 +38,7 @@ export function CheckoutView() {
       fullName: f.fullName || customer.name,
       phone: f.phone || customer.phone,
       address: f.address || customer.address,
+      city: f.city || customer.city || "",
     }));
   }, [customer]);
 

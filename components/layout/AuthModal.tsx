@@ -8,6 +8,8 @@ import { customerApi } from "@/lib/api/customer";
 import type { FieldErrors } from "@/lib/services/customers";
 import { passwordStrength, toLocalPhone } from "@/lib/validators";
 import { DoodleCanvas } from "./DoodleCanvas";
+import { PasswordInput } from "@/components/ui/PasswordInput";
+import { CONFIG } from "@/lib/config";
 
 export function AuthModal() {
   const { authPanel, setAuthPanel, closeAuth, showToast } = useUI();
@@ -28,6 +30,7 @@ export function AuthModal() {
 
   const submitLogin = async (e: FormEvent) => {
     e.preventDefault();
+    if (!login.email.trim() || !login.password) { setLoginMsg("Enter your email and password."); return; }
     const res = await customerApi.login(login.email, login.password);
     if (!res.ok || !res.data) { setLoginMsg(res.error ?? "Could not sign in."); return; }
     setLogin({ email: "", password: "" });
@@ -64,10 +67,11 @@ export function AuthModal() {
               <p className="auth-sub">Sign in to your I Love Decants account.</p>
               <form className="auth-form" onSubmit={submitLogin} noValidate>
                 <div className="auth-field"><label>Email<input type="email" autoComplete="email" placeholder="you@example.com" value={login.email} onChange={(e) => setLogin({ ...login, email: e.target.value })} /></label></div>
-                <div className="auth-field"><label>Password<input type="password" autoComplete="current-password" placeholder="Your password" value={login.password} onChange={(e) => setLogin({ ...login, password: e.target.value })} /></label></div>
+                <div className="auth-field"><label>Password<PasswordInput autoComplete="current-password" placeholder="Your password" value={login.password} onChange={(e) => setLogin({ ...login, password: e.target.value })} /></label></div>
                 <p className="auth-msg" aria-live="polite">{loginMsg}</p>
                 <button className="auth-submit" type="submit">Sign in</button>
               </form>
+              <p className="auth-switch">Forgot your password? <a href={`${CONFIG.whatsapp}?text=${encodeURIComponent("Hi! I forgot my I Love Decants password. My account email is: ")}`} target="_blank" rel="noreferrer">Message us on WhatsApp</a> from your account phone number and we&apos;ll set a new one.</p>
               <p className="auth-switch">Don&apos;t have an account? <a role="button" tabIndex={0} onClick={() => setAuthPanel("register")}>Create one</a></p>
             </div>
           ) : (
@@ -81,7 +85,7 @@ export function AuthModal() {
                 </div>
                 <div className="auth-field"><label>Email<input type="email" autoComplete="email" placeholder="you@example.com" value={reg.email} onChange={(e) => setReg({ ...reg, email: e.target.value })} /></label><span className="field-err">{regErr.email}</span></div>
                 <div className="auth-field">
-                  <label>Password<input type="password" autoComplete="new-password" placeholder="At least 8 characters, letters + numbers" value={reg.password} onChange={(e) => setReg({ ...reg, password: e.target.value })} /></label>
+                  <label>Password<PasswordInput autoComplete="new-password" placeholder="At least 8 characters, letters + numbers" value={reg.password} onChange={(e) => setReg({ ...reg, password: e.target.value })} /></label>
                   {reg.password && <small style={{ color: strength.score >= 3 ? "#446046" : "var(--muted)" }}>Strength: {strength.label}</small>}
                   <span className="field-err">{regErr.password}</span>
                 </div>

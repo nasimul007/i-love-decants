@@ -19,26 +19,45 @@ import { adminApi, catalogOverridesApi } from "@/lib/api/admin";
 import { ADMIN_SECTIONS, can } from "@/lib/services/admin";
 import { formatDate, formatDateTime, money } from "@/lib/format";
 import type { CatalogOverrides, InventoryKind, InventoryRecord, ManagerPermissions, Order, PublicManager } from "@/types";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 
 /* ───────────────────────── Overview ───────────────────────── */
 export const STATUSES: Order["status"][] = ["received", "confirmed", "shipped", "delivered", "cancelled"];
 
-export function OverviewPanel() {
+export function OverviewPanel({ canSee }: { canSee: (s: "orders" | "history") => boolean }) {
   const ov = useAdminOverview();
-  const { orders } = useOrders(1, 6);
   const history = ov?.recentSignIns ?? [];
-  const [viewingId, setViewingId] = useState<string | null>(null);
-  const viewing = orders.find((o) => o.id === viewingId) ?? null;
 
   return (
     <>
       <div className="admin-stats">
         <div className="admin-stat"><span>Live products</span><strong>{ov?.liveProducts ?? "—"}</strong><small>Visible now</small></div>
         <div className="admin-stat"><span>Total orders</span><strong>{ov?.orders ?? "—"}</strong><small>Recorded so far</small></div>
-        <div className="admin-stat"><span>Shipments</span><strong>{ov?.shipped ?? "—"}</strong><small>{ov?.inTransit ?? 0} unit(s) in transit</small></div>
+        <div className="admin-stat"><span>Shipments</span><strong>{ov?.shipped ?? "—"}</strong><small>{ov?.openOrders ?? 0} open order{ov?.openOrders === 1 ? "" : "s"} not yet delivered</small></div>
         <div className="admin-stat"><span>Customers</span><strong>{ov?.customers ?? "—"}</strong><small>Registered accounts</small></div>
       </div>
 
+      {canSee("orders") && <><RecentOrders /><div style={{ height: "1.25rem" }} /></>}
+      {canSee("history") && <Panel title="Recent sign-ins" subtitle="Latest customer and staff activity.">
+        {!history.length && <p style={{ color: "var(--muted)", fontSize: ".84rem", padding: ".5rem" }}>No activity yet.</p>}
+        {history.slice(0, 5).map((h) => (
+          <p key={h.ts + h.user} style={{ margin: ".35rem 0", fontSize: ".84rem" }}>
+            <span className={`hist-type ${h.type === "manager" ? "mgr" : h.type === "owner" ? "owner" : "cust"}`}>{h.type}</span>{" "}
+            {h.user} — {h.action} <span className="hist-time">· {formatDateTime(h.ts)}</span>
+          </p>
+        ))}
+      </Panel>}
+    </>
+  );
+}
+
+/** Latest orders with quick status changes (staff with the Orders permission only). */
+function RecentOrders() {
+  const { orders } = useOrders(1, 6);
+  const [viewingId, setViewingId] = useState<string | null>(null);
+  const viewing = orders.find((o) => o.id === viewingId) ?? null;
+  return (
+    <>
       <Panel title="Recent order activity" subtitle="Last orders placed through the storefront. Update status as they progress.">
         {!orders.length && <p style={{ color: "var(--muted)", fontSize: ".84rem", padding: ".5rem" }}>No orders placed yet.</p>}
         <div style={{ display: "grid", gap: ".5rem", padding: ".5rem 0" }}>
@@ -59,16 +78,6 @@ export function OverviewPanel() {
       </Panel>
 
       <OrderDetailModal order={viewing} onClose={() => setViewingId(null)} />
-      <div style={{ height: "1.25rem" }} />
-      <Panel title="Recent sign-ins" subtitle="Latest customer and staff activity.">
-        {!history.length && <p style={{ color: "var(--muted)", fontSize: ".84rem", padding: ".5rem" }}>No activity yet.</p>}
-        {history.slice(0, 5).map((h) => (
-          <p key={h.ts + h.user} style={{ margin: ".35rem 0", fontSize: ".84rem" }}>
-            <span className={`hist-type ${h.type === "manager" ? "mgr" : h.type === "owner" ? "owner" : "cust"}`}>{h.type}</span>{" "}
-            {h.user} — {h.action} <span className="hist-time">· {formatDateTime(h.ts)}</span>
-          </p>
-        ))}
-      </Panel>
     </>
   );
 }
@@ -117,6 +126,13 @@ export function InventoryPanel() {
     if (a === "archive") void adminApi.patchInventory(r.id, { removed: true });
     if (a === "restore") void adminApi.patchInventory(r.id, { removed: false, enabled: true, visible: true });
   };
+  const remove = async (r: InventoryRecord) => {
+    if (!window.confirm(`Delete “${r.name}” for good? It disappears from the shop and admin with its photos and sales. Past orders keep their copy. This cannot be undone.`)) return;
+    const res = await adminApi.deleteInventory(r.id);
+    showToast(res.ok ? `${r.name} deleted.` : res.error ?? "Could not delete.");
+  };
+  /** Perfumes still missing the parameters customers compare on (brand, audience, strength). */
+  const incomplete = new Set(perfumes.filter((p) => !p.brand || !p.audience || !p.strength).map((p) => String(p.id)));
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -146,14 +162,17 @@ export function InventoryPanel() {
               const live = r.enabled && r.visible && !r.removed;
               return (
                 <tr key={r.id}>
-                  <td><strong style={{ display: "block", fontSize: ".9rem" }}>{r.name}</strong><small style={{ color: "var(--muted)", fontSize: ".73rem" }}>{r.type} · From ৳{r.price}</small></td>
+                  <td><strong style={{ display: "block", fontSize: ".9rem" }}>{r.name}</strong><small style={{ color: "var(--muted)", fontSize: ".73rem" }}>{r.type} · From ৳{r.price}</small>{r.storefrontId && incomplete.has(r.storefrontId) && !r.removed && <small style={{ display: "block", color: "var(--deal)", fontSize: ".72rem", fontWeight: 700 }}>Details missing: brand, audience or strength</small>}</td>
                   <td>{r.sizes || "—"}</td>
                   <td><StockCell r={r} /></td>
                   <td>{r.ordered} {r.unit}<small style={{ display: "block", color: "var(--muted)", fontSize: ".72rem" }}>{r.inTransit} {r.unit} on way</small></td>
-                  <td>{live ? <span className="pill live">Live</span> : <span className="pill off">{r.removed ? "Archived" : "Off"}</span>}</td>
+                  <td>{r.removed ? <span className="pill off">Archived</span> : !r.storefrontId ? <span className="pill off" title="Not sold in the shop">Stock only</span> : live ? <span className="pill live">Live</span> : <span className="pill off">Off</span>}</td>
                   <td style={{ whiteSpace: "nowrap", display: "flex", gap: ".4rem", flexWrap: "wrap" }}>
                     {r.removed ? (
-                      <button className="admin-btn" style={btn} type="button" onClick={() => act(r, "restore")}>Restore</button>
+                      <>
+                        <button className="admin-btn" style={btn} type="button" onClick={() => act(r, "restore")}>Restore</button>
+                        <button className="admin-btn danger" style={btn} type="button" onClick={() => void remove(r)}>Delete</button>
+                      </>
                     ) : (
                       <>
                         {canEdit && r.storefrontId && <button className="admin-btn primary" style={btn} type="button" onClick={() => setEditing({ id: r.storefrontId!, isNew: false })}>Edit</button>}
@@ -214,21 +233,49 @@ export function InventoryPanel() {
 /* ───────────────────────── Customers ───────────────────────── */
 export function CustomersPanel() {
   const customers = useCustomers();
+  const { showToast } = useUI();
+  const [pwFor, setPwFor] = useState<{ id: string; name: string } | null>(null);
+  const [pw, setPw] = useState("");
+  const [msg, setMsg] = useState("");
+  const remove = async (c: { id?: string; name: string; email: string }) => {
+    if (!c.id || !window.confirm(`Delete the account of ${c.name || c.email}? Their orders stay; the account cannot be restored.`)) return;
+    const res = await adminApi.deleteCustomer(c.id);
+    showToast(res.ok ? "Customer deleted." : res.error ?? "Could not delete.");
+  };
+  const savePw = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!pwFor) return;
+    const res = await adminApi.setCustomerPassword(pwFor.id, pw);
+    if (!res.ok) { setMsg(res.error ?? "Could not save."); return; }
+    showToast(`New password set for ${pwFor.name}. Send it to them privately.`);
+    setPwFor(null); setPw(""); setMsg("");
+  };
   return (
-    <Panel title="Customer database" subtitle="Registered customer accounts and their basic details.">
+    <Panel title="Customer database" subtitle="Registered customer accounts and their basic details. Forgot-password requests come in on WhatsApp: check it is the account's phone number, then set a new password here.">
       <table className="admin-table">
-        <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Address</th><th>Joined</th><th>Last login</th></tr></thead>
+        <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Address</th><th>Joined</th><th>Last login</th><th>Actions</th></tr></thead>
         <tbody>
-          {!customers.length && emptyRow(6, "No registered customers yet.")}
+          {!customers.length && emptyRow(7, "No registered customers yet.")}
           {customers.map((c) => (
             <tr key={c.email}>
               <td>{c.name || "—"}</td><td>{c.email}</td><td>{c.phone || "—"}</td>
-              <td style={{ maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.address || "—"}</td>
+              <td style={{ maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{[c.address, c.city].filter(Boolean).join(", ") || "—"}</td>
               <td className="hist-time">{formatDate(c.joinedAt)}</td><td className="hist-time">{formatDate(c.lastLogin)}</td>
+              <td style={{ whiteSpace: "nowrap" }}>
+                <button className="admin-btn" style={{ fontSize: ".75rem" }} type="button" onClick={() => { setPwFor({ id: c.id!, name: c.name || c.email }); setPw(""); setMsg(""); }}>Set new password</button>{" "}
+                <button className="admin-btn danger" style={{ fontSize: ".75rem" }} type="button" onClick={() => void remove(c)}>Delete</button>
+              </td>
             </tr>
           ))}
         </tbody>
       </table>
+      <Modal open={!!pwFor} onClose={() => setPwFor(null)} title={`New password for ${pwFor?.name ?? ""}`} subtitle="They are signed out everywhere and sign in with this password. At least 8 characters with letters and numbers.">
+        <form className="mgr-form" onSubmit={savePw} noValidate>
+          <div className="admin-field"><label htmlFor="custNewPass">New password</label><PasswordInput id="custNewPass" autoComplete="new-password" value={pw} onChange={(e) => { setPw(e.target.value); setMsg(""); }} /></div>
+          <p className="admin-form-msg" aria-live="polite">{msg}</p>
+          <div className="mgr-modal-actions"><button className="admin-btn" type="button" onClick={() => setPwFor(null)}>Cancel</button><button className="admin-btn primary" type="submit" disabled={!pw}>Save password</button></div>
+        </form>
+      </Modal>
     </Panel>
   );
 }
@@ -391,8 +438,8 @@ export function CouponsPanel() {
 }
 
 /* ───────────────────────── Managers ───────────────────────── */
-const NO_PERMS: ManagerPermissions = { inventory: false, products: false, customers: false, history: false, coupons: false, content: false };
-const DEFAULT_PERMS: ManagerPermissions = { inventory: true, products: false, customers: false, history: false, coupons: true, content: false };
+const NO_PERMS: ManagerPermissions = { orders: false, inventory: false, products: false, customers: false, history: false, coupons: false, content: false };
+const DEFAULT_PERMS: ManagerPermissions = { orders: true, inventory: true, products: false, customers: false, history: false, coupons: true, content: false };
 
 export function ManagersPanel() {
   const managers = useManagers();
@@ -423,14 +470,14 @@ export function ManagersPanel() {
     <>
       <Panel title="Manager accounts" subtitle="Create named manager accounts and define which sections they can access." action={<button className="admin-btn primary" type="button" onClick={() => open("new")}>Add manager</button>}>
         <table className="admin-table">
-          <thead><tr><th>Name</th><th>Username</th><th>Inventory</th><th>Prices</th><th>Customers</th><th>History</th><th>Coupons</th><th>Notice &amp; categories</th><th>Actions</th></tr></thead>
+          <thead><tr><th>Name</th><th>Username</th><th>Orders</th><th>Inventory</th><th>Prices</th><th>Customers</th><th>History</th><th>Coupons</th><th>Notice &amp; categories</th><th>Actions</th></tr></thead>
           <tbody>
-            {!managers.length && emptyRow(9, "No manager accounts yet. Add one to get started.")}
+            {!managers.length && emptyRow(10, "No manager accounts yet. Add one to get started.")}
             {managers.map((m) => (
               <tr key={m.id}>
                 <td><strong style={{ fontSize: ".88rem" }}>{m.name}</strong></td>
                 <td style={{ fontSize: ".82rem", color: "var(--muted)" }}>{m.username}</td>
-                <td>{tick(m.permissions.inventory)}</td><td>{tick(m.permissions.products)}</td><td>{tick(m.permissions.customers)}</td>
+                <td>{tick(m.permissions.orders)}</td><td>{tick(m.permissions.inventory)}</td><td>{tick(m.permissions.products)}</td><td>{tick(m.permissions.customers)}</td>
                 <td>{tick(m.permissions.history)}</td><td>{tick(m.permissions.coupons)}</td><td>{tick(m.permissions.content)}</td>
                 <td style={{ display: "flex", gap: ".4rem", flexWrap: "wrap" }}>
                   <button className="admin-btn" style={{ fontSize: ".75rem", color: "var(--rose-deep)" }} type="button" onClick={() => open(m)}>Edit</button>
@@ -450,7 +497,7 @@ export function ManagersPanel() {
         <form className="mgr-form" onSubmit={submit} noValidate>
           <div className="admin-field"><label htmlFor="mgrName">Full name</label><input id="mgrName" type="text" placeholder="Manager name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
           <div className="admin-field"><label htmlFor="mgrUser">Username</label><input id="mgrUser" type="text" autoComplete="off" placeholder="Login username" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} /></div>
-          <div className="admin-field"><label htmlFor="mgrPass">{isEdit ? "New password (leave blank to keep current)" : "Password"}</label><input id="mgrPass" type="password" autoComplete="new-password" placeholder="Set a password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} /></div>
+          <div className="admin-field"><label htmlFor="mgrPass">{isEdit ? "New password (leave blank to keep current)" : "Password"}</label><PasswordInput id="mgrPass" autoComplete="new-password" placeholder="Set a password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} /></div>
           <div style={{ border: "1px solid var(--line)", borderRadius: ".9rem", padding: ".9rem 1rem" }}>
             <div style={{ fontSize: ".83rem", fontWeight: 700, marginBottom: ".7rem" }}>Section access</div>
             <div className="perm-grid">

@@ -81,7 +81,7 @@ const swatch = (c: string) => <span aria-hidden="true" style={{ display: "inline
 
 /**
  * Everything that defines a perfume, in one form: photos, name, parameters, description, notes and price per size.
- * The same form is used by Inventory (add + edit) and by Perfumes & prices, so every screen edits the same thing.
+ * The same form is used by Inventory for add and edit, so every screen edits the same thing.
  */
 export function PerfumeEditor({ p, onClose }: { p: ProductDetails; onClose: () => void }) {
   const { showToast } = useUI();
@@ -172,7 +172,7 @@ export function PerfumeEditor({ p, onClose }: { p: ProductDetails; onClose: () =
         {choice("shape", "Drawn bottle shape", SHAPES, null)}
       </div>
       <small style={{ color: "var(--muted)" }}>The drawn bottle shows only until the first photo is added; the colour is always used for the card and pop-up background.</small>
-      <h3 style={sectionTitle}>Price per size (৳) <small style={{ ...hintStyle, textTransform: "none", letterSpacing: 0 }}>— leave a size empty to not sell it. Sizes are managed in “Perfumes & prices”.</small></h3>
+      <h3 style={sectionTitle}>Price per size (৳) <small style={{ ...hintStyle, textTransform: "none", letterSpacing: 0 }}>— leave a size empty to not sell it. To add or remove a size, use Inventory → Sizes on sale.</small></h3>
       <div style={{ display: "flex", flexWrap: "wrap", gap: ".6rem" }}>
         {volumes.map((v) => (
           <div className="admin-field" key={v} style={{ width: 100 }}>

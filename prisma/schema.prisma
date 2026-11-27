@@ -130,6 +130,7 @@ model Customer {
   name         String
   phone        String
   address      String    @default("")
+  city         String    @default("")
   joinedAt     DateTime  @default(now())
   lastLogin    DateTime  @default(now())
   orders       Order[]

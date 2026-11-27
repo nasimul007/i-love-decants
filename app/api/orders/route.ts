@@ -124,7 +124,7 @@ const listQuery = z.object({
 
 /** Staff: paginated orders, newest first. `?page=1&pageSize=20&status=shipped` */
 export const GET = route(async (req) => {
-  await requireStaff();
+  await requireStaff("orders");
   const q = listQuery.parse(Object.fromEntries(new URL(req.url).searchParams));
   const where = q.status ? { status: q.status.toUpperCase() as "RECEIVED" } : {};
   const [total, orders] = await Promise.all([

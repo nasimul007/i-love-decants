@@ -102,8 +102,11 @@ export interface Customer {
   name: string;
   phone: string;
   address: string;
+  city: string;
   joinedAt: string;
   lastLogin: string;
+  /** Admin lists only. */
+  id?: string;
 }
 export type PublicCustomer = Omit<Customer, "passwordHash">;
 export interface CustomerSession {
@@ -137,7 +140,7 @@ export interface Order {
 }
 
 /* ───────────── Admin ───────────── */
-export type AdminSection = "inventory" | "products" | "customers" | "history" | "coupons" | "content";
+export type AdminSection = "orders" | "inventory" | "products" | "customers" | "history" | "coupons" | "content";
 export type ManagerPermissions = Record<AdminSection, boolean>;
 
 export interface Manager {

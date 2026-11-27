@@ -16,13 +16,13 @@ type Tx = Prisma.TransactionClient;
 
 export const MAX_PRICE = 1_000_000;
 export const MAX_SPRAYS = 100_000;
-const MIN_VOLUME = 1, MAX_VOLUME = 1000, MAX_VOLUMES = 12;
+const MIN_VOLUME = 1, MAX_VOLUME = 1000, MAX_DECANT = 50, MAX_VOLUMES = 12; // decants stop at 50 ml (client rule); a full bottle may be bigger
 const FULL = 0; // volumeMl sentinel for per-perfume Full bottle price overrides
 
 const validPrice = (n: unknown) => Number.isInteger(n) && (n as number) >= 0 && (n as number) <= MAX_PRICE;
 const validSprays = (n: unknown) => Number.isInteger(n) && (n as number) >= 1 && (n as number) <= MAX_SPRAYS;
 const bad = (msg: string) => new HttpError(400, msg);
-const rangeText = (vs: number[]) => (vs.length ? (vs.length === 1 ? `${vs[0]} ml` : `${vs[0]}–${vs[vs.length - 1]} ml`) : "—");
+export const rangeText = (vs: number[]) => (vs.length ? (vs.length === 1 ? `${vs[0]} ml` : `${vs[0]}–${vs[vs.length - 1]} ml`) : "—");
 const sameAsDefault = (vs: number[]) => vs.length === DEFAULT_VOLUMES.length && vs.every((v, i) => v === DEFAULT_VOLUMES[i]);
 
 export async function getOverrides(tx: Tx | typeof db = db): Promise<CatalogOverrides> {
@@ -95,7 +95,7 @@ export const catalogOps = {
   async addVolume(tx: Tx, a: { ml: number; sprays: number; price?: number }) {
     const vols = (await tx.volumeSetting.findMany({ where: { onSale: true } })).map((v) => v.volumeMl);
     const fb = await tx.fullBottleSetting.findUnique({ where: { id: 1 } });
-    if (!Number.isInteger(a.ml) || a.ml < MIN_VOLUME || a.ml > MAX_VOLUME) throw bad(`Enter a whole number of ml between ${MIN_VOLUME} and ${MAX_VOLUME}.`);
+    if (!Number.isInteger(a.ml) || a.ml < MIN_VOLUME || a.ml > MAX_DECANT) throw bad(`Enter a whole number of ml between ${MIN_VOLUME} and ${MAX_DECANT}. Decants go up to ${MAX_DECANT} ml.`);
     if (vols.includes(a.ml)) throw bad(`${a.ml} ml is already on sale.`);
     if (fb?.enabled && fb.price !== null && fb.ml === a.ml) throw bad(`The Full bottle section is ${a.ml} ml, so a ${a.ml} ml section would be the same bottle. Change the Full bottle size or switch it off first.`);
     if (vols.length >= MAX_VOLUMES) throw bad(`You can offer at most ${MAX_VOLUMES} volumes.`);

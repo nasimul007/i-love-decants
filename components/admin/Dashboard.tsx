@@ -20,7 +20,6 @@ interface Props {
 export function Dashboard({ session, canSee }: Props) {
   const tabs: { id: TabId; label: string }[] = [
     { id: "overview", label: "Overview" },
-    { id: "orders", label: "Orders" },
     ...ADMIN_SECTIONS.filter((s) => s.tab !== false && canSee(s.id)).map((s) => ({ id: s.id as TabId, label: s.label })),
     ...(session.role === "owner" ? [{ id: "managers" as TabId, label: "Managers" }] : []),
   ];
@@ -55,8 +54,8 @@ export function Dashboard({ session, canSee }: Props) {
       </div>
 
       <div className="admin-tab-panel is-active">
-        {tab === "overview" && <OverviewPanel />}
-        {tab === "orders" && <OrdersPanel />}
+        {tab === "overview" && <OverviewPanel canSee={canSee} />}
+        {tab === "orders" && canSee("orders") && <OrdersPanel />}
         {tab === "content" && canSee("content") && <ContentPanel />}
         {tab === "inventory" && canSee("inventory") && <><InventoryPanel />{canSee("products") && <><div style={{ height: "1.25rem" }} /><SizesPanel /></>}</>}
         {tab === "customers" && canSee("customers") && <CustomersPanel />}

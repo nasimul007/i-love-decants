@@ -65,7 +65,28 @@ export const adminApi = {
     return res;
   },
 
+  async deleteOrder(id: string): Promise<ServiceResult<unknown>> {
+    const res = await call("DELETE", `/api/orders/${id}`);
+    await Promise.all([refreshPrefix(ADMIN.orders), refresh(ADMIN.overview)]);
+    return res;
+  },
+
+  /* customers */
+  async setCustomerPassword(id: string, password: string): Promise<ServiceResult<unknown>> {
+    return call("PATCH", `${ADMIN.customers}/${id}`, { password });
+  },
+  async deleteCustomer(id: string): Promise<ServiceResult<unknown>> {
+    const res = await call("DELETE", `${ADMIN.customers}/${id}`);
+    await Promise.all([refresh(ADMIN.customers), refresh(ADMIN.overview)]);
+    return res;
+  },
+
   /* inventory */
+  async deleteInventory(id: string): Promise<ServiceResult<unknown>> {
+    const res = await call("DELETE", `${ADMIN.inventory}/${id}`);
+    await Promise.all([refresh(ADMIN.inventory), refresh(ADMIN.overview), refresh(ADMIN.productDetails), refresh(ADMIN.products), refresh(ADMIN.catalog), refresh(ADMIN.categories), refresh(ADMIN.sales), refresh("/api/products")]);
+    return res;
+  },
   async addInventory(input: { name: string; type: InventoryKind; sizes: string; price: number; stock: number }): Promise<ServiceResult<unknown>> {
     const res = await call<InventoryRecord>("POST", ADMIN.inventory, input);
     // A new perfume / oil / gift set must show up at once in every admin table, not only Inventory.

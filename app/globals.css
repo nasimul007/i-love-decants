@@ -4558,3 +4558,15 @@ html.touch-mode .cursor-layer{display:none!important}
   .gallery-main:hover .gallery-zoom { opacity: 0; } /* the badge would sit on top of the magnified detail */
 }
 @media (prefers-reduced-motion: reduce) { .gallery-main img { transition: none; } }
+
+/* Password show/hide eye (every sign-in, sign-up and manager password box) */
+.pw-wrap { position: relative; display: block; }
+.pw-wrap input { padding-right: 2.9rem !important; }
+.pw-eye { position: absolute; top: 50%; right: .4rem; transform: translateY(-50%); width: 36px; height: 36px; display: grid; place-items: center; border: 0; border-radius: 50%; background: transparent; color: var(--muted); cursor: pointer; }
+.pw-eye:hover, .pw-eye:focus-visible { color: var(--rose-deep); background: rgba(159, 95, 115, .08); }
+
+/* Phones: the three shop tabs share the width instead of the last one being cut off (F-16) */
+@media (max-width: 480px) {
+  .product-section-tabs { width: 100%; overflow-x: visible; }
+  .prod-tab-btn { flex: 1 1 0; min-width: 0; padding: .45rem .5rem; font-size: .8rem; }
+}

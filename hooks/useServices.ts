@@ -105,9 +105,9 @@ export function useCurrentCustomer(): PublicCustomer | null {
   return useApi<PublicCustomer | null>(ME).data ?? null;
 }
 
-/** Orders of the signed-in customer. */
-export function useMyOrders(): Order[] {
-  return useApi<Order[]>(MY_ORDERS).data ?? EMPTY_ORDERS;
+/** Orders of the signed-in customer (nothing is fetched while signed out). */
+export function useMyOrders(signedIn: boolean): Order[] {
+  return useApi<Order[]>(signedIn ? MY_ORDERS : null).data ?? EMPTY_ORDERS;
 }
 const EMPTY_ORDERS: Order[] = [];
 
@@ -133,7 +133,7 @@ export function useCatalogOverrides(): CatalogOverrides {
 }
 
 export interface AdminOverview {
-  liveProducts: number; totalItems: number; inTransit: number; orders: number; shipped: number; customers: number;
+  liveProducts: number; totalItems: number; openOrders: number; orders: number; shipped: number; customers: number;
   recentSignIns: LoginEvent[];
 }
 export const useAdminOverview = () => useApi<AdminOverview>(ADMIN.overview).data;
