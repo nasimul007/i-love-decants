@@ -206,6 +206,8 @@ export interface CatalogOverrides {
   volumes?: VolumeMl[];
   /** Perfume prices by product id, then volume. `null` = this perfume does not offer that volume. */
   prices: Record<string, Record<string, number | null>>;
+  /** Sizes a perfume has switched OFF (not sold for now), by product id then volume, with the price they keep for later. */
+  off?: Record<string, Record<string, number>>;
   /** Single-price items (oils, gift sets) by id. */
   itemPrices: Record<string, number>;
   /** Spray count per volume (applies to every perfume). */

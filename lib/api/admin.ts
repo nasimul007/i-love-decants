@@ -265,6 +265,6 @@ export const catalogOverridesApi = {
   addVolume: (ml: number, sprays: number, price?: number) => catalogOp({ op: "addVolume", ml: n(ml), sprays: n(sprays), price: price === undefined ? undefined : n(price) }),
   removeVolume: (ml: number) => catalogOp({ op: "removeVolume", ml }),
   setSprays: (sprays: Record<number, number>) => catalogOp({ op: "setSprays", sprays: Object.fromEntries(Object.entries(sprays).map(([k, v]) => [k, n(v)])) }),
-  setProductPrices: (id: number, prices: Record<number, number | null>, full?: number | null) =>
-    catalogOp({ op: "setProductPrices", id, prices: Object.fromEntries(Object.entries(prices).map(([k, v]) => [k, nn(v)])), full: full === undefined ? undefined : nn(full) }),
+  setProductPrices: (id: number, prices: Record<number, number | null>, full?: number | null, off?: number[]) =>
+    catalogOp({ op: "setProductPrices", id, prices: Object.fromEntries(Object.entries(prices).map(([k, v]) => [k, nn(v)])), full: full === undefined ? undefined : nn(full), off }),
 };

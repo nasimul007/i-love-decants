@@ -180,3 +180,27 @@ The shop now has exactly **five scent families: Fresh, Floral, Amber, Woods, Fru
   - `components/admin/ContentPanel.tsx`
   - `lib/api/admin.ts`
   - the migration
+
+## On/Off per size for each perfume (28 Nov 2026)
+
+**Problem:** a perfume may not have enough left for a 50 ml decant (for example only 20 ml left), but its 50 ml price should not be lost.
+
+- **Admin → Inventory → Edit (perfume) → Price per size:** each size has an **On/Off** switch.
+  - **Off:** the size disappears from the shop for that perfume only (pop-up, size buttons, bag, checkout and the server's price check). Its price stays in the box, greyed and marked **Not sold**, so switching it back **On** needs no retyping.
+  - **Empty price:** still means “this perfume never comes in that size” (the switch is disabled until a price is entered).
+  - **All sizes Off is refused** with a message. To take a perfume out of the shop, use **Disable** in Inventory.
+- **Works together with stock:** the shop also hides sizes bigger than the ml left in stock automatically. The switch is for when the owner decides to stop a size regardless.
+- **No database change:** the existing `active` flag on each perfume size is used. Saving prices now stores On/Off instead of switching every priced size on.
+- **Tested:**
+  - Citrus Silk: switching 50 ml and 15 ml Off → the shop offers 3–9 ml only
+  - re-opening the editor shows them Off with their prices kept
+  - switching every size Off is refused (the editor stays open, the shop is unchanged)
+  - switching back On → 3–50 ml again
+  - rapid clicking: each click counts (a stale-state bug found and fixed during testing)
+- **Files:**
+  - `components/admin/ProductEditor.tsx`
+  - `lib/server/overrides.ts`
+  - `app/api/admin/catalog/route.ts`
+  - `lib/api/admin.ts`
+  - `types/index.ts`
+  - `app/globals.css`
