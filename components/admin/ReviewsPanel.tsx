@@ -48,7 +48,7 @@ export function ReviewsPanel() {
   return (
     <Panel
       title="Reviews"
-      subtitle={`Customer reviews on the Reviews page and the home page. Reviews written on the website wait here as “Pending” until you publish them${pending ? ` (${pending} waiting)` : ""}. Add reviews from WhatsApp, Facebook or Instagram yourself; with a link, the review opens that post. “Home” picks the reviews shown first on the home page.`}
+      subtitle={`Customer reviews on the Reviews page and the home page. Reviews written on the website wait here as “Pending” until you publish them${pending ? ` (${pending} waiting)` : ""}. Add reviews from WhatsApp, Facebook or Instagram yourself; with a link, the review opens that post. The home page shows only the published reviews switched to “On home page” (up to 6); with none switched on, the home page has no reviews section.`}
       action={<button className="admin-btn primary" type="button" onClick={() => open()}>Add review</button>}
     >
       <div style={{ display: "flex", gap: ".4rem", flexWrap: "wrap", marginBottom: ".8rem" }}>
@@ -74,12 +74,12 @@ export function ReviewsPanel() {
               <td className="hist-time">{formatDate(r.date)}</td>
               <td>
                 <span className={`pill ${r.status === "published" ? "live" : "off"}`}>{r.status === "published" ? "Published" : r.status === "pending" ? "Pending" : "Hidden"}</span>
-                {r.featured && <span className="pill live" style={{ marginLeft: ".3rem" }}>Home</span>}
+                {r.featured && <span className="pill live" style={{ marginLeft: ".3rem" }} title={r.status === "published" ? "Shown on the home page" : "Switched on, but only published reviews are shown"}>{r.status === "published" ? "On home" : "On home (not published)"}</span>}
               </td>
               <td style={{ display: "flex", gap: ".4rem", flexWrap: "wrap" }}>
                 {r.status !== "published" && <button className="admin-btn primary" style={btn} type="button" onClick={() => patch(r, { status: "published" })}>Publish</button>}
                 {r.status === "published" && <button className="admin-btn" style={btn} type="button" onClick={() => patch(r, { status: "hidden" })}>Hide</button>}
-                <button className="admin-btn" style={{ ...btn, color: "var(--rose-deep)" }} type="button" aria-pressed={r.featured} onClick={() => patch(r, { featured: !r.featured })}>{r.featured ? "★ On home" : "☆ Home"}</button>
+                <button className="admin-btn" style={{ ...btn, color: "var(--rose-deep)" }} type="button" aria-pressed={r.featured} onClick={() => patch(r, { featured: !r.featured })}>{r.featured ? "★ On home page" : "☆ Add to home page"}</button>
                 <button className="admin-btn" style={btn} type="button" onClick={() => open(r)}>Edit</button>
                 <button className="admin-btn danger" style={btn} type="button" onClick={() => void remove(r)}>Delete</button>
               </td>
@@ -114,7 +114,7 @@ export function ReviewsPanel() {
               </select>
             </div>
           </div>
-          <label style={{ display: "flex", gap: ".5rem", alignItems: "center", fontSize: ".85rem", fontWeight: 700 }}><input type="checkbox" checked={f.featured} onChange={(e) => setF({ ...f, featured: e.target.checked })} /> Show on the home page</label>
+          <label style={{ display: "flex", gap: ".5rem", alignItems: "center", fontSize: ".85rem", fontWeight: 700 }}><input type="checkbox" checked={f.featured} onChange={(e) => setF({ ...f, featured: e.target.checked })} /> Show on the home page (only published reviews, up to 6)</label>
           {current
             ? <PhotoManager p={{ id: `review-${current.id}`, name: `Review by ${current.name}`, images: current.images }} hint="screenshots of the chat or post, or a customer photo (up to 8)." />
             : <p style={{ color: "var(--muted)", fontSize: ".8rem", margin: 0 }}>Save first, then you can add screenshots or photos.</p>}

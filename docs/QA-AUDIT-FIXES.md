@@ -114,7 +114,7 @@ Second migration: `prisma/migrations/20261128120000_coupon_modes_reviews`. It ad
   - filter by where the review came from (Website / WhatsApp / Facebook / Instagram), and sort by Newest or Highest rated
   - review cards in a masonry grid
   - **Write a review** form: stars, name, what they bought, text
-- **Home page:** a “Loved, then re-ordered.” strip shows three reviews (starred ones first) with **Read all reviews**. It appears once there is at least one published review. The home page stays a fast static page and is rebuilt the moment staff publish, edit, hide or delete a review (measured: about 0.1 s).
+- **Home page:** a “Loved, then re-ordered.” strip shows **only the reviews switched to “On home page”** in Admin → Reviews (up to 6, newest first), with **Read all reviews**. With none switched on there is no reviews section. *(Fixed 27 Nov: the strip used to fill empty spots with other reviews, so the switch seemed to do nothing.)* It appears once there is at least one published review. The home page stays a fast static page and is rebuilt the moment staff publish, edit, hide or delete a review (measured: about 0.1 s).
 - **Links:** **Reviews** is in the header (with its own icon in the phone menu) and the footer, and `/reviews` is in the sitemap.
 - **Facebook / Instagram / WhatsApp reviews:** staff add them with the customer's words, rating, date, product and a **link to the post**. Clicking anywhere on that card opens the post in a new tab. Screenshots or photos can be attached and show as a small gallery inside the card.
 - **Moderation:** reviews written on the website arrive as **Pending** and appear only after **Publish**. Links in the text are refused, a hidden trap catches bots, and each visitor can send at most 5 reviews per hour.
