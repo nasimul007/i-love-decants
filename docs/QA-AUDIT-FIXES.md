@@ -377,7 +377,7 @@ Test data was removed afterwards.
   - The English text is the key. `lib/i18n/bn.ts` holds the Bangla (about 690 entries), and a missing entry simply shows English.
   - Server pages use `await getT()`; client components use `useT()`; `{name}` slots fill in values.
 - **Night mode:**
-  - The moon / sun button switches it, and the choice is remembered (cookie `ild-theme`). The site always starts in day mode.
+  - The moon / sun button switches it, and the choice is remembered (cookie `ild-theme`). Until a visitor picks one, the site follows their device's light or dark setting (a small script in `app/layout.tsx` sets it before the first paint, so nothing flashes).
   - Dark colours keep the brand's rose, sage and amber hues.
   - The light colours written directly in the CSS have matching dark versions, generated at the end of `globals.css` (regenerate them if those light colours change).
   - Pale product tiles and glows are softened.

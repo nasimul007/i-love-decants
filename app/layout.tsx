@@ -25,7 +25,12 @@ export const viewport: Viewport = { themeColor: "#fbf8f3", width: "device-width"
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const { lang, theme } = await getPrefs();
   return (
-    <html lang={lang} data-theme={theme} className={`${bnSerif.variable} ${bnSans.variable}`}>
+    // The script may set data-theme before React loads, hence suppressHydrationWarning (it covers this tag's attributes only).
+    <html lang={lang} data-theme={theme} className={`${bnSerif.variable} ${bnSans.variable}`} suppressHydrationWarning>
+      <head>
+        {/* No saved choice: follow the device's light/dark setting, set before the first paint so there's no flash. */}
+        <script dangerouslySetInnerHTML={{ __html: `(function(){var d=document.documentElement;if(!d.dataset.theme)d.dataset.theme=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"})()` }} />
+      </head>
       <body>
         {children}
       </body>

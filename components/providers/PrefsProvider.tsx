@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { LANG_COOKIE, THEME_COOKIE, translator, type Lang, type T, type Theme } from "@/lib/i18n";
@@ -13,6 +13,8 @@ export function PrefsProvider({ lang: initialLang, theme: initialTheme, children
   const router = useRouter();
   const [lang, setLangState] = useState(initialLang);
   const [theme, setThemeState] = useState(initialTheme);
+  // Without a saved choice the server can't know the device theme; the root layout's script already set it on <html>.
+  useEffect(() => { const d = document.documentElement.dataset.theme; if (d === "dark" || d === "light") setThemeState(d); }, []);
   const value = useMemo<Prefs>(() => ({
     lang, theme, t: translator(lang),
     setLang: (l) => {
