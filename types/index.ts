@@ -257,6 +257,12 @@ export interface Review {
   source: "website" | "whatsapp" | "facebook" | "instagram" | "other";
   link: string;
   product: string;
+  /** Shop id of the product it is about ("7", "oil-3", "gift-trio"); "" = the shop in general. */
+  productId: string;
+  verified: boolean;
+  /** Public answer from the shop ("" = none) and when it was written. */
+  reply: string;
+  replyAt: string | null;
   status: "pending" | "published" | "hidden";
   featured: boolean;
   date: string;

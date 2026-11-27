@@ -4632,7 +4632,7 @@ html.touch-mode .cursor-layer{display:none!important}
 .review-open::after { content: ""; position: absolute; inset: 0; border-radius: inherit; } /* the whole card opens the original post */
 .review-open:focus-visible { outline: none; }
 .review-card:has(.review-open:focus-visible) { outline: 2px solid var(--rose-deep); outline-offset: 3px; }
-.reviews-layout { display: grid; grid-template-columns: minmax(260px, 320px) 1fr; gap: var(--content-gap); align-items: start; }
+.reviews-layout { display: grid; grid-template-columns: minmax(260px, 320px) minmax(0, 1fr); gap: var(--content-gap); align-items: start; }
 .reviews-side { position: sticky; top: 140px; display: grid; gap: 1rem; }
 .review-summary, .review-write { padding: 1.4rem; border: 1px solid var(--line); border-radius: var(--radius-md); background: rgba(255, 253, 249, .78); box-shadow: var(--shadow-sm); }
 .review-summary { display: grid; justify-items: start; gap: .3rem; }
@@ -4664,7 +4664,7 @@ html.touch-mode .cursor-layer{display:none!important}
 .review-sort { display: flex; align-items: center; gap: .5rem; color: var(--muted); font-size: .78rem; font-weight: 700; }
 .review-mini { display: flex; align-items: center; gap: .4rem; margin: 0 0 .8rem; color: var(--muted); }
 @media (max-width: 900px) {
-  .reviews-layout { grid-template-columns: 1fr; }
+  .reviews-layout { grid-template-columns: minmax(0, 1fr); } /* lets the one-line chip row scroll instead of widening the page */
   .reviews-side { position: static; }
   .reviews-main { order: -1; }
 }
@@ -4680,3 +4680,49 @@ html.touch-mode .cursor-layer{display:none!important}
 .size-switch.is-on { flex-direction: row-reverse; padding: .1rem .15rem .1rem .45rem; border-color: transparent; background: var(--rose-deep); color: #fff; }
 .size-switch:disabled { opacity: .45; cursor: not-allowed; }
 .size-switch:focus-visible { outline: 2px solid var(--rose-deep); outline-offset: 2px; }
+
+/* ── Reviews, round 3: product ratings, pop-up reviews, verified badge, shop reply, photos in the form, filters ── */
+.rating-mini { display: inline-flex; align-items: center; gap: .35rem; margin: .1rem 0 .35rem; padding: 0; border: 0; background: none; color: var(--muted); font: inherit; font-size: .8rem; }
+.rating-mini strong { color: var(--ink); font-size: .82rem; }
+.rating-mini small { font-size: .76rem; }
+button.rating-mini { cursor: pointer; text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 3px; transition: text-decoration-color .2s; }
+button.rating-mini:hover { text-decoration-color: currentColor; }
+.review-verified { display: inline-block; margin-left: .45rem; padding: .1rem .45rem; border-radius: 999px; background: var(--sage-pale); color: #446046; font-size: .66rem; font-weight: 800; vertical-align: middle; }
+.review-reply { position: relative; z-index: 2; padding: .8rem .9rem; border-left: 3px solid var(--rose); border-radius: 0 .8rem .8rem 0; background: #fbf1f3; }
+.review-reply strong { display: block; margin-bottom: .2rem; color: var(--rose-deep); font-size: .76rem; }
+.review-reply p { margin: 0; color: var(--ink); font-size: .86rem; line-height: 1.5; }
+.review-card.is-compact { padding: 1rem; box-shadow: none; }
+.review-card.is-compact .review-text { font-size: .95rem; }
+.product-reviews { margin-top: 1.4rem; padding-top: 1.2rem; border-top: 1px solid var(--line); }
+.product-reviews-head { display: flex; align-items: center; justify-content: space-between; gap: .6rem; margin-bottom: .8rem; }
+.product-reviews-head h3 { margin: 0; font-size: 1.15rem; }
+.product-reviews-list { display: grid; gap: .7rem; }
+.product-reviews-empty { color: var(--muted); font-size: .86rem; }
+.product-reviews-more { display: flex; justify-content: space-between; gap: .8rem; flex-wrap: wrap; margin: .8rem 0 0; font-size: .84rem; font-weight: 800; }
+.product-reviews a, .review-scope a { color: var(--rose-deep); }
+.review-scope { margin: 0 0 .8rem; color: var(--muted); font-size: .88rem; }
+.review-bar-row { display: grid; grid-template-columns: 2.4rem 1fr 1.6rem; align-items: center; gap: .5rem; width: 100%; padding: .2rem .3rem; border: 0; border-radius: .5rem; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; transition: background .2s; }
+.review-bar-row:hover:not(:disabled), .review-bar-row.is-active { background: #fbf1f3; color: var(--rose-deep); }
+.review-bar-row:disabled { cursor: default; opacity: .6; }
+.review-bars li { display: block; }
+.review-more { display: flex; justify-content: center; margin-top: 1.4rem; }
+.review-form select { width: 100%; min-height: 48px; padding: .7rem .9rem; border: 1px solid var(--line); border-radius: .85rem; background: #fff; color: var(--ink); font: inherit; }
+.review-photo-label { display: block; margin-bottom: .4rem; font-size: .82rem; font-weight: 700; }
+.review-photo-row { display: flex; gap: .5rem; flex-wrap: wrap; }
+.review-photo-thumb { position: relative; width: 64px; height: 64px; margin: 0; border-radius: .7rem; overflow: hidden; border: 1px solid var(--line); }
+.review-photo-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.review-photo-thumb button { position: absolute; top: 2px; right: 2px; width: 22px; height: 22px; border: 0; border-radius: 50%; background: rgba(53, 46, 48, .75); color: #fff; font-size: .9rem; line-height: 1; cursor: pointer; }
+.review-photo-add { display: grid; width: 64px; height: 64px; place-items: center; border: 2px dashed var(--line); border-radius: .7rem; color: var(--rose-deep); font-size: .78rem; font-weight: 800; cursor: pointer; }
+.review-photo-add input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.review-photo-add:focus-within { outline: 2px solid var(--rose-deep); outline-offset: 2px; }
+.review-form-hint { margin: 0; color: var(--muted); font-size: .78rem; }
+.tab-count { display: inline-grid; min-width: 1.25rem; height: 1.25rem; margin-left: .35rem; padding: 0 .3rem; place-items: center; border-radius: 999px; background: var(--rose-deep); color: #fff; font-size: .68rem; font-weight: 800; }
+/* Phones: the source chips scroll sideways on one line, the sort sits beside them */
+@media (max-width: 640px) {
+  .reviews-toolbar { flex-wrap: nowrap; align-items: center; }
+  .review-chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; flex: 1; min-width: 0; padding-bottom: 2px; -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent); mask-image: linear-gradient(90deg, #000 85%, transparent); }
+  .review-chips::-webkit-scrollbar { display: none; }
+  .review-chip { flex: 0 0 auto; }
+  .review-sort { flex: 0 0 auto; font-size: 0; gap: 0; }
+  .review-sort select { font-size: .72rem; }
+}

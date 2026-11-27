@@ -204,3 +204,59 @@ The shop now has exactly **five scent families: Fresh, Floral, Amber, Woods, Fru
   - `lib/api/admin.ts`
   - `types/index.ts`
   - `app/globals.css`
+
+## Reviews: all 10 audit improvements (28 Nov 2026)
+
+Migration `prisma/migrations/20261128200000_review_upgrades` (runs on deploy) adds to each review: the product it is about, a verified flag, the shop's reply (with its date) and the writer's account.
+
+| # | Improvement | What it does |
+|---|---|---|
+| 1 | Reviews linked to products | Website form and admin editor choose the product from a list (perfumes, oils, gift sets, or “the shop in general”). Product cards, oil cards, gift cards and the product pop-up show **★ 4.8 (12)**. The pop-up has a **Reviews** section with the latest 3, **See all reviews** (`/reviews?product=…`) and **Write a review** (product already chosen). Product ratings are added to the shop page's structured data for Google (allowed for products, unlike a shop rating). |
+| 2 | Verified buyer | A signed-in customer who has a **delivered** order of that product gets **✓ Verified buyer** automatically. Staff can tick it for reviews they add (e.g. from WhatsApp) when they know the person bought. |
+| 3 | Shop replies | **Reply from I Love Decants** box in the admin editor, shown under the review in a rose panel. The reply date is recorded. |
+| 4 | Pending count | The admin **Reviews** tab shows a badge with the number of website reviews waiting for approval. |
+| 5 | Customer photos | The website form takes up to **3 photos**: previews with remove buttons, shrunk in the browser before sending. The server checks the real file type (JPG/PNG/WebP), 2 MB per photo and at most 3, and the photos are approved together with the review. |
+| 6 | Filter by stars | Click a bar in the rating summary (e.g. **4 ★**) to show only those reviews. A **4 ★ only ✕** chip clears it. |
+| 7 | Show more | The page shows 12 reviews first, then **Show more reviews (N more)**. |
+| 8 | Dates | Shown as **27 Nov 2026** (day month year) in Dhaka time. |
+| 9 | Phone toolbar | The source chips sit on one swipeable row (soft fade at the edge), with the sort beside them. |
+| 10 | Star picker | Hovering the 4th star lights stars 1–4 (it used to light only the hovered star). |
+
+**Also fixed while testing:**
+- A photo-preview bug in the new form: adding a photo would have broken the earlier previews.
+- With the chips on one line, the Reviews page became 505 px wide on a 375 px phone (the page zoomed out). The column can now shrink and the chips scroll. All 14 pages were re-checked at phone width: 375 px each.
+
+**Tests:** 14 end-to-end checks pass:
+- admin picker, Verified and reply
+- ratings in the shop data and on the cards
+- pop-up reviews and links
+- Google rating data
+- the product-only reviews page
+- the date format
+- Show more (12 → 15)
+- the star filter
+- the phone toolbar
+- star hover
+- a guest review with 2 photos arriving as Pending
+- upload guards (4 photos refused, fake image refused)
+- the pending badge (1 → none after Publish)
+- automatic Verified buyer for a customer with a delivered order
+
+Test data was removed afterwards.
+
+**Files:**
+- `lib/server/reviews.ts`
+- `app/api/reviews/route.ts`
+- `app/api/admin/reviews/*`
+- `app/api/products/route.ts`
+- `app/(shop)/products/page.tsx`
+- `app/(shop)/reviews/page.tsx`
+- `components/reviews/*` (`RatingMini`, `ProductReviews` are new)
+- `components/ui/ProductCard.tsx`
+- `components/layout/ProductModal.tsx`
+- `components/products/ProductsView.tsx`
+- `components/admin/ReviewsPanel.tsx`
+- `components/admin/Dashboard.tsx`
+- `hooks/useServices.ts`
+- `types/index.ts`
+- `app/globals.css`

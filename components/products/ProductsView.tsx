@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ProductCard } from "@/components/ui/ProductCard";
 import { SectionHeading } from "@/components/ui/PageHero";
 import { ProductGallery } from "@/components/products/ProductGallery";
+import { RatingMini } from "@/components/reviews/RatingMini";
 import { useUI } from "@/components/providers/UIProvider";
 import { useCart, useCatalog, useFullBottle, useVolumes } from "@/hooks/useServices";
 import { priceFrom, searchText } from "@/lib/volumes";
@@ -207,6 +208,7 @@ export function ProductsView() {
             <article className="faq-card oil-card" key={oil.id}>
               {!!oil.images?.length && <div className="item-gallery"><ProductGallery product={oil} /></div>}
               <h3>{oil.name}</h3>
+              <RatingMini id={oil.id} />
               <p>Alcohol-free 6 ml roll-on, easy to carry and reapply through the day.</p>
               <div className="oil-card-footer">
                 <span className="gift-price">{oil.wasPrice !== undefined && <s className="was-price">{money(oil.wasPrice)}</s>}{money(oil.price)}</span>
@@ -251,6 +253,7 @@ export function ProductsView() {
                 : <div className="gift-card-art" style={{ "--gift-bg": `linear-gradient(145deg,${g.accent},#f8f1eb)` } as CSSProperties}><div className="gift-box-art" /></div>}
               <span className="eyebrow">Ready to give</span>
               <h3>{g.name}</h3>
+              <RatingMini id={g.id} />
               <p>{g.description}</p>
               <div className="gift-card-footer">
                 <span className="gift-price">{g.wasPrice !== undefined && <s className="was-price">{money(g.wasPrice)}</s>}{money(g.price)}</span>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useAdminReviews } from "@/hooks/useServices";
+import { useAdminReviews, useCatalog } from "@/hooks/useServices";
 import { useUI } from "@/components/providers/UIProvider";
 import { adminApi } from "@/lib/api/admin";
 import { formatDate } from "@/lib/format";
@@ -10,12 +10,13 @@ import { PhotoManager } from "./ProductEditor";
 import type { Review } from "@/types";
 
 const SOURCE_LABEL: Record<Review["source"], string> = { website: "Website", whatsapp: "WhatsApp", facebook: "Facebook", instagram: "Instagram", other: "Other" };
-const BLANK = { name: "", rating: "5", text: "", source: "whatsapp" as Review["source"], link: "", product: "", status: "published" as Review["status"], featured: false, date: "" };
+const BLANK = { name: "", rating: "5", text: "", source: "whatsapp" as Review["source"], link: "", productId: "", verified: false, reply: "", status: "published" as Review["status"], featured: false, date: "" };
 const hint = { color: "var(--muted)", fontWeight: 500 } as const;
 
 /** Reviews: approve website reviews, add ones received on WhatsApp / Facebook / Instagram (with a link to the post and screenshots), choose the home-page three. */
 export function ReviewsPanel() {
   const reviews = useAdminReviews();
+  const { products, oils, gifts } = useCatalog();
   const { showToast } = useUI();
   const [filter, setFilter] = useState<"all" | Review["status"]>("all");
   const [editing, setEditing] = useState<number | "new" | null>(null);
@@ -27,7 +28,7 @@ export function ReviewsPanel() {
   const open = (r?: Review) => {
     setMsg("");
     setEditing(r ? r.id : "new");
-    setF(r ? { name: r.name, rating: String(r.rating), text: r.text, source: r.source, link: r.link, product: r.product, status: r.status, featured: r.featured, date: r.date.slice(0, 10) } : BLANK);
+    setF(r ? { name: r.name, rating: String(r.rating), text: r.text, source: r.source, link: r.link, productId: r.productId, verified: r.verified, reply: r.reply, status: r.status, featured: r.featured, date: r.date.slice(0, 10) } : BLANK);
   };
   const save = async () => {
     const res = await adminApi.saveReview(editing === "new" ? null : (editing as number), { ...f, rating: Number(f.rating), date: f.date || null });
@@ -67,7 +68,7 @@ export function ReviewsPanel() {
               <td style={{ maxWidth: 340 }}>
                 <strong style={{ display: "block", fontSize: ".88rem" }}>{r.name}{r.product ? ` · ${r.product}` : ""}</strong>
                 <small style={{ color: "var(--muted)", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{r.text}</small>
-                {r.images.length > 0 && <small style={{ color: "var(--muted)" }}>{r.images.length} photo{r.images.length > 1 ? "s" : ""}</small>}
+                <small style={{ color: "var(--muted)" }}>{[r.verified && "✓ Verified buyer", r.images.length > 0 && `${r.images.length} photo${r.images.length > 1 ? "s" : ""}`, r.reply && "Replied"].filter(Boolean).join(" · ")}</small>
               </td>
               <td>{SOURCE_LABEL[r.source]}{r.link && <a href={r.link} target="_blank" rel="noreferrer" style={{ display: "block", fontSize: ".72rem", color: "var(--rose-deep)" }}>Open post ↗</a>}</td>
               <td style={{ color: "#c98a2e", whiteSpace: "nowrap" }} aria-label={`${r.rating} out of 5`}>{"★".repeat(r.rating)}<span style={{ color: "var(--sand-deep)" }}>{"★".repeat(5 - r.rating)}</span></td>
@@ -107,14 +108,26 @@ export function ReviewsPanel() {
           <div className="admin-field"><label htmlFor="revText">Review</label><textarea id="revText" rows={4} maxLength={1200} style={{ ...inputStyle, minHeight: 100 }} value={f.text} onChange={(e) => setF({ ...f, text: e.target.value })} /></div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: ".75rem" }}>
             <div className="admin-field"><label htmlFor="revLink">Link to the post <small style={hint}>(optional, https://…)</small></label><input id="revLink" type="url" style={inputStyle} placeholder="https://www.facebook.com/…" value={f.link} onChange={(e) => setF({ ...f, link: e.target.value })} /></div>
-            <div className="admin-field"><label htmlFor="revProduct">Product <small style={hint}>(optional)</small></label><input id="revProduct" style={inputStyle} maxLength={80} value={f.product} onChange={(e) => setF({ ...f, product: e.target.value })} /></div>
+            <div className="admin-field"><label htmlFor="revProduct">Product <small style={hint}>(its rating shows on that product)</small></label>
+              <select id="revProduct" style={inputStyle} value={f.productId} onChange={(e) => setF({ ...f, productId: e.target.value })}>
+                <option value="">The shop in general</option>
+                {f.productId && ![...products.map((p) => String(p.id)), ...oils.map((o) => o.id), ...gifts.map((g) => g.id)].includes(f.productId) && <option value={f.productId}>{current?.product || f.productId} (not in the shop now)</option>}
+                <optgroup label="Perfume decants">{products.map((p) => <option key={p.id} value={String(p.id)}>{p.name}</option>)}</optgroup>
+                <optgroup label="Perfume oils">{oils.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}</optgroup>
+                <optgroup label="Gift sets">{gifts.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}</optgroup>
+              </select>
+            </div>
             <div className="admin-field"><label htmlFor="revStatus">Status</label>
               <select id="revStatus" style={inputStyle} value={f.status} onChange={(e) => setF({ ...f, status: e.target.value as Review["status"] })}>
                 <option value="published">Published</option><option value="pending">Pending</option><option value="hidden">Hidden</option>
               </select>
             </div>
           </div>
-          <label style={{ display: "flex", gap: ".5rem", alignItems: "center", fontSize: ".85rem", fontWeight: 700 }}><input type="checkbox" checked={f.featured} onChange={(e) => setF({ ...f, featured: e.target.checked })} /> Show on the home page (only published reviews, up to 6)</label>
+          <div style={{ display: "flex", gap: "1.2rem", flexWrap: "wrap" }}>
+            <label style={{ display: "flex", gap: ".5rem", alignItems: "center", fontSize: ".85rem", fontWeight: 700 }}><input type="checkbox" checked={f.featured} onChange={(e) => setF({ ...f, featured: e.target.checked })} /> Show on the home page (only published reviews, up to 6)</label>
+            <label style={{ display: "flex", gap: ".5rem", alignItems: "center", fontSize: ".85rem", fontWeight: 700 }}><input type="checkbox" checked={f.verified} onChange={(e) => setF({ ...f, verified: e.target.checked })} /> ✓ Verified buyer <small style={hint}>(you know they bought it)</small></label>
+          </div>
+          <div className="admin-field"><label htmlFor="revReply">Reply from I Love Decants <small style={hint}>(optional, shown under the review)</small></label><textarea id="revReply" rows={2} maxLength={800} style={{ ...inputStyle, minHeight: 64 }} placeholder="e.g. Thank you, Nusrat! We are so glad it lasted all day." value={f.reply} onChange={(e) => setF({ ...f, reply: e.target.value })} /></div>
           {current
             ? <PhotoManager p={{ id: `review-${current.id}`, name: `Review by ${current.name}`, images: current.images }} hint="screenshots of the chat or post, or a customer photo (up to 8)." />
             : <p style={{ color: "var(--muted)", fontSize: ".8rem", margin: 0 }}>Save first, then you can add screenshots or photos.</p>}

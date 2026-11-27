@@ -6,6 +6,7 @@ import { money } from "@/lib/format";
 import { priceFrom, regularFrom, saleOff, sizesLabel } from "@/lib/volumes";
 import { useUI } from "@/components/providers/UIProvider";
 import { ProductBottle } from "./BottleVisual";
+import { RatingMini } from "@/components/reviews/RatingMini";
 
 export function ScentFamily({ product }: { product: Product }) {
   const families = [product.family.trim()].filter(Boolean);
@@ -43,6 +44,7 @@ export function ProductCard({ product }: { product: Product }) {
           <h3 className="product-name">{product.name}</h3>
         </button>
         <ScentFamily product={product} />
+        <RatingMini id={product.id} />
         {factsOf(product).length > 0 && <p className="product-facts">{factsOf(product).map(([k, v]) => <span key={k}>{k === "Lasting" ? `Lasting ${v}` : v}</span>)}</p>}
         <p className="product-notes">{product.notes}</p>
         <div className="card-price-row">

@@ -24,11 +24,19 @@ interface StorefrontCatalog {
   volumes: number[];
   sprays: Record<number, number>;
   fullBottle: { ml: number; sprays: number } | null;
+  /** Star rating per shop id from published reviews. */
+  ratings?: Record<string, { average: number; count: number }>;
 }
 const EMPTY_CATALOG: StorefrontCatalog = { products: [], gifts: [], oils: [], categories: [], volumes: [], sprays: {}, fullBottle: null };
 
 function useStorefront() {
   return useApi<StorefrontCatalog>("/api/products");
+}
+
+const NO_RATINGS: Record<string, { average: number; count: number }> = {};
+/** Star rating of every shop item that has published reviews, by shop id ("7", "oil-3"…). */
+export function useRatings() {
+  return useStorefront().data?.ratings ?? NO_RATINGS;
 }
 
 /** Spray count per volume. */

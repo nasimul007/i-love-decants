@@ -10,6 +10,13 @@ import {
 import { OrdersPanel } from "./OrdersPanel";
 import { ContentPanel } from "./ContentPanel";
 import { ReviewsPanel } from "./ReviewsPanel";
+import { useAdminReviews } from "@/hooks/useServices";
+
+/** Number of website reviews waiting for approval, on the Reviews tab. */
+function PendingReviews() {
+  const n = useAdminReviews().filter((r) => r.status === "pending").length;
+  return n ? <span className="tab-count" aria-label={`, ${n} waiting`}>{n}</span> : null;
+}
 
 type TabId = "overview" | "orders" | AdminSection | "managers";
 
@@ -49,7 +56,7 @@ export function Dashboard({ session, canSee }: Props) {
 
       <div className="admin-tabs" role="tablist">
         {tabs.map((t) => (
-          <button key={t.id} className={`admin-tab-btn${tab === t.id ? " is-active" : ""}`} type="button" role="tab" aria-selected={tab === t.id} onClick={() => setTab(t.id)}>{t.label}</button>
+          <button key={t.id} className={`admin-tab-btn${tab === t.id ? " is-active" : ""}`} type="button" role="tab" aria-selected={tab === t.id} onClick={() => setTab(t.id)}>{t.label}{t.id === "reviews" && <PendingReviews />}</button>
         ))}
       </div>
       </div>

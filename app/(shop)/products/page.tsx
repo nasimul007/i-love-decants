@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { PageHero, RouteView } from "@/components/ui/PageHero";
 import { ProductsView } from "@/components/products/ProductsView";
 import { loadCatalog } from "@/lib/server/catalog";
+import { productRatings } from "@/lib/server/reviews";
 import { SITE_URL } from "@/lib/config";
 
 export const metadata: Metadata = {
@@ -13,7 +14,7 @@ export const dynamic = "force-dynamic";
 
 /** Products are drawn in the browser, so search engines get them here as structured data (no visual change). */
 async function ProductsJsonLd() {
-  const { products } = await loadCatalog().catch(() => ({ products: [] }));
+  const [{ products }, ratings] = await Promise.all([loadCatalog().catch(() => ({ products: [] })), productRatings().catch(() => ({} as Awaited<ReturnType<typeof productRatings>>))]);
   // Escape "<" so a product name can never close the script tag.
   const ld = {
     "@context": "https://schema.org", "@type": "ItemList",
@@ -24,6 +25,8 @@ async function ProductsJsonLd() {
         ...(p.images?.[0] ? { image: `${SITE_URL}/api/images/${p.images[0]}` } : {}),
         ...(p.brand ? { brand: { "@type": "Brand", name: p.brand } } : {}),
         category: p.family,
+        // Product reviews from customers (allowed for rich results, unlike a shop rating itself)
+        ...(ratings[String(p.id)] ? { aggregateRating: { "@type": "AggregateRating", ratingValue: ratings[String(p.id)].average, reviewCount: ratings[String(p.id)].count, bestRating: 5, worstRating: 1 } } : {}),
         offers: { "@type": "AggregateOffer", priceCurrency: "BDT", lowPrice: Math.min(...Object.values(p.prices)), highPrice: Math.max(...Object.values(p.prices)), offerCount: Object.keys(p.prices).length, availability: "https://schema.org/InStock" },
       },
     })),
