@@ -9,6 +9,14 @@ import {
 } from "./Panels";
 import { OrdersPanel } from "./OrdersPanel";
 import { ContentPanel } from "./ContentPanel";
+import { ReviewsPanel } from "./ReviewsPanel";
+import { useAdminReviews } from "@/hooks/useServices";
+
+/** Number of website reviews waiting for approval, on the Reviews tab. */
+function PendingReviews() {
+  const n = useAdminReviews().filter((r) => r.status === "pending").length;
+  return n ? <span className="tab-count" aria-label={`, ${n} waiting`}>{n}</span> : null;
+}
 
 type TabId = "overview" | "orders" | AdminSection | "managers";
 
@@ -20,7 +28,6 @@ interface Props {
 export function Dashboard({ session, canSee }: Props) {
   const tabs: { id: TabId; label: string }[] = [
     { id: "overview", label: "Overview" },
-    { id: "orders", label: "Orders" },
     ...ADMIN_SECTIONS.filter((s) => s.tab !== false && canSee(s.id)).map((s) => ({ id: s.id as TabId, label: s.label })),
     ...(session.role === "owner" ? [{ id: "managers" as TabId, label: "Managers" }] : []),
   ];
@@ -49,19 +56,20 @@ export function Dashboard({ session, canSee }: Props) {
 
       <div className="admin-tabs" role="tablist">
         {tabs.map((t) => (
-          <button key={t.id} className={`admin-tab-btn${tab === t.id ? " is-active" : ""}`} type="button" role="tab" aria-selected={tab === t.id} onClick={() => setTab(t.id)}>{t.label}</button>
+          <button key={t.id} className={`admin-tab-btn${tab === t.id ? " is-active" : ""}`} type="button" role="tab" aria-selected={tab === t.id} onClick={() => setTab(t.id)}>{t.label}{t.id === "reviews" && <PendingReviews />}</button>
         ))}
       </div>
       </div>
 
       <div className="admin-tab-panel is-active">
-        {tab === "overview" && <OverviewPanel />}
-        {tab === "orders" && <OrdersPanel />}
+        {tab === "overview" && <OverviewPanel canSee={canSee} />}
+        {tab === "orders" && canSee("orders") && <OrdersPanel />}
         {tab === "content" && canSee("content") && <ContentPanel />}
         {tab === "inventory" && canSee("inventory") && <><InventoryPanel />{canSee("products") && <><div style={{ height: "1.25rem" }} /><SizesPanel /></>}</>}
         {tab === "customers" && canSee("customers") && <CustomersPanel />}
         {tab === "history" && canSee("history") && <HistoryPanel />}
         {tab === "coupons" && canSee("coupons") && <><SalesPanel /><div style={{ height: "1.25rem" }} /><CouponsPanel /></>}
+        {tab === "reviews" && canSee("reviews") && <ReviewsPanel />}
         {tab === "managers" && session.role === "owner" && <ManagersPanel />}
       </div>
     </div>

@@ -22,7 +22,7 @@ export const customerApi = {
     mutate(ME, null);
     mutate<Order[]>(MY_ORDERS, []);
   },
-  async updateProfile(patch: { name: string; phone: string; address: string }): Promise<ServiceResult<PublicCustomer>> {
+  async updateProfile(patch: { name: string; phone: string; address: string; city: string }): Promise<ServiceResult<PublicCustomer>> {
     const res = await call<PublicCustomer>("PATCH", ME, patch);
     if (res.ok) mutate(ME, res.data);
     return res;

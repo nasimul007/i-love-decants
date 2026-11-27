@@ -82,7 +82,7 @@ export async function requireOwner() {
 export const audit = (actor: "customer" | "owner" | "manager", user: string, action: string) =>
   db.auditLog.create({ data: { actor, user, action } });
 
-export const publicCustomer = (c: { email: string; name: string; phone: string; address: string; joinedAt: Date; lastLogin: Date }) => ({
-  email: c.email, name: c.name, phone: c.phone, address: c.address,
+export const publicCustomer = (c: { email: string; name: string; phone: string; address: string; city: string; joinedAt: Date; lastLogin: Date }) => ({
+  email: c.email, name: c.name, phone: c.phone, address: c.address, city: c.city,
   joinedAt: c.joinedAt.toISOString(), lastLogin: c.lastLogin.toISOString(),
 });

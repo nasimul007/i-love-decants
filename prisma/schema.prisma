@@ -130,6 +130,7 @@ model Customer {
   name         String
   phone        String
   address      String    @default("")
+  city         String    @default("")
   joinedAt     DateTime  @default(now())
   lastLogin    DateTime  @default(now())
   orders       Order[]
@@ -241,6 +242,9 @@ model Coupon {
   expiresAt DateTime?
   maxUses   Int?
   uses      Int        @default(0)
+  /// true: once per customer (guests by phone number, signed-in customers by account too).
+  /// false: signed-in customers only, as often as they like (guests are asked to sign in).
+  oncePerCustomer Boolean @default(true)
 }
 
 enum CouponType {
@@ -331,4 +335,31 @@ model Sale {
   active    Boolean    @default(true)
   endsAt    DateTime?
   createdAt DateTime   @default(now())
+}
+
+/**
+ * ───────────── Reviews ─────────────
+ * Customer reviews: written on the website (status "pending" until staff approve) or added by staff from WhatsApp,
+ * Facebook, Instagram… (`link` opens the original post). Screenshots are ProductImage rows with itemId "review-<id>".
+ */
+model Review {
+  id        Int      @id @default(autoincrement())
+  name      String
+  rating    Int
+  text      String
+  source    String   @default("website") // website | whatsapp | facebook | instagram | other
+  link      String   @default("")
+  product   String   @default("") // label shown on the card, e.g. "Amber Light, 6 ml"
+  productId String   @default("")     // shop id it is about ("7", "oil-3", "gift-trio"); "" = the shop in general
+  verified  Boolean  @default(false)  // written by a customer with a delivered order (or marked by staff)
+  reply     String   @default("")     // public answer from I Love Decants
+  replyAt   DateTime?
+  customerId String?                  // signed-in writer (website reviews)
+  status    String   @default("pending") // pending | published | hidden
+  featured  Boolean  @default(false)     // shown on the home page
+  sort      Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([status, sort])
+  @@index([productId, status])
 }

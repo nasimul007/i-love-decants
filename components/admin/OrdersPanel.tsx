@@ -119,7 +119,8 @@ export function OrdersPanel() {
                 <td>{o.items.reduce((n, i) => n + i.qty, 0)}</td>
                 <td style={{ textAlign: "right", fontWeight: 700, color: "var(--rose-deep)" }}>{money(o.grandTotal)}</td>
                 <td><span className="pill live" style={{ textTransform: "capitalize" }}>{o.status}</span></td>
-                <td><button className="admin-btn primary" style={{ fontSize: ".75rem" }} type="button" onClick={() => setViewingId(o.id)}>View details</button></td>
+                <td style={{ whiteSpace: "nowrap" }}><button className="admin-btn primary" style={{ fontSize: ".75rem" }} type="button" onClick={() => setViewingId(o.id)}>View details</button>
+                  {o.status === "cancelled" && <>{" "}<button className="admin-btn danger" style={{ fontSize: ".75rem" }} type="button" onClick={() => { if (window.confirm(`Delete cancelled order ${o.id} for good?`)) void adminApi.deleteOrder(o.id); }}>Delete</button></>}</td>
               </tr>
             ))}
           </tbody>

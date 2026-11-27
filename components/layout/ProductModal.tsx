@@ -12,6 +12,8 @@ import { formatSprays } from "@/lib/services/catalogOverrides";
 import { money } from "@/lib/format";
 import { volumesOf } from "@/lib/volumes";
 import type { Product } from "@/types";
+import { RatingMini } from "@/components/reviews/RatingMini";
+import { ProductReviews } from "@/components/reviews/ProductReviews";
 
 export function ProductModal() {
   const { productId, closeProduct, openCart } = useUI();
@@ -63,6 +65,7 @@ export function ProductModal() {
               {product.brand && <span className="product-brand">{product.brand}</span>}
               <h2 id="modalTitle">{product.name}</h2>
               <ScentFamily product={product} />
+              <RatingMini id={product.id} onClick={() => document.getElementById("productReviews")?.scrollIntoView({ behavior: "smooth", block: "start" })} />
               <div className="modal-size-block">
                 <span className="size-label">Choose your volume <small aria-live="polite">{selectedLabel} selected</small></span>
                 <div className="size-options" aria-label="Available volumes">
@@ -96,6 +99,7 @@ export function ProductModal() {
                 </dl>
               )}
               {!!product.keyNotes?.length && <p className="key-notes" aria-label="Key notes">{product.keyNotes.map((n) => <span key={n}>{n}</span>)}</p>}
+              <ProductReviews key={product.id} id={product.id} name={product.name} />
             </div>
           </>
         )}

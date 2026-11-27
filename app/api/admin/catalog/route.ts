@@ -16,7 +16,7 @@ const op = z.discriminatedUnion("op", [
   z.object({ op: z.literal("removeVolume"), ml: num }),
   z.object({ op: z.literal("resetVolumes") }),
   z.object({ op: z.literal("setSprays"), sprays: z.record(z.string(), num) }),
-  z.object({ op: z.literal("setProductPrices"), id: num, prices: z.record(z.string(), num.nullable()), full: num.nullable().optional() }),
+  z.object({ op: z.literal("setProductPrices"), id: num, prices: z.record(z.string(), num.nullable()), full: num.nullable().optional(), off: z.array(num).max(20).optional() }),
   z.object({ op: z.literal("resetProductPrices"), id: num }),
   z.object({ op: z.literal("setItemPrice"), id: z.string(), price: num }),
   z.object({ op: z.literal("resetItemPrice"), id: z.string() }),
@@ -33,7 +33,7 @@ export const POST = route(async (req) => {
       case "removeVolume": return catalogOps.removeVolume(tx, a.ml);
       case "resetVolumes": return catalogOps.resetVolumes(tx);
       case "setSprays": return catalogOps.setSprays(tx, a.sprays);
-      case "setProductPrices": return catalogOps.setProductPrices(tx, a.id, a.prices, a.full);
+      case "setProductPrices": return catalogOps.setProductPrices(tx, a.id, a.prices, a.full, a.off);
       case "resetProductPrices": return catalogOps.resetProductPrices(tx, a.id);
       case "setItemPrice": return catalogOps.setItemPrice(tx, a.id, a.price);
       case "resetItemPrice": return catalogOps.resetItemPrice(tx, a.id);

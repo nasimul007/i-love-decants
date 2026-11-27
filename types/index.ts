@@ -93,6 +93,8 @@ export interface Coupon {
   /** Total uses allowed across all customers; null = unlimited. */
   maxUses?: number | null;
   uses?: number;
+  /** true: once per customer; false: signed-in customers only, every time. */
+  oncePerCustomer?: boolean;
 }
 
 /* ───────────── Customers ───────────── */
@@ -102,8 +104,11 @@ export interface Customer {
   name: string;
   phone: string;
   address: string;
+  city: string;
   joinedAt: string;
   lastLogin: string;
+  /** Admin lists only. */
+  id?: string;
 }
 export type PublicCustomer = Omit<Customer, "passwordHash">;
 export interface CustomerSession {
@@ -137,7 +142,7 @@ export interface Order {
 }
 
 /* ───────────── Admin ───────────── */
-export type AdminSection = "inventory" | "products" | "customers" | "history" | "coupons" | "content";
+export type AdminSection = "orders" | "inventory" | "products" | "customers" | "history" | "coupons" | "content" | "reviews";
 export type ManagerPermissions = Record<AdminSection, boolean>;
 
 export interface Manager {
@@ -201,6 +206,8 @@ export interface CatalogOverrides {
   volumes?: VolumeMl[];
   /** Perfume prices by product id, then volume. `null` = this perfume does not offer that volume. */
   prices: Record<string, Record<string, number | null>>;
+  /** Sizes a perfume has switched OFF (not sold for now), by product id then volume, with the price they keep for later. */
+  off?: Record<string, Record<string, number>>;
   /** Single-price items (oils, gift sets) by id. */
   itemPrices: Record<string, number>;
   /** Spray count per volume (applies to every perfume). */
@@ -239,4 +246,25 @@ export interface ServiceResult<T = undefined> {
   ok: boolean;
   error?: string;
   data?: T;
+}
+
+/** A customer review (website, WhatsApp, Facebook…). `link` opens the original post; `images` are screenshots/photos. */
+export interface Review {
+  id: number;
+  name: string;
+  rating: number;
+  text: string;
+  source: "website" | "whatsapp" | "facebook" | "instagram" | "other";
+  link: string;
+  product: string;
+  /** Shop id of the product it is about ("7", "oil-3", "gift-trio"); "" = the shop in general. */
+  productId: string;
+  verified: boolean;
+  /** Public answer from the shop ("" = none) and when it was written. */
+  reply: string;
+  replyAt: string | null;
+  status: "pending" | "published" | "hidden";
+  featured: boolean;
+  date: string;
+  images: number[];
 }

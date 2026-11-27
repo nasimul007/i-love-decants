@@ -16,13 +16,13 @@ type Tx = Prisma.TransactionClient;
 
 export const MAX_PRICE = 1_000_000;
 export const MAX_SPRAYS = 100_000;
-const MIN_VOLUME = 1, MAX_VOLUME = 1000, MAX_VOLUMES = 12;
+const MIN_VOLUME = 1, MAX_VOLUME = 1000, MAX_DECANT = 50, MAX_VOLUMES = 12; // decants stop at 50 ml (client rule); a full bottle may be bigger
 const FULL = 0; // volumeMl sentinel for per-perfume Full bottle price overrides
 
 const validPrice = (n: unknown) => Number.isInteger(n) && (n as number) >= 0 && (n as number) <= MAX_PRICE;
 const validSprays = (n: unknown) => Number.isInteger(n) && (n as number) >= 1 && (n as number) <= MAX_SPRAYS;
 const bad = (msg: string) => new HttpError(400, msg);
-const rangeText = (vs: number[]) => (vs.length ? (vs.length === 1 ? `${vs[0]} ml` : `${vs[0]}–${vs[vs.length - 1]} ml`) : "—");
+export const rangeText = (vs: number[]) => (vs.length ? (vs.length === 1 ? `${vs[0]} ml` : `${vs[0]}–${vs[vs.length - 1]} ml`) : "—");
 const sameAsDefault = (vs: number[]) => vs.length === DEFAULT_VOLUMES.length && vs.every((v, i) => v === DEFAULT_VOLUMES[i]);
 
 export async function getOverrides(tx: Tx | typeof db = db): Promise<CatalogOverrides> {
@@ -38,12 +38,14 @@ export async function getOverrides(tx: Tx | typeof db = db): Promise<CatalogOver
   for (const v of vols) if (v.sprays !== DEFAULT_SPRAYS[v.volumeMl]) sprays[String(v.volumeMl)] = v.sprays;
 
   const prices: CatalogOverrides["prices"] = {};
+  const off: NonNullable<CatalogOverrides["off"]> = {};
   for (const p of products) {
     const base = PRODUCTS.find((x) => x.id === p.id);
     const diff: Record<string, number | null> = {};
     for (const v of volumes) {
       const row = p.variants.find((x) => !x.isFull && x.volumeMl === v);
       const cur = row?.active ? row.price : null;
+      if (row && !row.active) (off[String(p.id)] ??= {})[String(v)] = row.price; // switched off: not sold, price kept
       const dflt = base?.prices[v];
       if (dflt === undefined ? cur !== null : cur !== dflt) diff[String(v)] = cur;
     }
@@ -56,7 +58,7 @@ export async function getOverrides(tx: Tx | typeof db = db): Promise<CatalogOver
   for (const g of gifts) if (g.price !== GIFTS.find((x) => x.id === g.id)?.price) itemPrices[g.id] = g.price;
 
   return {
-    volumes: sameAsDefault(volumes) ? undefined : volumes, prices, itemPrices, sprays,
+    volumes: sameAsDefault(volumes) ? undefined : volumes, prices, off, itemPrices, sprays,
     fullBottle: undefined, // the Full bottle option is retired: never reported to the admin
     items: {
       products: products.map(({ id, name, family }) => ({ id, name, family })),
@@ -95,7 +97,7 @@ export const catalogOps = {
   async addVolume(tx: Tx, a: { ml: number; sprays: number; price?: number }) {
     const vols = (await tx.volumeSetting.findMany({ where: { onSale: true } })).map((v) => v.volumeMl);
     const fb = await tx.fullBottleSetting.findUnique({ where: { id: 1 } });
-    if (!Number.isInteger(a.ml) || a.ml < MIN_VOLUME || a.ml > MAX_VOLUME) throw bad(`Enter a whole number of ml between ${MIN_VOLUME} and ${MAX_VOLUME}.`);
+    if (!Number.isInteger(a.ml) || a.ml < MIN_VOLUME || a.ml > MAX_DECANT) throw bad(`Enter a whole number of ml between ${MIN_VOLUME} and ${MAX_DECANT}. Decants go up to ${MAX_DECANT} ml.`);
     if (vols.includes(a.ml)) throw bad(`${a.ml} ml is already on sale.`);
     if (fb?.enabled && fb.price !== null && fb.ml === a.ml) throw bad(`The Full bottle section is ${a.ml} ml, so a ${a.ml} ml section would be the same bottle. Change the Full bottle size or switch it off first.`);
     if (vols.length >= MAX_VOLUMES) throw bad(`You can offer at most ${MAX_VOLUMES} volumes.`);
@@ -135,7 +137,8 @@ export const catalogOps = {
     for (const v of vols) await tx.volumeSetting.update({ where: { volumeMl: v.volumeMl }, data: { sprays: sprays[String(v.volumeMl)] } });
   },
 
-  async setProductPrices(tx: Tx, id: number, prices: Record<string, number | null>, full?: number | null) {
+  /** `off`: sizes that keep their price but are switched off (not sold) for now, e.g. not enough left of this perfume. */
+  async setProductPrices(tx: Tx, id: number, prices: Record<string, number | null>, full?: number | null, off: number[] = []) {
     if (!(await tx.product.findUnique({ where: { id } }))) throw new HttpError(404, "Product not found.");
     const vols = (await tx.volumeSetting.findMany({ where: { onSale: true } })).map((v) => v.volumeMl);
     const fb = await tx.fullBottleSetting.findUnique({ where: { id: 1 } });
@@ -147,16 +150,16 @@ export const catalogOps = {
     const fbLive = !!fb?.enabled && fb.price !== null;
     const replaced = fbLive && vols.includes(fb!.ml) ? fb!.ml : null;
     const existingFull = await tx.productVariant.findFirst({ where: { productId: id, isFull: true } });
-    const anyVolume = vols.some((v) => v !== replaced && prices[String(v)] !== null && prices[String(v)] !== undefined);
+    const anyVolume = vols.some((v) => v !== replaced && !off.includes(v) && prices[String(v)] !== null && prices[String(v)] !== undefined);
     const fullNotOffered = existingFull ? !existingFull.active : false;
     const anyFull = fbLive && full !== null && (full !== undefined || !fullNotOffered);
-    if (!anyVolume && !anyFull) throw bad("Give at least one size a price (blank everywhere would hide this perfume).");
+    if (!anyVolume && !anyFull) throw bad("Switch on at least one size with a price (otherwise this perfume disappears from the shop; use Disable in Inventory for that).");
 
     for (const v of vols) {
       const val = prices[String(v)];
       const where = { productId_volumeMl_isFull: { productId: id, volumeMl: v, isFull: false } };
       if (val === null || val === undefined) await tx.productVariant.deleteMany({ where: { productId: id, volumeMl: v, isFull: false } });
-      else await tx.productVariant.upsert({ where, update: { price: val, active: true }, create: { productId: id, volumeMl: v, price: val } });
+      else await tx.productVariant.upsert({ where, update: { price: val, active: !off.includes(v) }, create: { productId: id, volumeMl: v, price: val, active: !off.includes(v) } });
     }
     if (full !== undefined) {
       const where = { productId_volumeMl_isFull: { productId: id, volumeMl: FULL, isFull: true } };

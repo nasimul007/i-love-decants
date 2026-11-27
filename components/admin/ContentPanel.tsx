@@ -5,6 +5,8 @@ import { useUI } from "@/components/providers/UIProvider";
 import { useAdminCategories, useAdminFaqs, useAdminNotices, useAdminProducts } from "@/hooks/useServices";
 import { adminApi } from "@/lib/api/admin";
 import { Panel, emptyRow, inputStyle } from "./shared";
+import { PhotoManager } from "./ProductEditor";
+import { useApi } from "@/lib/api/client";
 
 /** Messages of the moving notice bar under the navbar (all enabled ones scroll one after another). */
 function NoticeEditor() {
@@ -77,8 +79,6 @@ function CategoryEditor() {
   const categories = useAdminCategories();
   const products = useAdminProducts();
   const { showToast } = useUI();
-  const [name, setName] = useState("");
-  const [editing, setEditing] = useState<{ id: number; name: string } | null>(null);
   const [msg, setMsg] = useState("");
 
   const run = async (p: Promise<{ ok: boolean; error?: string }>, done?: string) => {
@@ -91,45 +91,18 @@ function CategoryEditor() {
 
   return (
     <>
-      <Panel title="Categories" subtitle="Scent categories shown as filters in the shop. Hiding a category also hides the perfumes in it.">
-        <div className="coupon-add-row">
-          <div className="admin-field"><label htmlFor="newCategory">New category</label>
-            <input id="newCategory" type="text" maxLength={40} placeholder="e.g. Woods" style={inputStyle} value={name}
-              onChange={(e) => { setName(e.target.value); setMsg(""); }} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void run(adminApi.addCategory(name), `${name.trim()} added.`).then((ok) => ok && setName("")); } }} />
-          </div>
-          <button className="admin-btn primary" type="button" style={{ alignSelf: "flex-end", height: 42 }}
-            onClick={() => void run(adminApi.addCategory(name), `${name.trim()} added.`).then((ok) => ok && setName(""))}>Add category</button>
-        </div>
+      <Panel title="Scent families" subtitle="The five families used as filters in the shop: Fresh, Floral, Amber, Woods and Fruity. They are fixed; hiding one also hides its perfumes.">
         <p className="admin-form-msg" aria-live="polite" style={{ marginBottom: ".8rem" }}>{msg}</p>
         <table className="admin-table">
-          <thead><tr><th>Category</th><th>Perfumes</th><th>Status</th><th>Actions</th></tr></thead>
+          <thead><tr><th>Family</th><th>Perfumes</th><th>Status</th><th>Actions</th></tr></thead>
           <tbody>
-            {!categories.length && emptyRow(4, "No categories yet.")}
             {categories.map((c) => (
               <tr key={c.id}>
-                <td>
-                  {editing?.id === c.id ? (
-                    <input aria-label={`Rename ${c.name}`} type="text" maxLength={40} style={{ ...inputStyle, minHeight: 36, width: 180 }} value={editing.name} autoFocus
-                      onChange={(e) => setEditing({ id: c.id, name: e.target.value })}
-                      onKeyDown={(e) => { if (e.key === "Enter") void run(adminApi.renameCategory(c.id, editing.name), "Category renamed.").then((ok) => ok && setEditing(null)); if (e.key === "Escape") setEditing(null); }} />
-                  ) : <strong>{c.name}</strong>}
-                </td>
+                <td><strong>{c.name}</strong></td>
                 <td>{c.products}</td>
                 <td><span className={`pill ${c.hidden ? "off" : "live"}`}>{c.hidden ? "Hidden" : "Visible"}</span></td>
-                <td style={{ display: "flex", gap: ".4rem", flexWrap: "wrap" }}>
-                  {editing?.id === c.id ? (
-                    <>
-                      <button className="admin-btn primary" style={{ fontSize: ".75rem" }} type="button" onClick={() => void run(adminApi.renameCategory(c.id, editing.name), "Category renamed.").then((ok) => ok && setEditing(null))}>Save</button>
-                      <button className="admin-btn" style={{ fontSize: ".75rem" }} type="button" onClick={() => setEditing(null)}>Cancel</button>
-                    </>
-                  ) : (
-                    <>
-                      <button className="admin-btn" style={{ fontSize: ".75rem", color: "var(--rose-deep)" }} type="button" onClick={() => { setEditing({ id: c.id, name: c.name }); setMsg(""); }}>Rename</button>
-                      <button className="admin-btn" style={{ fontSize: ".75rem" }} type="button" onClick={() => void run(adminApi.setCategoryHidden(c.id, !c.hidden), c.hidden ? `${c.name} is visible again.` : `${c.name} hidden from the shop.`)}>{c.hidden ? "Show" : "Hide"}</button>
-                      <button className="admin-btn danger" style={{ fontSize: ".75rem" }} type="button"
-                        onClick={() => { if (window.confirm(`Delete the category “${c.name}”?`)) void run(adminApi.removeCategory(c.id), "Category deleted."); }}>Delete</button>
-                    </>
-                  )}
+                <td>
+                  <button className="admin-btn" style={{ fontSize: ".75rem" }} type="button" onClick={() => void run(adminApi.setCategoryHidden(c.id, !c.hidden), c.hidden ? `${c.name} is visible again.` : `${c.name} hidden from the shop.`)}>{c.hidden ? "Show" : "Hide"}</button>
                 </td>
               </tr>
             ))}
@@ -138,9 +111,9 @@ function CategoryEditor() {
       </Panel>
 
       <div style={{ height: "1.25rem" }} />
-      <Panel title="Perfume categories" subtitle="Choose which category each perfume belongs to.">
+      <Panel title="Perfume families" subtitle="Choose which of the five families each perfume belongs to.">
         <table className="admin-table">
-          <thead><tr><th>Perfume</th><th>Category</th></tr></thead>
+          <thead><tr><th>Perfume</th><th>Family</th></tr></thead>
           <tbody>
             {!products.length && emptyRow(2, "No perfumes.")}
             {products.map((p) => (
@@ -269,10 +242,22 @@ function HomePerfumes() {
   );
 }
 
+/** Photos of past custom designs, shown as a gallery on the Custom design page (drawn sample bottle until the first photo). */
+function CustomDesignPhotos() {
+  const images = useApi<{ images: number[] }>("/api/custom-design").data?.images ?? [];
+  return (
+    <Panel title="Custom design photos" subtitle="Photos of engraved bottles and designs you have made. They appear as a gallery on the Custom design page; without photos, the page shows the drawn sample bottle.">
+      <PhotoManager p={{ id: "custom-design", name: "Custom design", images }} hint="choose several at once or drag them in (up to 8). The first one shows first; use ← → to reorder." />
+    </Panel>
+  );
+}
+
 export function ContentPanel() {
   return (
     <>
       <HomePerfumes />
+      <div style={{ height: "1.25rem" }} />
+      <CustomDesignPhotos />
       <div style={{ height: "1.25rem" }} />
       <NoticeEditor />
       <div style={{ height: "1.25rem" }} />

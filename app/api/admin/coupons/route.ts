@@ -17,6 +17,7 @@ const create = z.object({
   value: z.number().int().positive("Enter a positive value.").max(1_000_000),
   expiresAt: z.string().datetime().nullish(),
   maxUses: z.number().int().positive().nullish(),
+  oncePerCustomer: z.boolean().default(true),
 }).refine((c) => c.type !== "percent" || c.value <= 100, { message: "Percent cannot exceed 100.", path: ["value"] });
 
 export const POST = route(async (req) => {
@@ -24,7 +25,7 @@ export const POST = route(async (req) => {
   const c = await body(req, create);
   if (await db.coupon.findUnique({ where: { code: c.code } })) throw new HttpError(409, "That code already exists.");
   const row = await db.coupon.create({
-    data: { code: c.code, type: c.type === "percent" ? "PERCENT" : "FLAT", value: c.value, expiresAt: c.expiresAt ? new Date(c.expiresAt) : null, maxUses: c.maxUses ?? null },
+    data: { code: c.code, type: c.type === "percent" ? "PERCENT" : "FLAT", value: c.value, expiresAt: c.expiresAt ? new Date(c.expiresAt) : null, maxUses: c.maxUses ?? null, oncePerCustomer: c.oncePerCustomer },
   });
   return ok(serializeCoupon(row), 201);
 });

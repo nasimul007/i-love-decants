@@ -1,11 +1,12 @@
 import { db } from "@/lib/db";
+import { revalidatePath } from "next/cache";
 import { requireStaff } from "@/lib/server/auth";
 import { HttpError, ok, route } from "@/lib/server/http";
-import { MAX_IMAGE_BYTES, MAX_IMAGES_PER_PRODUCT, sniffImage } from "@/lib/server/images";
+import { MAX_IMAGE_BYTES, MAX_IMAGES_PER_PRODUCT, photoOwner, sniffImage } from "@/lib/server/images";
 
-/** Staff (products): add one photo to a perfume (`productId`) or an oil / gift set (`itemId`). multipart/form-data with `file`. */
+/** Staff: add one photo to a perfume (`productId`), an oil / gift set, the Custom design gallery or a review (`itemId`). multipart/form-data with `file`. */
 export const POST = route(async (req) => {
-  await requireStaff("products");
+  await requireStaff();
   const form = await req.formData().catch(() => { throw new HttpError(400, "Invalid upload."); });
   const productId = form.get("productId") ? Number(form.get("productId")) : null;
   const itemId = productId === null ? String(form.get("itemId") ?? "") : null;
@@ -15,9 +16,8 @@ export const POST = route(async (req) => {
   const bytes = new Uint8Array(await file.arrayBuffer());
   const mime = sniffImage(bytes);
   if (!mime) throw new HttpError(400, "Only JPG, PNG or WebP images are allowed.");
-  const exists = productId !== null
-    ? await db.product.findUnique({ where: { id: productId }, select: { id: true } })
-    : (await db.oil.findUnique({ where: { id: itemId! }, select: { id: true } })) ?? (await db.giftSet.findUnique({ where: { id: itemId! }, select: { id: true } }));
+  const { section, exists } = await photoOwner({ productId, itemId });
+  await requireStaff(section);
   if (!exists) throw new HttpError(404, "Product not found.");
   const owner = productId !== null ? { productId } : { itemId };
   if ((await db.productImage.count({ where: owner })) >= MAX_IMAGES_PER_PRODUCT) {
@@ -28,5 +28,6 @@ export const POST = route(async (req) => {
     data: { ...owner, mime, data: bytes, size: bytes.length, sort: (max._max.sort ?? 0) + 1 },
     select: { id: true },
   });
+  if (section === "reviews") revalidatePath("/"); // the home page reviews strip is static
   return ok({ id: img.id }, 201);
 });

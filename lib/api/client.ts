@@ -47,9 +47,9 @@ export function clearCache(...prefixes: string[]): void {
   emit();
 }
 
-export function useApi<T>(url: string): { data: T | undefined; loaded: boolean } {
-  const entry = useSyncExternalStore(subscribe, () => cache.get(url) ?? EMPTY, () => EMPTY);
-  useEffect(() => { if (!cache.has(url)) void refresh(url); }, [url]);
+export function useApi<T>(url: string | null): { data: T | undefined; loaded: boolean } {
+  const entry = useSyncExternalStore(subscribe, () => (url && cache.get(url)) || EMPTY, () => EMPTY);
+  useEffect(() => { if (url && !cache.has(url)) void refresh(url); }, [url]); // null = not wanted yet (e.g. signed out)
   return useMemo(() => ({ data: entry.data as T | undefined, loaded: entry.loaded }), [entry]);
 }
 

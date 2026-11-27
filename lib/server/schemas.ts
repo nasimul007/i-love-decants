@@ -8,6 +8,6 @@ export const lineSchema = z.object({
 });
 
 export const permissionsSchema = z.object({
-  inventory: z.boolean(), products: z.boolean(), customers: z.boolean(), history: z.boolean(), coupons: z.boolean(), content: z.boolean().default(false),
+  orders: z.boolean().default(false), inventory: z.boolean(), products: z.boolean(), customers: z.boolean(), history: z.boolean(), coupons: z.boolean(), content: z.boolean().default(false), reviews: z.boolean().default(false),
 });
 

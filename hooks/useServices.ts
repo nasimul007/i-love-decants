@@ -9,7 +9,7 @@ import { useApi } from "@/lib/api/client";
 import { ADMIN, ordersUrl, type AdminMe, type AdminSale, type AdminFaq, type AdminNotice, type Page, type ProductDetails, type PublicCategory } from "@/lib/api/admin";
 import { ME, MY_ORDERS } from "@/lib/api/customer";
 import type {
-  CartItem, CatalogOverrides, Coupon, GiftSet, InventoryRecord, LoginEvent, OilProduct, Order, Product, PublicCustomer, PublicManager,
+  CartItem, CatalogOverrides, Coupon, GiftSet, InventoryRecord, LoginEvent, OilProduct, Order, Product, PublicCustomer, PublicManager, Review,
 } from "@/types";
 
 /** Reactive reads over the service layer. Swap internals for SWR/React Query when an API exists. */
@@ -24,11 +24,19 @@ interface StorefrontCatalog {
   volumes: number[];
   sprays: Record<number, number>;
   fullBottle: { ml: number; sprays: number } | null;
+  /** Star rating per shop id from published reviews. */
+  ratings?: Record<string, { average: number; count: number }>;
 }
 const EMPTY_CATALOG: StorefrontCatalog = { products: [], gifts: [], oils: [], categories: [], volumes: [], sprays: {}, fullBottle: null };
 
 function useStorefront() {
   return useApi<StorefrontCatalog>("/api/products");
+}
+
+const NO_RATINGS: Record<string, { average: number; count: number }> = {};
+/** Star rating of every shop item that has published reviews, by shop id ("7", "oil-3"…). */
+export function useRatings() {
+  return useStorefront().data?.ratings ?? NO_RATINGS;
 }
 
 /** Spray count per volume. */
@@ -105,9 +113,9 @@ export function useCurrentCustomer(): PublicCustomer | null {
   return useApi<PublicCustomer | null>(ME).data ?? null;
 }
 
-/** Orders of the signed-in customer. */
-export function useMyOrders(): Order[] {
-  return useApi<Order[]>(MY_ORDERS).data ?? EMPTY_ORDERS;
+/** Orders of the signed-in customer (nothing is fetched while signed out). */
+export function useMyOrders(signedIn: boolean): Order[] {
+  return useApi<Order[]>(signedIn ? MY_ORDERS : null).data ?? EMPTY_ORDERS;
 }
 const EMPTY_ORDERS: Order[] = [];
 
@@ -133,12 +141,13 @@ export function useCatalogOverrides(): CatalogOverrides {
 }
 
 export interface AdminOverview {
-  liveProducts: number; totalItems: number; inTransit: number; orders: number; shipped: number; customers: number;
+  liveProducts: number; totalItems: number; openOrders: number; orders: number; shipped: number; customers: number;
   recentSignIns: LoginEvent[];
 }
 export const useAdminOverview = () => useApi<AdminOverview>(ADMIN.overview).data;
 export const useInventoryRecords = () => useList<InventoryRecord>(ADMIN.inventory);
 export const useCustomers = () => useList<PublicCustomer>(ADMIN.customers);
+export const useAdminReviews = () => useList<Review>(ADMIN.reviews);
 /** One page of orders for staff (newest first). */
 export function useOrders(page = 1, pageSize = 20, status?: string) {
   const { data, loaded } = useApi<Page<Order>>(ordersUrl(page, pageSize, status));

@@ -4,6 +4,7 @@ import { requireStaff } from "@/lib/server/auth";
 import { body, HttpError, ok, route } from "@/lib/server/http";
 import { serializeOrder } from "@/lib/server/orders";
 import { inventoryWhere, stockByItem } from "@/lib/server/stock";
+import { normalizePhone } from "@/lib/validators";
 
 const schema = z.object({ status: z.enum(["received", "confirmed", "shipped", "delivered", "cancelled"]) });
 
@@ -15,7 +16,7 @@ type Status = "RECEIVED" | "CONFIRMED" | "SHIPPED" | "DELIVERED" | "CANCELLED";
  *  - "In transit" counts everything still open; it clears when an order is delivered or cancelled.
  */
 export const PATCH = route(async (req, { params }: { params: Promise<{ id: string }> }) => {
-  await requireStaff();
+  await requireStaff("orders");
   const { id } = await params;
   const next = (await body(req, schema)).status.toUpperCase() as Status;
   const order = await db.$transaction(async (tx) => {
@@ -48,9 +49,31 @@ export const PATCH = route(async (req, { params }: { params: Promise<{ id: strin
         });
       }
     }
-    // A cancelled order doesn't use up the customer's one-time coupon.
-    if (next === "CANCELLED") await tx.couponRedemption.deleteMany({ where: { orderId: id } });
+    // A cancelled order doesn't use up the coupon: free the customer's one-time use and the code's use count; re-opening takes them again.
+    if (cur.couponCode && (release || reserve)) {
+      const code = cur.couponCode;
+      if (release) {
+        await tx.couponRedemption.deleteMany({ where: { orderId: id } });
+        await tx.coupon.updateMany({ where: { code, uses: { gt: 0 } }, data: { uses: { decrement: 1 } } });
+      } else {
+        const c = await tx.coupon.updateMany({ where: { code }, data: { uses: { increment: 1 } } });
+        const once = c.count > 0 && (await tx.coupon.findUnique({ where: { code } }))?.oncePerCustomer;
+        if (once && !await tx.couponRedemption.findUnique({ where: { code_phone: { code, phone: normalizePhone(cur.customerPhone) } } }))
+          await tx.couponRedemption.create({ data: { code, phone: normalizePhone(cur.customerPhone), orderId: id } });
+      }
+    }
     return tx.order.update({ where: { id }, data: { status: next }, include: { items: true } });
   });
   return ok(serializeOrder(order));
+});
+
+/** Staff: delete a cancelled order (e.g. a test order). Its stock was already returned when it was cancelled. */
+export const DELETE = route(async (_req, { params }: { params: Promise<{ id: string }> }) => {
+  await requireStaff("orders");
+  const { id } = await params;
+  const cur = await db.order.findUnique({ where: { id } });
+  if (!cur) throw new HttpError(404, "Order not found.");
+  if (cur.status !== "CANCELLED") throw new HttpError(409, "Only cancelled orders can be deleted. Cancel it first.");
+  await db.$transaction([db.couponRedemption.deleteMany({ where: { orderId: id } }), db.order.delete({ where: { id } })]);
+  return ok({ deleted: id });
 });

@@ -9,8 +9,8 @@ type Ctx = { params: Promise<{ code: string }> };
 export const PATCH = route(async (req, { params }: Ctx) => {
   await requireStaff("coupons");
   const { code } = await params;
-  const { active } = await body(req, z.object({ active: z.boolean() }));
-  const res = await db.coupon.updateMany({ where: { code }, data: { active } });
+  const data = await body(req, z.object({ active: z.boolean().optional(), oncePerCustomer: z.boolean().optional() }));
+  const res = await db.coupon.updateMany({ where: { code }, data });
   if (!res.count) throw new HttpError(404, "Coupon not found.");
   return ok(serializeCoupon((await db.coupon.findUnique({ where: { code } }))!));
 });

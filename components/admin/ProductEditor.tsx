@@ -17,7 +17,7 @@ const draftOf = ({ id: _i, images: _img, keyNotes, ...rest }: ProductDetails): D
 
 /** Photos of one perfume: upload several, choose the main one, re-order, delete. Stored in the database. */
 /** Photos of a perfume (`owner` = its number id) or an oil / gift set (`owner` = "oil-…" / "gift-…"). */
-function PhotoManager({ p }: { p: { id: number | string; name: string; images: number[] } }) {
+export function PhotoManager({ p, hint }: { p: { id: number | string; name: string; images: number[] }; hint?: string }) {
   const { showToast } = useUI();
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
@@ -41,7 +41,7 @@ function PhotoManager({ p }: { p: { id: number | string; name: string; images: n
 
   return (
     <div className="admin-field">
-      <label>Photos <small style={{ color: "var(--muted)", fontWeight: 500 }}>— choose several at once or drag them in (up to 8). The first is the main photo; use ← → to reorder. Without photos, customers see the drawn artwork.</small></label>
+      <label>Photos <small style={{ color: "var(--muted)", fontWeight: 500 }}>— {hint ?? "choose several at once or drag them in (up to 8). The first is the main photo; use ← → to reorder. Without photos, customers see the drawn artwork."}</small></label>
       <div style={{ display: "flex", flexWrap: "wrap", gap: ".7rem", marginTop: ".4rem" }}>
         {p.images.map((id, i) => (
           <figure key={id} style={{ margin: 0, width: 112, display: "grid", gap: ".3rem", justifyItems: "center" }}>
@@ -81,7 +81,7 @@ const swatch = (c: string) => <span aria-hidden="true" style={{ display: "inline
 
 /**
  * Everything that defines a perfume, in one form: photos, name, parameters, description, notes and price per size.
- * The same form is used by Inventory (add + edit) and by Perfumes & prices, so every screen edits the same thing.
+ * The same form is used by Inventory for add and edit, so every screen edits the same thing.
  */
 export function PerfumeEditor({ p, onClose }: { p: ProductDetails; onClose: () => void }) {
   const { showToast } = useUI();
@@ -90,18 +90,22 @@ export function PerfumeEditor({ p, onClose }: { p: ProductDetails; onClose: () =
   const volumes = activeVolumes(overrides);
   const base = perfumesOf(overrides).find((x) => x.id === p.id);
   const live = base ? applyToProduct(base, overrides).prices : {};
-  const savedPrices: Record<number, string> = Object.fromEntries(volumes.map((v) => [v, live[v] === undefined ? "" : String(live[v])]));
-  const pricesKey = JSON.stringify(savedPrices);
+  const offNow = overrides.off?.[String(p.id)] ?? {};
+  // A switched-off size keeps its price (shown greyed) so it can be switched back on without retyping.
+  const savedPrices: Record<number, string> = Object.fromEntries(volumes.map((v) => [v, offNow[v] !== undefined ? String(offNow[v]) : live[v] === undefined ? "" : String(live[v])]));
+  const savedOn: Record<number, boolean> = Object.fromEntries(volumes.map((v) => [v, offNow[v] === undefined]));
+  const pricesKey = JSON.stringify([savedPrices, savedOn]);
 
   const [draft, setDraft] = useState<Draft>(draftOf(p));
   const [prices, setPrices] = useState(savedPrices);
+  const [on, setOn] = useState(savedOn);
   const [msg, setMsg] = useState("");
   const [saving, setSaving] = useState(false);
-  useEffect(() => { setPrices(savedPrices); }, [pricesKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { setPrices(savedPrices); setOn(savedOn); }, [pricesKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const saved = draftOf(p);
   const detailsDirty = (Object.keys(draft) as (keyof Draft)[]).some((k) => k !== "family" && draft[k] !== saved[k]);
-  const pricesDirty = volumes.some((v) => (prices[v] ?? "") !== savedPrices[v]);
+  const pricesDirty = volumes.some((v) => (prices[v] ?? "") !== savedPrices[v] || on[v] !== savedOn[v]);
   const dirty = detailsDirty || pricesDirty || draft.family !== p.family;
 
   const save = async () => {
@@ -111,7 +115,7 @@ export function PerfumeEditor({ p, onClose }: { p: ProductDetails; onClose: () =
     let res: Result = { ok: true };
     if (family !== p.family) res = await adminApi.assignCategory(p.id, family);
     if (res.ok && detailsDirty) res = await adminApi.saveProductDetails(p.id, { ...rest, keyNotes: keyNotes.split(",").map((n) => n.trim()).filter(Boolean) });
-    if (res.ok && pricesDirty) res = await catalogOverridesApi.setProductPrices(p.id, Object.fromEntries(volumes.map((v) => [v, prices[v].trim() === "" ? null : Number(prices[v])])));
+    if (res.ok && pricesDirty) res = await catalogOverridesApi.setProductPrices(p.id, Object.fromEntries(volumes.map((v) => [v, prices[v].trim() === "" ? null : Number(prices[v])])), undefined, volumes.filter((v) => !on[v] && prices[v].trim() !== ""));
     setSaving(false);
     if (!res.ok) { setMsg(res.error ?? "Could not save."); return; }
     setMsg(""); showToast(`${draft.name} saved.`); onClose();
@@ -172,15 +176,27 @@ export function PerfumeEditor({ p, onClose }: { p: ProductDetails; onClose: () =
         {choice("shape", "Drawn bottle shape", SHAPES, null)}
       </div>
       <small style={{ color: "var(--muted)" }}>The drawn bottle shows only until the first photo is added; the colour is always used for the card and pop-up background.</small>
-      <h3 style={sectionTitle}>Price per size (৳) <small style={{ ...hintStyle, textTransform: "none", letterSpacing: 0 }}>— leave a size empty to not sell it. Sizes are managed in “Perfumes & prices”.</small></h3>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: ".6rem" }}>
-        {volumes.map((v) => (
-          <div className="admin-field" key={v} style={{ width: 100 }}>
-            <label htmlFor={id(`ml${v}`)}>{v} ml</label>
-            <input id={id(`ml${v}`)} type="number" inputMode="numeric" min={0} step={1} placeholder="—" style={inputStyle}
-              value={prices[v] ?? ""} onChange={(e) => { setPrices({ ...prices, [v]: e.target.value }); setMsg(""); }} />
-          </div>
-        ))}
+      <h3 style={sectionTitle}>Price per size (৳) <small style={{ ...hintStyle, textTransform: "none", letterSpacing: 0 }}>— switch a size Off when there isn't enough of this perfume for it (the price is kept for later); leave the price empty if you never sell that size. To add or remove a size for every perfume, use Inventory → Sizes on sale.</small></h3>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: ".6rem", alignItems: "flex-start" }}>
+        {volumes.map((v) => {
+          const isOn = on[v] !== false;
+          const priced = (prices[v] ?? "").trim() !== "";
+          return (
+            <div className="admin-field size-field" key={v} style={{ width: 112 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: ".3rem" }}>
+                <label htmlFor={id(`ml${v}`)}>{v} ml</label>
+                <button type="button" role="switch" aria-checked={isOn && priced} disabled={!priced} aria-label={`Sell ${v} ml of ${draft.name}`}
+                  className={`size-switch${isOn && priced ? " is-on" : ""}`} title={priced ? (isOn ? "On sale. Click to stop selling this size." : "Not sold. Click to sell it again.") : "Enter a price first"}
+                  onClick={() => { setOn((o) => ({ ...o, [v]: o[v] === false })); setMsg(""); }}>
+                  <span className="size-switch-knob" aria-hidden="true" />{isOn && priced ? "On" : "Off"}
+                </button>
+              </div>
+              <input id={id(`ml${v}`)} type="number" inputMode="numeric" min={0} step={1} placeholder="—" style={{ ...inputStyle, ...(priced && !isOn ? { opacity: .5, textDecoration: "line-through" } : {}) }}
+                value={prices[v] ?? ""} onChange={(e) => { const val = e.target.value; setPrices((pr) => ({ ...pr, [v]: val })); setMsg(""); }} />
+              {priced && !isOn && <small style={{ color: "var(--deal)", fontSize: ".7rem", fontWeight: 700 }}>Not sold</small>}
+            </div>
+          );
+        })}
       </div>
       <p className="admin-form-msg" aria-live="polite">{msg}</p>
       <div style={{ display: "flex", gap: ".5rem", justifyContent: "flex-end" }}>

@@ -5,20 +5,32 @@ import { body, ok, route } from "@/lib/server/http";
 import { KIND_FROM_LABEL, serializeInventory } from "@/lib/server/inventory";
 import { PRODUCTS } from "@/lib/data/catalog";
 import { OIL_ML } from "@/lib/config";
+import { loadCatalog } from "@/lib/server/catalog";
+import { rangeText } from "@/lib/server/overrides";
 
 export const dynamic = "force-dynamic";
 
 export const GET = route(async () => {
   await requireStaff("inventory");
-  const items = await db.inventoryItem.findMany({ orderBy: [{ kind: "asc" }, { name: "asc" }] });
-  return ok(items.map(serializeInventory));
+  const [items, shop, all] = await Promise.all([db.inventoryItem.findMany({ orderBy: [{ kind: "asc" }, { name: "asc" }] }), loadCatalog(), loadCatalog(db, { all: true })]);
+  // A perfume's Sizes show what the shop can sell now: sizes bigger than the ml left in stock aren't offered.
+  const sizesOf = (c: typeof shop, id: number) => Object.keys(c.products.find((x) => x.id === id)?.prices ?? {}).map(Number).sort((a, b) => a - b);
+  return ok(items.map((i) => {
+    const r = serializeInventory(i);
+    if (i.productId === null || all.products.find((x) => x.id === i.productId)?.fullBottle) return r;
+    const every = sizesOf(all, i.productId), now = sizesOf(shop, i.productId);
+    if (!every.length) return r; // "Not priced yet"
+    const live = i.enabled && i.visible && !i.removed && now.length > 0;
+    r.sizes = live && now.length < every.length ? `${rangeText(now)} (stock limits it)` : rangeText(every);
+    return r;
+  }));
 });
 
 const create = z.object({
   name: z.string().trim().min(1).max(62),
   type: z.enum(["Perfume decant", "Perfume oil", "Gift set", "Custom bottle"]),
   sizes: z.string().trim().max(60).default(""),
-  price: z.number().int().min(0).max(1_000_000), // ignored for perfumes: they are priced per size in Perfumes & prices
+  price: z.number().int().min(0).max(1_000_000), // ignored for perfumes: they are priced per size in the product editor
   stock: z.number().int().min(0).max(1_000_000), // ml for decants/oils, pieces otherwise
 });
 

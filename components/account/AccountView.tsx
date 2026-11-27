@@ -10,6 +10,8 @@ import { useApi } from "@/lib/api/client";
 import { ME, customerApi } from "@/lib/api/customer";
 import { formatDate, formatDateTime, initials, money } from "@/lib/format";
 import type { Order } from "@/types";
+import { CitySelect } from "@/components/checkout/CitySelect";
+import { BD_CITIES } from "@/lib/data/cities";
 
 type Tab = "orders" | "profile";
 
@@ -91,15 +93,15 @@ export function AccountView() {
   const { openAuth, showToast } = useUI();
   const loaded = useApi(ME).loaded;
   const customer = useCurrentCustomer();
-  const orders = useMyOrders();
+  const orders = useMyOrders(!!customer);
   const [tab, setTab] = useState<Tab>("orders");
   const [openId, setOpenId] = useState<string | null>(null);
-  const [form, setForm] = useState({ name: "", phone: "", address: "" });
+  const [form, setForm] = useState({ name: "", phone: "", address: "", city: "" });
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (customer) setForm({ name: customer.name, phone: customer.phone, address: customer.address });
+    if (customer) setForm({ name: customer.name, phone: customer.phone, address: customer.address, city: customer.city ?? "" });
   }, [customer]);
 
   // Deep link: /account#order-ILD-1234 opens that order.
@@ -184,6 +186,7 @@ export function AccountView() {
           <div className="profile-field"><label htmlFor="acct-name">Full name</label><input id="acct-name" type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
           <div className="profile-field"><label htmlFor="acct-phone">Phone</label><input id="acct-phone" type="tel" inputMode="numeric" maxLength={11} pattern="01[0-9]{9}" autoComplete="tel" value={form.phone} placeholder="01XXXXXXXXX" onChange={(e) => setForm({ ...form, phone: toLocalPhone(e.target.value) })} /></div>
           <div className="profile-field"><label htmlFor="acct-addr">Delivery address</label><textarea id="acct-addr" value={form.address} placeholder="House, road, area, landmark…" onChange={(e) => setForm({ ...form, address: e.target.value })} /></div>
+          <div className="profile-field"><label htmlFor="acct-city">City</label><CitySelect id="acct-city" value={form.city} options={BD_CITIES} onChange={(city) => setForm({ ...form, city })} /></div>
           {error && <p className="auth-msg">{error}</p>}
           <button className="profile-save-btn" type="submit" disabled={saving}>{saving ? "Saving…" : "Save changes"}</button>
         </form>

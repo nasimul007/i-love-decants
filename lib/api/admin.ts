@@ -6,6 +6,7 @@ import type {
 } from "@/types";
 
 export const ADMIN = {
+  reviews: "/api/admin/reviews",
   me: "/api/admin/me",
   overview: "/api/admin/overview",
   catalog: "/api/admin/catalog",
@@ -65,7 +66,40 @@ export const adminApi = {
     return res;
   },
 
+  async deleteOrder(id: string): Promise<ServiceResult<unknown>> {
+    const res = await call("DELETE", `/api/orders/${id}`);
+    await Promise.all([refreshPrefix(ADMIN.orders), refresh(ADMIN.overview)]);
+    return res;
+  },
+
+  /* customers */
+  async setCustomerPassword(id: string, password: string): Promise<ServiceResult<unknown>> {
+    return call("PATCH", `${ADMIN.customers}/${id}`, { password });
+  },
+  async deleteCustomer(id: string): Promise<ServiceResult<unknown>> {
+    const res = await call("DELETE", `${ADMIN.customers}/${id}`);
+    await Promise.all([refresh(ADMIN.customers), refresh(ADMIN.overview)]);
+    return res;
+  },
+
+  /* reviews: the storefront pages render on the server, so only admin lists need refreshing */
+  async saveReview(id: number | null, data: Record<string, unknown>): Promise<ServiceResult<{ id: number }>> {
+    const res = await call<{ id: number }>(id === null ? "POST" : "PATCH", id === null ? ADMIN.reviews : `${ADMIN.reviews}/${id}`, data);
+    await refresh(ADMIN.reviews);
+    return res;
+  },
+  async deleteReview(id: number): Promise<ServiceResult<unknown>> {
+    const res = await call("DELETE", `${ADMIN.reviews}/${id}`);
+    await refresh(ADMIN.reviews);
+    return res;
+  },
+
   /* inventory */
+  async deleteInventory(id: string): Promise<ServiceResult<unknown>> {
+    const res = await call("DELETE", `${ADMIN.inventory}/${id}`);
+    await Promise.all([refresh(ADMIN.inventory), refresh(ADMIN.overview), refresh(ADMIN.productDetails), refresh(ADMIN.products), refresh(ADMIN.catalog), refresh(ADMIN.categories), refresh(ADMIN.sales), refresh("/api/products")]);
+    return res;
+  },
   async addInventory(input: { name: string; type: InventoryKind; sizes: string; price: number; stock: number }): Promise<ServiceResult<unknown>> {
     const res = await call<InventoryRecord>("POST", ADMIN.inventory, input);
     // A new perfume / oil / gift set must show up at once in every admin table, not only Inventory.
@@ -79,8 +113,13 @@ export const adminApi = {
   },
 
   /* coupons */
-  async addCoupon(input: { code: string; type: Coupon["type"]; value: number; expiresAt?: string | null; maxUses?: number | null }): Promise<ServiceResult<unknown>> {
+  async addCoupon(input: { code: string; type: Coupon["type"]; value: number; expiresAt?: string | null; maxUses?: number | null; oncePerCustomer?: boolean }): Promise<ServiceResult<unknown>> {
     const res = await call("POST", ADMIN.coupons, input);
+    await refresh(ADMIN.coupons);
+    return res;
+  },
+  async setCouponOnce(code: string, oncePerCustomer: boolean): Promise<ServiceResult<unknown>> {
+    const res = await call("PATCH", `${ADMIN.coupons}/${encodeURIComponent(code)}`, { oncePerCustomer });
     await refresh(ADMIN.coupons);
     return res;
   },
@@ -128,10 +167,7 @@ export const adminApi = {
     await Promise.all([refresh(ADMIN.products), refresh("/api/products")]);
     return res;
   },
-  addCategory(name: string) { return this.categoryOp(() => call<PublicCategory[]>("POST", ADMIN.categories, { name })); },
-  renameCategory(id: number, name: string) { return this.categoryOp(() => call<PublicCategory[]>("PATCH", `${ADMIN.categories}/${id}`, { name })); },
   setCategoryHidden(id: number, hidden: boolean) { return this.categoryOp(() => call<PublicCategory[]>("PATCH", `${ADMIN.categories}/${id}`, { hidden })); },
-  removeCategory(id: number) { return this.categoryOp(() => call<PublicCategory[]>("DELETE", `${ADMIN.categories}/${id}`)); },
   async setFeatured(productId: number, featured: boolean): Promise<ServiceResult<unknown>> {
     const res = await call("PATCH", `${ADMIN.products}/${productId}`, { featured });
     await Promise.all([refresh(ADMIN.products), refresh("/api/products")]);
@@ -165,7 +201,7 @@ export const adminApi = {
     await this.photosChanged();
     return res;
   },
-  async photosChanged() { await Promise.all([refresh(ADMIN.productDetails), refresh(ADMIN.catalog), refresh("/api/products")]); },
+  async photosChanged() { await Promise.all([refresh(ADMIN.productDetails), refresh(ADMIN.catalog), refresh("/api/products"), refresh("/api/custom-design"), refresh(ADMIN.reviews)]); },
 
   /* FAQ */
   async faqOp(op: () => Promise<ServiceResult<AdminFaq[]>>): Promise<ServiceResult<unknown>> {
@@ -229,6 +265,6 @@ export const catalogOverridesApi = {
   addVolume: (ml: number, sprays: number, price?: number) => catalogOp({ op: "addVolume", ml: n(ml), sprays: n(sprays), price: price === undefined ? undefined : n(price) }),
   removeVolume: (ml: number) => catalogOp({ op: "removeVolume", ml }),
   setSprays: (sprays: Record<number, number>) => catalogOp({ op: "setSprays", sprays: Object.fromEntries(Object.entries(sprays).map(([k, v]) => [k, n(v)])) }),
-  setProductPrices: (id: number, prices: Record<number, number | null>, full?: number | null) =>
-    catalogOp({ op: "setProductPrices", id, prices: Object.fromEntries(Object.entries(prices).map(([k, v]) => [k, nn(v)])), full: full === undefined ? undefined : nn(full) }),
+  setProductPrices: (id: number, prices: Record<number, number | null>, full?: number | null, off?: number[]) =>
+    catalogOp({ op: "setProductPrices", id, prices: Object.fromEntries(Object.entries(prices).map(([k, v]) => [k, nn(v)])), full: full === undefined ? undefined : nn(full), off }),
 };
