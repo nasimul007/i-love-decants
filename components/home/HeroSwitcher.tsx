@@ -7,6 +7,7 @@ import { useUI } from "@/components/providers/UIProvider";
 import { useCatalog } from "@/hooks/useServices";
 import { money } from "@/lib/format";
 import { priceFrom } from "@/lib/volumes";
+import { useSwipe } from "@/hooks/useSwipe";
 
 /** Hero bottle swapper: auto-cycles, dot navigation, pointer-tilt parallax. */
 export function HeroSwitcher() {
@@ -25,6 +26,7 @@ export function HeroSwitcher() {
     return preferred.length ? preferred : products;
   }, [products]);
   const go = (step: number) => setCurrent((c) => (c + step + heroProducts.length) % heroProducts.length);
+  const swipe = useSwipe(go, heroProducts.length > 1);
 
   // Swap the artwork half-way through the fade (matches the 520 ms CSS transition).
   useEffect(() => {
@@ -67,6 +69,7 @@ export function HeroSwitcher() {
         onPointerDown={(e) => { if ((e.target as Element).closest("[data-open-product]")) setPressed(true); }}
         onPointerUp={() => setPressed(false)}
         onPointerCancel={() => setPressed(false)}
+        {...swipe}
       >
         {product ? (
           <>

@@ -322,3 +322,39 @@ Test data was removed afterwards.
 - `hooks/useServices.ts`
 - `types/index.ts`
 - `app/globals.css`
+
+## Phone swipe fixes (27 Nov 2026, on `main`)
+
+### Admin: tables on phones
+
+- **Problem:** admin tables were 700 px wide and scrolled sideways inside a 349 px phone panel, with the first column (the item name) pinned on a solid background. When you swiped, every other column slid **under** that pinned column and disappeared. Examples:
+  - **Home page perfumes:** you could see the names but not the On/Off switch or the family.
+  - **Inventory:** the Sizes column was half hidden even before swiping, and the stock and buttons slid away.
+- **Fix:** on phones (≤ 680 px) **every admin table becomes a list of cards**. The item is the card title; each value sits on its own line next to its column name (Family, On the home page, Sizes, Stock, Status, Actions…), and there is no sideways scrolling at all.
+  - The shared `Panel` component labels every cell with its column header, so all 14 admin tables got this at once.
+  - The “Sizes on sale” table's inline 860 px width became a desktop-only class.
+  - Desktop tables are unchanged.
+- **Tested at 375 px:** all 14 admin tables have no sideways scroll, nothing wider than the panel, and every value labelled. A swipe moves nothing, and tapping the Home page switch turns it on and off. On desktop the tables are normal tables as before.
+
+### Shop: swipe test on every page (375 px, real touch events)
+
+- **What was tested:** each of the 13 pages, plus the product pop-up, bag, checkout, phone menu and filters drawer. Every screen-height was swiped left and right on the page and on every photo, the hero, the product rail, the shop tabs, the review chips and the notice bar.
+- **Already fine:** no page ever slides sideways or gets wider than the phone, and the product rail scrolls under a finger.
+- **Problems found:**
+  - Swiping a **photo** did nothing (review photos, oil and gift cards, Custom design gallery, product pop-up gallery, full-screen viewer). Only the small ‹ › arrows worked.
+  - The **hero slideshow** ignored touch completely.
+  - A rightward flick on a photo could be taken by the browser as **“go back”**, leaving the page.
+- **Fix:** a small `hooks/useSwipe.ts`:
+  - **Where:** the photo gallery (every place above), the full-screen viewer (only while not zoomed in, so a zoomed photo still pans) and the hero.
+  - **Swipe left / right:** next / previous photo or perfume.
+  - **Up-down finger moves** still scroll the page, and pinch-to-zoom still works (CSS `touch-action: pan-y pinch-zoom`).
+  - **Taps** still open the viewer and the perfume.
+- **Tested with real touch events:**
+  - review photos, Custom design and oil cards: next → back
+  - vertical scroll over a photo still scrolls (235 px)
+  - viewer: tap opens it, a flick changes the photo (1/3 → 2/3), zoomed in a flick doesn't change it
+  - hero: Quiet Bloom → Linen Sky → Quiet Bloom, and a tap opens the pop-up
+  - the product rail still scrolls (308 px)
+  - a rightward flick on a photo stays on the page
+  - desktop arrows unchanged
+- **Files:** `components/admin/shared.tsx`, `components/admin/Panels.tsx`, `hooks/useSwipe.ts` (new), `components/products/ProductGallery.tsx`, `components/ui/Lightbox.tsx`, `components/home/HeroSwitcher.tsx`, `app/globals.css`.

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useSwipe } from "@/hooks/useSwipe";
 
 interface Props {
   images: { src: string; alt: string }[];
@@ -36,6 +37,9 @@ export function Lightbox({ images, index, onIndex, onClose }: Props) {
     return () => window.removeEventListener("keydown", onKey, true);
   }, [index, images.length, many, onClose, onIndex]);
 
+  // Flick to the next/previous photo; while zoomed in, a finger pans the photo instead.
+  const swipe = useSwipe((step) => onIndex((index + step + images.length) % images.length), many && zoom <= 1);
+
   if (typeof document === "undefined" || !img) return null;
   const zoomed = zoom > 1;
 
@@ -49,7 +53,7 @@ export function Lightbox({ images, index, onIndex, onClose }: Props) {
           <button ref={closeBtn} type="button" aria-label="Close photo viewer" onClick={onClose}>×</button>
         </div>
       </div>
-      <div className="lb-scroll" ref={scroller} onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="lb-scroll" ref={scroller} onClick={(e) => { if (e.target === e.currentTarget) onClose(); }} {...swipe}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img className={`lb-img${zoomed ? " is-zoomed" : ""}`} src={img.src} alt={img.alt} draggable={false}
           style={zoomed ? { width: `${zoom * 100}%` } : undefined}

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Lightbox } from "@/components/ui/Lightbox";
+import { useSwipe } from "@/hooks/useSwipe";
 
 /** Main photo + thumbnails (product pop-up, oil and gift cards). Clicking the main photo opens the zoomable viewer. */
 export function ProductGallery({ product }: { product: { name: string; images?: number[] } }) {
@@ -10,12 +11,13 @@ export function ProductGallery({ product }: { product: { name: string; images?: 
   const [viewer, setViewer] = useState(false);
   const shots = ids.map((id, i) => ({ src: `/api/images/${id}`, alt: `${product.name}, photo ${i + 1} of ${ids.length}` }));
   const current = shots[Math.min(index, shots.length - 1)];
+  const swipe = useSwipe((step) => setIndex((i) => (i + step + shots.length) % shots.length), shots.length > 1);
   if (!current) return null;
   const go = (step: number) => setIndex((i) => (i + step + shots.length) % shots.length);
 
   return (
     <div className="gallery">
-      <div className="gallery-stage">
+      <div className="gallery-stage" {...swipe}>
         <button type="button" className="gallery-main" aria-label={`Enlarge photo of ${product.name}`} onClick={() => setViewer(true)}
           // Hover magnifier (mouse only, see CSS): the zoom is centred on the cursor.
           onMouseMove={(e) => {

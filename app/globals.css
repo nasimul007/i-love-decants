@@ -4732,3 +4732,7 @@ button.rating-mini:hover { text-decoration-color: currentColor; }
   .review-sort { flex: 0 0 auto; font-size: 0; gap: 0; }
   .review-sort select { font-size: .72rem; }
 }
+
+/* Phones: a sideways flick on a photo or the hero changes it (hooks/useSwipe.ts). The page still scrolls up and down and
+   can be pinched; the browser no longer reads the flick as "go back". The zoomed photo viewer keeps free panning. */
+.gallery-stage, .hero-stage, .lb-scroll:has(.lb-img:not(.is-zoomed)) { touch-action: pan-y pinch-zoom; }
