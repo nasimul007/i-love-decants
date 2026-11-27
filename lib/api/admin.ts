@@ -167,10 +167,7 @@ export const adminApi = {
     await Promise.all([refresh(ADMIN.products), refresh("/api/products")]);
     return res;
   },
-  addCategory(name: string) { return this.categoryOp(() => call<PublicCategory[]>("POST", ADMIN.categories, { name })); },
-  renameCategory(id: number, name: string) { return this.categoryOp(() => call<PublicCategory[]>("PATCH", `${ADMIN.categories}/${id}`, { name })); },
   setCategoryHidden(id: number, hidden: boolean) { return this.categoryOp(() => call<PublicCategory[]>("PATCH", `${ADMIN.categories}/${id}`, { hidden })); },
-  removeCategory(id: number) { return this.categoryOp(() => call<PublicCategory[]>("DELETE", `${ADMIN.categories}/${id}`)); },
   async setFeatured(productId: number, featured: boolean): Promise<ServiceResult<unknown>> {
     const res = await call("PATCH", `${ADMIN.products}/${productId}`, { featured });
     await Promise.all([refresh(ADMIN.products), refresh("/api/products")]);

@@ -150,3 +150,33 @@ Second migration: `prisma/migrations/20261128120000_coupon_modes_reviews`. It ad
 - **SEO:** the answers are built on the server, so search engines read them. There is no FAQ schema, because Google retired FAQ rich results.
 - **Tested:** 5 questions on desktop and phone, the accordion opens one at a time, no sideways scrolling, no errors, every link works.
 - **Files:** `app/(shop)/faq/page.tsx`, `components/home/FaqSection.tsx`, `components/layout/Header.tsx`, `components/layout/Footer.tsx`, `app/sitemap.ts`, `app/globals.css`
+
+## Five scent families only (28 Nov 2026)
+
+The shop now has exactly **five scent families: Fresh, Floral, Amber, Woods, Fruity**.
+
+- **Migration** `prisma/migrations/20261128180000_five_scent_families` (runs on deploy). It moves every perfume from an old family into one of the five, the same way the built-in catalogue already did:
+
+  | Old family | New family | Perfume |
+  |---|---|---|
+  | Woody | Woods | Soft Oud |
+  | Gourmand | Amber | Vanilla Veil |
+  | Warm | Amber | Amber Light |
+  | Aromatic | Fresh | Sage Rain |
+  | Citrus | Fresh | Citrus Silk |
+  | Musky | Floral | Moon Musk |
+
+  Sales set on an old family move with it (e.g. a sale on Woody becomes a sale on Woods). The six extra categories are deleted, and the five keep this order.
+- **Admin → Home page & content → Scent families:** shows the five with **Hide / Show** only. Adding, renaming and deleting families are gone, and the server refuses them too. The **Perfume families** table and the product editor's dropdown offer only the five.
+- **Tested:**
+  - shop data and filter chips show only the five
+  - each chip shows exactly its perfumes
+  - the server refuses add (405), rename (400) and delete (405)
+  - hiding Amber hides its perfumes, and showing it brings them back
+- **To change a perfume's family:** use Admin → Inventory → Edit, or the **Perfume families** table.
+- **Files:**
+  - `app/api/admin/categories/route.ts`
+  - `app/api/admin/categories/[id]/route.ts`
+  - `components/admin/ContentPanel.tsx`
+  - `lib/api/admin.ts`
+  - the migration
