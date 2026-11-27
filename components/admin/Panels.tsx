@@ -628,7 +628,7 @@ export function SizesPanel() {
           </select>
           <small style={{ color: "var(--muted)" }}>Prices can differ per perfume — pick one to see exactly what its customers see.</small>
         </div>
-        <table className="admin-table" style={{ minWidth: 860 }}>
+        <table className="admin-table admin-table--wide">
           <thead><tr><th>Volume</th><th>Spray count</th><th>Price</th><th>Customer view</th><th>Sold for</th><th>Actions</th></tr></thead>
           <tbody>
             {volumes.map((v) => {

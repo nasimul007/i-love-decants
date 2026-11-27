@@ -4081,6 +4081,7 @@ html.touch-mode .cursor-layer{display:none!important}
 
 /* Admin tables */
 .admin-table{width:100%;min-width:700px;border-collapse:collapse}
+.admin-table--wide{min-width:860px} /* desktop only: phones turn every admin table into cards */
 .admin-table th{padding:.6rem .55rem .7rem;border-bottom:1px solid var(--line);color:#837a7b;font-size:.67rem;font-weight:800;letter-spacing:.1em;text-align:left;text-transform:uppercase}
 .admin-table td{padding:.8rem .55rem;border-bottom:1px solid #eee5e2;vertical-align:middle;color:#5e5357;font-size:.86rem}
 .admin-table tbody tr:last-child td{border-bottom:0}
@@ -4385,16 +4386,21 @@ html.touch-mode .cursor-layer{display:none!important}
   /* Admin: compact top bar, buttons on one line */
   .admin-topbar { padding: .9rem 1rem; }
   .admin-signout { white-space: nowrap; }
-  /* Admin: wide tables scroll sideways with the item name pinned on the left */
-  .admin-panel-body { padding: .8rem .8rem 1rem; }
-  .admin-table:not(.admin-table--stack) th:first-child,
-  .admin-table:not(.admin-table--stack) td:first-child { position: sticky; left: 0; z-index: 1; background: #fffdf9; box-shadow: 1px 0 0 var(--line); }
-  /* Admin: tables with an inline edit form stack as cards so the form fits the screen */
-  .admin-table--stack { min-width: 0; }
-  .admin-table--stack thead { display: none; }
-  .admin-table--stack, .admin-table--stack tbody, .admin-table--stack tr, .admin-table--stack td { display: block; width: 100%; }
-  .admin-table--stack tr { padding: .5rem 0; border-bottom: 1px solid #eee5e2; }
-  .admin-table--stack td { padding: .3rem 0; border: 0; }
+  /* Admin: every table becomes a list of cards on phones (no sideways scrolling: a pinned first column used to
+     hide the other columns, e.g. the Home page switches). Each value carries its column name (data-label, set by Panel). */
+  .admin-panel-body { padding: .8rem .8rem 1rem; overflow-x: visible; }
+  .admin-table { min-width: 0; }
+  .admin-table thead { display: none; }
+  .admin-table, .admin-table tbody, .admin-table tr, .admin-table td { display: block; width: 100%; }
+  .admin-table tr { padding: .75rem 0; border-bottom: 1px solid #eee5e2; }
+  .admin-table tbody tr:last-child { border-bottom: 0; }
+  .admin-table td { display: flex; align-items: center; justify-content: space-between; gap: .8rem; padding: .3rem 0; border: 0; text-align: right; }
+  .admin-table td::before { content: attr(data-label); flex: 0 0 auto; max-width: 42%; color: #837a7b; font-size: .64rem; font-weight: 800; letter-spacing: .08em; text-align: left; text-transform: uppercase; }
+  .admin-table td:first-child { display: block; padding-bottom: .45rem; text-align: left; font-size: .95rem; } /* the item itself: card title, no label */
+  .admin-table td:first-child::before, .admin-table td[colspan]::before, .admin-table td[data-label=""]::before { content: none; }
+  .admin-table td[colspan] { display: block; text-align: center; }
+  .admin-table td > :only-child { margin-left: auto; }
+  .admin-table td[style*="flex"] { justify-content: flex-end; flex-wrap: wrap; } /* button groups: wrap under each other, right aligned */
 }
 
 /* ==========================================================================

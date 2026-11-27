@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import type { ReactNode } from "react";
 import { createPortal } from "react-dom";
 
@@ -10,10 +10,18 @@ export const emptyRow = (cols: number, text: string) => (
 );
 
 export function Panel({ title, subtitle, action, children }: { title: string; subtitle: string; action?: ReactNode; children: ReactNode }) {
+  const body = useRef<HTMLDivElement>(null);
+  // Phones show each table row as a card: every cell gets its column name (data-label), read by the CSS.
+  useLayoutEffect(() => {
+    body.current?.querySelectorAll("table.admin-table").forEach((t) => {
+      const heads = [...t.querySelectorAll("thead th")].map((th) => th.textContent?.trim() ?? "");
+      t.querySelectorAll("tbody tr").forEach((tr) => [...tr.children].forEach((td, i) => { if (!td.hasAttribute("colspan")) td.setAttribute("data-label", heads[i] ?? ""); }));
+    });
+  });
   return (
     <div className="admin-panel">
       <div className="admin-panel-hd"><div><h2>{title}</h2><p>{subtitle}</p></div>{action}</div>
-      <div className="admin-panel-body">{children}</div>
+      <div className="admin-panel-body" ref={body}>{children}</div>
     </div>
   );
 }
